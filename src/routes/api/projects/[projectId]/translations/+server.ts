@@ -5,8 +5,14 @@ import { response } from '../../../../../server/lib/response';
 
 const prisma = new PrismaClient()
 
-export async function GET() {
-  const translations = await prisma.translation.findMany()
+export async function GET({ params }: RequestEvent) {
+  const projectId = params.projectId ? parseInt(params.projectId) : undefined
+
+  const translations = await prisma.translation.findMany({
+    where: {
+      projectId
+    }
+  })
   return response(translations, null)
 }
 
