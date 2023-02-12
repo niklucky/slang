@@ -2,6 +2,8 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import Button from '../../../components/Button/Button.svelte';
+	import Modal from '../../../components/Modal/Modal.svelte';
+	import ProjectForm from '../../../components/Projects/ProjectForm.svelte';
 	import Title from '../../../components/Title.svelte';
 	import TranslationsTable from '../../../components/Translations/TranslationsTable.svelte';
 	import { navigate } from '../../../library/navigate';
@@ -14,6 +16,8 @@
 
 	let project: Project | undefined = undefined;
 
+	let isEditModal = false;
+
 	onMount(() => {
 		async function load() {
 			const response = await fetchProject(projectId);
@@ -23,13 +27,18 @@
 		load();
 	});
 
+	function handleCloseEditModal() {
+		isEditModal = false;
+	}
+
 	const toolbar = [
 		{
 			component: Button,
 			props: {
 				title: 'Edit project',
 				onClick: () => {
-					navigate(`/projects/${project?.id}/edit`);
+					//navigate(`/projects/${project?.id}/edit`);
+					isEditModal = true;
 				}
 			}
 		},
@@ -49,6 +58,11 @@
 	<title>{title}</title>
 </svelte:head>
 
+{#if isEditModal}
+	<Modal {title} isOpened={isEditModal} onClose={handleCloseEditModal}
+		><ProjectForm {project} /></Modal
+	>
+{/if}
 {#if project != undefined}
 	<Title {toolbar}>{title}</Title>
 

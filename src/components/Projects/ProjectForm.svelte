@@ -3,6 +3,7 @@
 	import { createProject, updateProject } from '../../stores/projects';
 	import type { Project } from '../../types';
 	import Button from '../Button/Button.svelte';
+	import Input from '../Form/Input.svelte';
 
 	export let project: Partial<Project> = {
 		name: '',
@@ -28,29 +29,9 @@
 </script>
 
 <form>
-	<input
-		type="text"
-		id="first_name"
-		class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-		placeholder="John"
-		required
-		bind:value={project.name}
-	/>
-	<input
-		type="text"
-		id="first_name"
-		class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-		placeholder="John"
-		required
-		bind:value={project.url}
-	/>
-	<input
-		type="text"
-		id="first_name"
-		class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-		placeholder="John"
-		required
-		bind:value={project.description}
-	/>
+	<Input label={'name'} bind:value={project.name} />
+	<Input label={'url'} bind:value={project.url} />
+	<Input label={'description'} bind:value={project.description} />
+
 	<Button onClick={handleSubmit} title={submitTitle} />
 </form>

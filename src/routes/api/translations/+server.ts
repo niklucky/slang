@@ -22,6 +22,15 @@ export async function GET({ url }: RequestEvent) {
       locale: {
         name: locale || undefined
       }
+    },
+    select: {
+      id: true,
+      key: true,
+      value: true,
+      projectId: !projectId,
+      namespaceId: !namespace,
+      localeId: !locale,
+      channelId: !channel
     }
   })
   return response(projects, null)
