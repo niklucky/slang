@@ -25,7 +25,8 @@
 			}
 			console.log(result);
 		} else {
-			const result = await updateTranslation(translation.id, translation);
+			const result = await updateTranslation(translation.id, translation as Translation);
+			navigate('/projects/' + result.data.projectId);
 			console.log(result);
 		}
 	}

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { navigate } from '../../library/navigate';
-	import { fetchTranslations } from '../../stores/projects';
+	import { fetchProjectTranslations } from '../../stores/projects';
+
 	import type { Project, Translation } from '../../types';
 	import Table from '../Table/Table.svelte';
 
@@ -33,7 +34,7 @@
 
 	onMount(() => {
 		async function load() {
-			const response = await fetchTranslations();
+			const response = await fetchProjectTranslations(project!.id);
 			translations = response.data;
 		}
 		load();

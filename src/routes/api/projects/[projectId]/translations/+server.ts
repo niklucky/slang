@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
-import { response } from '../../../server/lib/response';
+import { response } from '../../../../../server/lib/response';
+
 
 const prisma = new PrismaClient()
 

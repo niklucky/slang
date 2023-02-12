@@ -6,18 +6,18 @@ type Response<T> = {
   error: Error | null
 }
 
-export async function fetchTranslations() {
-  return await request<Response<Translation[]>>('/api/translations')
+export async function fetchProjectTranslations(projectId: number) {
+  return await request<Response<Translation[]>>(`/api/projects/${projectId}/translations`)
 }
-export async function fetchTranslation(id: number) {
-  return await request<Response<Translation>>(`/api/translations/${id}`)
+export async function fetchProjectTranslation(projectId: number, id: number) {
+  return await request<Response<Translation>>(`/api/projects/${projectId}/translations/${id}`)
 }
 export async function createTranslation(translation: Partial<Translation>) {
-  return await request<Response<Translation>>('/api/translations', 'POST', translation)
+  return await request<Response<Translation>>(`/api/projects/${translation.projectId}/translations`, 'POST', translation)
 }
 
-export async function updateTranslation(id: number, translation: Partial<Translation>) {
-  return await request<Response<Translation>>(`/api/translations/${id}`, 'PUT', translation)
+export async function updateTranslation(id: number, translation: Translation) {
+  return await request<Response<Translation>>(`/api/projects/${translation.projectId}/translations/${id}`, 'PUT', translation)
 }
 
 export async function fetchProjects() {
