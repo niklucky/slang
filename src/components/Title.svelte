@@ -69,84 +69,10 @@
 	</div>
 	<div class="mt-5 flex lg:mt-0 lg:ml-4">
 		{#each toolbar as item}
-			<span class="hidden sm:block">
+			<span class="hidden sm:block mr-4">
 				<svelte:component this={item.component} {...item.props} />
 			</span>
 		{/each}
-		<span class="hidden sm:block">
-			<!-- <label for="countries" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-				>Select an option</label
-			> -->
-			<select
-				id="countries"
-				class="bg-gray-50 border mr-4  border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-			>
-				<option selected>Choose a country</option>
-				<option value="US">United States</option>
-				<option value="CA">Canada</option>
-				<option value="FR">France</option>
-				<option value="DE">Germany</option>
-			</select>
-		</span>
-		<span class="hidden sm:block">
-			<!-- <label for="countries" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-				>Select an option</label
-			> -->
-			<select
-				id="languages"
-				class="bg-gray-50 border mr-4  border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-			>
-				<option selected>languages</option>
-				<option value="US">United States</option>
-				<option value="CA">Canada</option>
-				<option value="FR">France</option>
-				<option value="DE">Germany</option>
-			</select>
-		</span>
-		<span class="hidden sm:block">
-			<button
-				type="button"
-				class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-			>
-				<!-- Heroicon name: mini/pencil -->
-				<svg
-					class="-ml-1 mr-2 h-5 w-5 text-gray-500"
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 20 20"
-					fill="currentColor"
-					aria-hidden="true"
-				>
-					<path
-						d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z"
-					/>
-				</svg>
-				Edit
-			</button>
-		</span>
-
-		<span class="ml-3 hidden sm:block">
-			<button
-				type="button"
-				class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-			>
-				<!-- Heroicon name: mini/link -->
-				<svg
-					class="-ml-1 mr-2 h-5 w-5 text-gray-500"
-					xmlns="http://www.w3.org/2000/svg"
-					viewBox="0 0 20 20"
-					fill="currentColor"
-					aria-hidden="true"
-				>
-					<path
-						d="M12.232 4.232a2.5 2.5 0 013.536 3.536l-1.225 1.224a.75.75 0 001.061 1.06l1.224-1.224a4 4 0 00-5.656-5.656l-3 3a4 4 0 00.225 5.865.75.75 0 00.977-1.138 2.5 2.5 0 01-.142-3.667l3-3z"
-					/>
-					<path
-						d="M11.603 7.963a.75.75 0 00-.977 1.138 2.5 2.5 0 01.142 3.667l-3 3a2.5 2.5 0 01-3.536-3.536l1.225-1.224a.75.75 0 00-1.061-1.06l-1.224 1.224a4 4 0 105.656 5.656l3-3a4 4 0 00-.225-5.865z"
-					/>
-				</svg>
-				View
-			</button>
-		</span>
 
 		<span class="sm:ml-3">
 			<button
@@ -216,14 +142,14 @@
 			>
 				<!-- Active: "bg-gray-100", Not Active: "" -->
 				<a
-					href="#"
+					href="/"
 					class="block px-4 py-2 text-sm text-gray-700"
 					role="menuitem"
 					tabindex="-1"
 					id="mobile-menu-item-0">Edit</a
 				>
 				<a
-					href="#"
+					href="/"
 					class="block px-4 py-2 text-sm text-gray-700"
 					role="menuitem"
 					tabindex="-1"

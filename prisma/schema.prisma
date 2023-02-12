@@ -16,9 +16,64 @@ model User {
 }
 
 model Project {
-  id   Int    @id @default(autoincrement())
-  name String
-  url  String
+  id           Int           @id @default(autoincrement())
+  name         String
+  url          String
+  description  String?
+  translations Translation[]
+  namespaces   Namespace[]
+  channels     Channel[]
 
   @@map("projects")
+}
+
+model Locale {
+  id          Int           @id @default(autoincrement())
+  iso3        String
+  name        String
+  localeName  String
+  Translation Translation[]
+
+  @@map("locales")
+}
+
+model Namespace {
+  id          Int           @id @default(autoincrement())
+  project     Project       @relation(fields: [projectId], references: [id])
+  projectId   Int
+  name        String
+  Translation Translation[]
+
+  @@map("namespaces")
+}
+
+model Channel {
+  id          Int           @id @default(autoincrement())
+  name        String
+  project     Project       @relation(fields: [projectId], references: [id])
+  projectId   Int
+  Translation Translation[]
+
+  @@map("channels")
+}
+
+model Translation {
+  id    Int     @id @default(autoincrement())
+  key   String
+  value String?
+
+  project     Project    @relation(fields: [projectId], references: [id])
+  projectId   Int
+  locale      Locale     @relation(fields: [localeId], references: [id])
+  localeId    Int
+  namespace   Namespace? @relation(fields: [namespaceId], references: [id])
+  namespaceId Int?
+  channel     Channel?   @relation(fields: [channelId], references: [id])
+  channelId   Int?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("translations")
 }

@@ -4,6 +4,8 @@
 	import Title from '../../components/Title.svelte';
 	import { navigate } from '../../library/navigate';
 
+	const title = 'Projects';
+
 	const toolbar = [
 		{
 			component: Button,
@@ -17,5 +19,8 @@
 	];
 </script>
 
-<Title {toolbar}>Projects</Title>
+<svelte:head>
+	<title>{title}</title>
+</svelte:head>
+<Title {toolbar}>{title}</Title>
 <ProjectList />

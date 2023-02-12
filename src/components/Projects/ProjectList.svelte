@@ -2,6 +2,7 @@
 	import Table from '../Table/Table.svelte';
 
 	import { onMount } from 'svelte';
+	import { navigate } from '../../library/navigate';
 	import { fetchProjects } from '../../stores/projects';
 	import type { Project } from '../../types';
 
@@ -20,7 +21,7 @@
 	];
 
 	function handleRowClick(project: Project) {
-		window.location.href = '/projects/' + project.id;
+		navigate(`/projects/${project.id}`);
 	}
 
 	onMount(() => {
