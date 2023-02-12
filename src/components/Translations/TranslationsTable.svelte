@@ -1,14 +1,18 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { navigate } from '../../library/navigate';
 	import { fetchProjectTranslations } from '../../stores/projects';
 
 	import type { Project, Translation } from '../../types';
+	import Drawer from '../Drawer/Drawer.svelte';
 	import Table from '../Table/Table.svelte';
+	import TranslationForm from './TranslationForm.svelte';
 
-	export let project: Project | undefined = undefined;
+	export let project: Project;
+
+	const projectId = project.id;
 
 	let translations: Translation[] = [];
+	let selectedTranslation: Translation | undefined = undefined;
 
 	const fields = [
 		{
@@ -29,7 +33,12 @@
 	];
 
 	function handleRowClick(translation: Translation) {
-		navigate(`/projects/${project?.id}/translations/${translation.id}`);
+		console.log(translation);
+		selectedTranslation = translation;
+	}
+
+	function handleCloseEditTranslation() {
+		selectedTranslation = undefined;
 	}
 
 	onMount(() => {
@@ -41,4 +50,13 @@
 	});
 </script>
 
+{#if selectedTranslation}
+	<Drawer
+		title={selectedTranslation.value || selectedTranslation.key}
+		isOpened={true}
+		onClose={handleCloseEditTranslation}
+	>
+		<TranslationForm {projectId} translation={selectedTranslation} />
+	</Drawer>
+{/if}
 <Table onRowClick={handleRowClick} data={translations} {fields} />
