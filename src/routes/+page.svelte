@@ -1,8 +1,11 @@
 <script>
 	import Title from '../components/Title.svelte';
+	import { t } from '../library/i18n';
+
+	$: title = $t('h_dashboard');
 </script>
 
 <svelte:head>
-	<title>Dashboard</title>
+	<title>{title}</title>
 </svelte:head>
-<Title>Dashboard</Title>
+<Title>{title}</Title>

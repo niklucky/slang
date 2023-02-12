@@ -1,4 +1,6 @@
 <script>
+	import { locale, locales } from '../../library/i18n';
+
 	import NotificationMenu from './NotificationMenu.svelte';
 	import ProfileMenu from './ProfileMenu.svelte';
 	import TopMenu from './TopMenu.svelte';
@@ -76,6 +78,12 @@
 			<div
 				class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0"
 			>
+				<select bind:value={$locale}>
+					{#each locales as l}
+						<option value={l}>{l}</option>
+					{/each}
+				</select>
+
 				<NotificationMenu />
 
 				<ProfileMenu />

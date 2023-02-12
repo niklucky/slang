@@ -1,6 +1,6 @@
 <button
 	type="button"
-	class="rounded-full bg-gray-800 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+	class="rounded-full p-1 text-gray-400 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-200"
 >
 	<span class="sr-only">View notifications</span>
 	<!-- Heroicon name: outline/bell -->
