@@ -11,6 +11,10 @@ export async function GET({ params }: RequestEvent) {
   const translations = await prisma.translation.findMany({
     where: {
       projectId
+    },
+    include: {
+      namespace: true,
+      locale: true
     }
   })
   return response(translations, null)

@@ -13,16 +13,24 @@
 <table class="table-auto w-[100%] mt-8">
 	<thead class="bg-slate-50">
 		<tr>
+			<td>#</td>
 			{#each fields as field}
 				<td class="text-left p-4 text-gray-800">{field.name || field.key}</td>
 			{/each}
 		</tr>
 	</thead>
 	<tbody>
-		{#each data as row}
+		{#each data as row, i}
 			<tr on:click={() => handleRowClick(row)}>
+				<td>{i + 1}</td>
 				{#each fields as field}
-					<td class="text-left p-4 text-gray-800">{row[field.key]}</td>
+					<td class="text-left p-4 text-gray-800">
+						{#if field.component}
+							<svelte:component this={field.component} {...row} />
+						{:else}
+							{row[field.key]}
+						{/if}
+					</td>
 				{/each}
 			</tr>
 		{/each}

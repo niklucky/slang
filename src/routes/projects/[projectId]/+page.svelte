@@ -6,7 +6,6 @@
 	import ProjectForm from '../../../components/Projects/ProjectForm.svelte';
 	import Title from '../../../components/Title.svelte';
 	import TranslationsTable from '../../../components/Translations/TranslationsTable.svelte';
-	import { navigate } from '../../../library/navigate';
 	import { fetchProject } from '../../../stores/projects';
 	import type { Project } from '../../../types';
 
@@ -17,6 +16,7 @@
 	let project: Project | undefined = undefined;
 
 	let isEditModal = false;
+	let isAddTranslation = false;
 
 	onMount(() => {
 		async function load() {
@@ -29,6 +29,9 @@
 
 	function handleCloseEditModal() {
 		isEditModal = false;
+	}
+	function handleCloseAddTranslationModal() {
+		isAddTranslation = false;
 	}
 
 	const toolbar = [
@@ -45,9 +48,9 @@
 		{
 			component: Button,
 			props: {
-				title: 'Create translation',
+				title: 'Add translation',
 				onClick: () => {
-					navigate(`/projects/${project?.id}/translations/create`);
+					isAddTranslation = true;
 				}
 			}
 		}
@@ -66,7 +69,7 @@
 {#if project != undefined}
 	<Title {toolbar}>{title}</Title>
 
-	<TranslationsTable {project} />
+	<TranslationsTable {project} {isAddTranslation} />
 {:else}
 	<p>empty</p>
 {/if}
