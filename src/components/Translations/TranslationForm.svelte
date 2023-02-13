@@ -26,6 +26,7 @@
 			onUpdate && onUpdate(result.data);
 		}
 	}
+	console.log('key', key);
 </script>
 
 <form>

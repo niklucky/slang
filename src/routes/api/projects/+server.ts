@@ -5,7 +5,16 @@ import { response } from '../../../server/lib/response';
 const prisma = new PrismaClient()
 
 export async function GET() {
-  const projects = await prisma.project.findMany()
+  const projects = await prisma.project.findMany({
+    include: {
+      _count: {
+        select: {
+          keys: true,
+          channels: true
+        }
+      }
+    }
+  })
   return response(projects, null)
 }
 

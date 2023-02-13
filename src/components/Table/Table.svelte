@@ -32,6 +32,8 @@
 					<td class="text-left py-2 px-4 text-gray-800 text-sm">
 						{#if field.component !== undefined}
 							<svelte:component this={field.component} value={row[field.key]} {row} {field} />
+						{:else if field.render}
+							{field.render(row[field.key])}
 						{:else}
 							{row[field.key]}
 						{/if}

@@ -15,6 +15,11 @@ export async function GET({ params }: RequestEvent) {
       locales: true,
       namespaces: true,
       channels: true,
+      _count: {
+        select: {
+          keys: true
+        }
+      }
     },
   })
   return response(project, null)
@@ -25,7 +30,15 @@ export async function PUT({ request, params }: RequestEvent) {
     return response(null, new Error('id is empty'))
   }
   const id = parseInt(params.projectId)
-  const data = await request.json()
+  const payload = await request.json()
+  const data = {
+    name: payload.name,
+    url: payload.url,
+    description: payload.description,
+    // namespaces: payload.namespaces,
+    // channels: payload.channels,
+    // locales: payload.locales,
+  }
   const project = await prisma.project.update({ where: { id }, data })
   return response(project, null)
 }

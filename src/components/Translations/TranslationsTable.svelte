@@ -22,9 +22,6 @@
 	let fields: Field<Channel[]>[] = [];
 	let baseFields: Field<Channel[]>[] = [
 		{
-			key: 'id'
-		},
-		{
 			key: 'name',
 			title: 'key',
 			component: KeyColumn
@@ -34,8 +31,6 @@
 			component: NamespacesColumn
 		}
 	];
-
-	console.log('project', project);
 
 	$: {
 		const locales = project.locales.map((locale) => {
@@ -49,7 +44,6 @@
 		fields = [...baseFields, ...locales];
 	}
 	function handleRowClick(key: Key) {
-		console.log(key);
 		selectedKey = key;
 	}
 
@@ -68,7 +62,6 @@
 
 	async function load() {
 		const response = await fetchProjectKeys(project!.id);
-		console.log('response.data', response.data);
 		keys = response.data;
 	}
 	onMount(() => {

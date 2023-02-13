@@ -10,13 +10,17 @@
 
 	const fields = [
 		{
-			key: 'id'
-		},
-		{
 			key: 'name'
 		},
 		{
 			key: 'url'
+		},
+		{
+			key: '_count',
+			title: 'keys',
+			render: (value: any) => {
+				return value.keys;
+			}
 		}
 	];
 
