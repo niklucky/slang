@@ -40,7 +40,6 @@
 			props: {
 				title: 'Edit project',
 				onClick: () => {
-					//navigate(`/projects/${project?.id}/edit`);
 					isEditModal = true;
 				}
 			}

@@ -16,64 +16,103 @@ model User {
 }
 
 model Project {
-  id           Int           @id @default(autoincrement())
-  name         String
-  url          String
-  description  String?
-  translations Translation[]
-  namespaces   Namespace[]
-  channels     Channel[]
+  id          Int         @id @default(autoincrement())
+  name        String
+  url         String
+  description String?
+  namespaces  Namespace[]
+  channels    Channel[]
+  keys        Key[]
 
   @@map("projects")
 }
 
 model Locale {
-  id          Int           @id @default(autoincrement())
-  iso3        String
-  name        String
-  localeName  String
-  Translation Translation[]
+  id           Int           @id @default(autoincrement())
+  iso2         String        @unique
+  name         String        @unique
+  title        String
+  translations Translation[]
 
   @@map("locales")
 }
 
 model Namespace {
-  id          Int           @id @default(autoincrement())
-  project     Project       @relation(fields: [projectId], references: [id])
-  projectId   Int
-  name        String
-  Translation Translation[]
+  id           Int                      @id @default(autoincrement())
+  project      Project                  @relation(fields: [projectId], references: [id])
+  projectId    Int
+  name         String
+  translations NamespaceToTranslation[]
 
+  @@unique([projectId, name])
   @@map("namespaces")
 }
 
 model Channel {
-  id          Int           @id @default(autoincrement())
-  name        String
-  project     Project       @relation(fields: [projectId], references: [id])
-  projectId   Int
-  Translation Translation[]
+  id           Int           @id @default(autoincrement())
+  name         String
+  project      Project       @relation(fields: [projectId], references: [id])
+  projectId    Int
+  translations Translation[]
 
+  @@unique([projectId, name])
   @@map("channels")
 }
 
-model Translation {
-  id    Int     @id @default(autoincrement())
-  key   String
-  value String?
+model Key {
+  id        Int     @id @default(autoincrement())
+  name      String
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId Int
 
-  project     Project    @relation(fields: [projectId], references: [id])
-  projectId   Int
-  locale      Locale     @relation(fields: [localeId], references: [id])
-  localeId    Int
-  namespace   Namespace? @relation(fields: [namespaceId], references: [id])
-  namespaceId Int?
-  channel     Channel?   @relation(fields: [channelId], references: [id])
-  channelId   Int?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+  translations Translation[]
+
+  @@unique([projectId, name])
+  @@map("keys")
+}
+
+model Translation {
+  id    Int    @id @default(autoincrement())
+  key   Key    @relation(fields: [keyId], references: [id])
+  keyId Int
+  value String
+
+  locale   Locale @relation(fields: [localeId], references: [id])
+  localeId Int
+
+  // dev / production
+  channel   Channel? @relation(fields: [channelId], references: [id])
+  channelId Int?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  namespaces NamespaceToTranslation[]
+  versions   TranslationVersion[]
+
   @@map("translations")
+}
+
+model TranslationVersion {
+  id            Int         @id @default(autoincrement())
+  translationId Int
+  translation   Translation @relation(fields: [translationId], references: [id])
+  data          String
+  createdAt     DateTime    @default(now())
+
+  @@map("translationVersions")
+}
+
+model NamespaceToTranslation {
+  namespace     Namespace   @relation(fields: [namespaceId], references: [id])
+  namespaceId   Int // relation scalar field (used in the `@relation` attribute above)
+  translation   Translation @relation(fields: [translationId], references: [id])
+  translationId Int // relation scalar field (used in the `@relation` attribute above)
+
+  @@id([namespaceId, translationId])
+  @@map("namespaceToTranslation")
 }
