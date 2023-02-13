@@ -7,12 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id    Int     @id
-  name  String?
-  email String  @unique(map: "sqlite_autoindex_users_2")
+model Locale {
+  id           Int           @id @default(autoincrement())
+  iso2         String        @unique
+  name         String        @unique
+  title        String
+  translations Translation[]
+  projects     Project[]
 
-  @@map("comments")
+  @@map("locales")
 }
 
 model Project {
@@ -23,26 +26,17 @@ model Project {
   namespaces  Namespace[]
   channels    Channel[]
   keys        Key[]
+  locales     Locale[]
 
   @@map("projects")
 }
 
-model Locale {
-  id           Int           @id @default(autoincrement())
-  iso2         String        @unique
-  name         String        @unique
-  title        String
-  translations Translation[]
-
-  @@map("locales")
-}
-
 model Namespace {
-  id           Int                      @id @default(autoincrement())
-  project      Project                  @relation(fields: [projectId], references: [id])
-  projectId    Int
-  name         String
-  translations NamespaceToTranslation[]
+  id        Int     @id @default(autoincrement())
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId Int
+  name      String
+  keys      Key[]
 
   @@unique([projectId, name])
   @@map("namespaces")
@@ -68,6 +62,7 @@ model Key {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   deletedAt    DateTime?
+  namespaces   Namespace[]
   translations Translation[]
 
   @@unique([projectId, name])
@@ -91,8 +86,7 @@ model Translation {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  namespaces NamespaceToTranslation[]
-  versions   TranslationVersion[]
+  versions TranslationVersion[]
 
   @@map("translations")
 }
@@ -105,14 +99,4 @@ model TranslationVersion {
   createdAt     DateTime    @default(now())
 
   @@map("translationVersions")
-}
-
-model NamespaceToTranslation {
-  namespace     Namespace   @relation(fields: [namespaceId], references: [id])
-  namespaceId   Int // relation scalar field (used in the `@relation` attribute above)
-  translation   Translation @relation(fields: [translationId], references: [id])
-  translationId Int // relation scalar field (used in the `@relation` attribute above)
-
-  @@id([namespaceId, translationId])
-  @@map("namespaceToTranslation")
 }

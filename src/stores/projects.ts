@@ -1,23 +1,25 @@
-import type { Project } from "@prisma/client"
-import type { Translation } from "../types"
+import type { Channel, Key, Locale, Namespace, Project } from "@prisma/client"
 
 type Response<T> = {
   data: T
   error: Error | null
 }
 
-export async function fetchProjectTranslations(projectId: number) {
-  return await request<Response<Translation[]>>(`/api/projects/${projectId}/translations`)
-}
-export async function fetchProjectTranslation(projectId: number, id: number) {
-  return await request<Response<Translation>>(`/api/projects/${projectId}/translations/${id}`)
-}
-export async function createTranslation(translation: Partial<Translation>) {
-  return await request<Response<Translation>>(`/api/projects/${translation.projectId}/translations`, 'POST', translation)
-}
+export type KeyExtended = Key & { namespaces: Namespace[] }
 
-export async function updateTranslation(id: number, translation: Translation) {
-  return await request<Response<Translation>>(`/api/projects/${translation.projectId}/translations/${id}`, 'PUT', translation)
+export type ProjectExtended = Project & { locales: Locale[], channels: Channel[] }
+
+export async function fetchProjectKeys(projectId: number) {
+  return await request<Response<KeyExtended[]>>(`/api/projects/${projectId}/keys`)
+}
+export async function fetchProjectKeyById(projectId: number, id: number) {
+  return await request<Response<KeyExtended>>(`/api/projects/${projectId}/keys/${id}`)
+}
+export async function createKey(key: Partial<Key>) {
+  return await request<Response<Key>>(`/api/projects/${key.projectId}/keys`, 'POST', key)
+}
+export async function updateKey(id: number, key: Key) {
+  return await request<Response<Key>>(`/api/projects/${key.projectId}/keys/${id}`, 'PUT', key)
 }
 
 export async function fetchProjects() {
@@ -25,7 +27,7 @@ export async function fetchProjects() {
 }
 
 export async function fetchProject(id: number) {
-  return await request<Response<Project>>(`/api/projects/${id}`)
+  return await request<Response<ProjectExtended>>(`/api/projects/${id}`)
 }
 
 export async function createProject(project: Partial<Project>) {

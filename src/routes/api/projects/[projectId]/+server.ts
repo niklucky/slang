@@ -9,7 +9,14 @@ export async function GET({ params }: RequestEvent) {
     return response(null, new Error('id is empty'))
   }
   const id = parseInt(params.projectId)
-  const project = await prisma.project.findUnique({ where: { id } })
+  const project = await prisma.project.findUnique({
+    where: { id },
+    include: {
+      locales: true,
+      namespaces: true,
+      channels: true,
+    },
+  })
   return response(project, null)
 }
 

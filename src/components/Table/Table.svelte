@@ -1,6 +1,8 @@
 <script lang="ts">
+	import type { Field } from './types';
+
 	export let data: any[] = [];
-	export let fields: any[] = [];
+	export let fields: Field<unknown>[] = [];
 	export let onRowClick: ((row: any) => void) | undefined = undefined;
 
 	function handleRowClick(row: any) {
@@ -13,20 +15,23 @@
 <table class="table-auto w-[100%] mt-8">
 	<thead class="bg-slate-50">
 		<tr>
-			<td>#</td>
+			<td class="text-left p-4 text-gray-500 text-sm">#</td>
 			{#each fields as field}
-				<td class="text-left p-4 text-gray-800">{field.name || field.key}</td>
+				<td class="text-left p-4 text-gray-500 text-sm">{field.title || field.key}</td>
 			{/each}
 		</tr>
 	</thead>
 	<tbody>
 		{#each data as row, i}
-			<tr on:click={() => handleRowClick(row)}>
-				<td>{i + 1}</td>
+			<tr
+				on:click={() => handleRowClick(row)}
+				class="align-top border-b cursor-pointer hover:bg-slate-50"
+			>
+				<td class="text-left py-2 px-4 text-gray-800 text-sm">{i + 1}</td>
 				{#each fields as field}
-					<td class="text-left p-4 text-gray-800">
-						{#if field.component}
-							<svelte:component this={field.component} {...row} />
+					<td class="text-left py-2 px-4 text-gray-800 text-sm">
+						{#if field.component !== undefined}
+							<svelte:component this={field.component} value={row[field.key]} {row} {field} />
 						{:else}
 							{row[field.key]}
 						{/if}

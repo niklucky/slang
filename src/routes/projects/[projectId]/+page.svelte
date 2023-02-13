@@ -6,17 +6,16 @@
 	import ProjectForm from '../../../components/Projects/ProjectForm.svelte';
 	import Title from '../../../components/Title.svelte';
 	import TranslationsTable from '../../../components/Translations/TranslationsTable.svelte';
-	import { fetchProject } from '../../../stores/projects';
-	import type { Project } from '../../../types';
+	import { fetchProject, type ProjectExtended } from '../../../stores/projects';
 
 	let title = 'Project loading...';
 
 	const projectId = parseInt($page.params.projectId);
 
-	let project: Project | undefined = undefined;
+	let project: ProjectExtended | undefined = undefined;
 
 	let isEditModal = false;
-	let isAddTranslation = false;
+	let isAddKey = false;
 
 	onMount(() => {
 		async function load() {
@@ -31,7 +30,7 @@
 		isEditModal = false;
 	}
 	function handleCloseAddTranslationModal() {
-		isAddTranslation = false;
+		isAddKey = false;
 	}
 
 	const toolbar = [
@@ -49,7 +48,7 @@
 			props: {
 				title: 'Add translation',
 				onClick: () => {
-					isAddTranslation = true;
+					isAddKey = true;
 				}
 			}
 		}
@@ -68,7 +67,7 @@
 {#if project != undefined}
 	<Title {toolbar}>{title}</Title>
 
-	<TranslationsTable {project} {isAddTranslation} />
+	<TranslationsTable {project} {isAddKey} />
 {:else}
 	<p>empty</p>
 {/if}

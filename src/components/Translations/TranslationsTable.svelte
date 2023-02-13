@@ -1,84 +1,93 @@
 <script lang="ts">
+	import type { Channel, Key, Namespace } from '@prisma/client';
 	import { onMount } from 'svelte';
-	import { fetchProjectTranslations } from '../../stores/projects';
+	import { fetchProjectKeys, type ProjectExtended } from '../../stores/projects';
 
-	import type { Project, Translation } from '../../types';
 	import Drawer from '../Drawer/Drawer.svelte';
 	import Table from '../Table/Table.svelte';
+	import type { Field } from '../Table/types';
 	import KeyColumn from './KeyColumn.svelte';
-	import LocaleColumn from './LocaleColumn.svelte';
+	import NamespacesColumn from './NamespacesColumn.svelte';
+	import TranslationComponent from './TranslationComponent.svelte';
 	import TranslationForm from './TranslationForm.svelte';
-	import TranslationNamespace from './TranslationNamespace.svelte';
 
-	export let project: Project;
-	export let isAddTranslation = false;
+	export let project: ProjectExtended;
+	export let isAddKey = false;
 
 	const projectId = project.id;
 
-	let translations: Translation[] = [];
-	let selectedTranslation: Translation | undefined = undefined;
+	let keys: (Key & { namespaces: Namespace[] })[] = [];
+	let selectedKey: Key | undefined = undefined;
 
-	const fields = [
+	let fields: Field<Channel[]>[] = [];
+	let baseFields: Field<Channel[]>[] = [
 		{
 			key: 'id'
 		},
 		{
-			key: 'key',
+			key: 'name',
+			title: 'key',
 			component: KeyColumn
 		},
 		{
-			key: 'value'
-		},
-		{
-			key: 'namespace',
-			component: TranslationNamespace
-		},
-		{
-			key: 'locale',
-			component: LocaleColumn
+			key: 'namespaces',
+			component: NamespacesColumn
 		}
 	];
 
-	function handleRowClick(translation: Translation) {
-		console.log(translation);
-		selectedTranslation = translation;
+	console.log('project', project);
+
+	$: {
+		const locales = project.locales.map((locale) => {
+			return {
+				key: locale.id,
+				title: locale.title,
+				component: TranslationComponent,
+				data: project.channels
+			};
+		});
+		fields = [...baseFields, ...locales];
+	}
+	function handleRowClick(key: Key) {
+		console.log(key);
+		selectedKey = key;
 	}
 
 	function handleCloseEditTranslation() {
-		selectedTranslation = undefined;
-		isAddTranslation = false;
+		selectedKey = undefined;
+		isAddKey = false;
 	}
 
-	function handleCreate(translation: Translation) {
+	function handleCreate(key: Key) {
 		handleCloseEditTranslation();
 	}
-	function handleUpdate(translation: Translation) {
+	function handleUpdate(key: Key) {
 		handleCloseEditTranslation();
 		load();
 	}
 
 	async function load() {
-		const response = await fetchProjectTranslations(project!.id);
+		const response = await fetchProjectKeys(project!.id);
 		console.log('response.data', response.data);
-		translations = response.data;
+		keys = response.data;
 	}
 	onMount(() => {
 		load();
 	});
 </script>
 
-{#if selectedTranslation || isAddTranslation}
+{#if selectedKey || isAddKey}
 	<Drawer
-		title={selectedTranslation ? selectedTranslation.value || selectedTranslation.key : 'Add'}
+		title={selectedKey ? selectedKey.name : 'Add'}
 		isOpened={true}
 		onClose={handleCloseEditTranslation}
 	>
 		<TranslationForm
 			{projectId}
-			translation={selectedTranslation}
+			key={selectedKey}
 			onCreate={handleCreate}
 			onUpdate={handleUpdate}
 		/>
 	</Drawer>
 {/if}
-<Table onRowClick={handleRowClick} data={translations} {fields} />
+<Table onRowClick={handleRowClick} data={keys} {fields} />
