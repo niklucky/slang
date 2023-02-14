@@ -7,7 +7,7 @@ type Response<T> = {
 
 export type KeyExtended = Key & { namespaces: Namespace[] }
 
-export type ProjectExtended = Project & { locales: Locale[], channels: Channel[] }
+export type ProjectExtended = Project & { locales: Locale[], channels: Channel[], namespaces: Namespace[] }
 
 export async function fetchProjectKeys(projectId: number) {
   return await request<Response<KeyExtended[]>>(`/api/projects/${projectId}/keys`)

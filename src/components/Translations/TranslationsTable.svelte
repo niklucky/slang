@@ -75,12 +75,7 @@
 		isOpened={true}
 		onClose={handleCloseEditTranslation}
 	>
-		<TranslationForm
-			{projectId}
-			key={selectedKey}
-			onCreate={handleCreate}
-			onUpdate={handleUpdate}
-		/>
+		<TranslationForm {project} key={selectedKey} onCreate={handleCreate} onUpdate={handleUpdate} />
 	</Drawer>
 {/if}
 <Table onRowClick={handleRowClick} data={keys} {fields} />
