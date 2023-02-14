@@ -78,9 +78,9 @@ model Translation {
   locale   Locale @relation(fields: [localeId], references: [id])
   localeId Int
 
-  // dev / production
-  channel   Channel? @relation(fields: [channelId], references: [id])
-  channelId Int?
+  // default / dev / production
+  channel   Channel @relation(fields: [channelId], references: [id])
+  channelId Int
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -88,6 +88,7 @@ model Translation {
 
   versions TranslationVersion[]
 
+  @@unique([keyId, localeId, channelId])
   @@map("translations")
 }
 

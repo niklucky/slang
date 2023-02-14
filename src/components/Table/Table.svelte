@@ -10,6 +10,7 @@
 			onRowClick(row);
 		}
 	}
+	console.log('data', data);
 </script>
 
 <table class="table-auto w-[100%] mt-8">

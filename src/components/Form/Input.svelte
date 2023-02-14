@@ -4,6 +4,12 @@
 	export let label: string | undefined = undefined;
 	export let value: string | number | undefined | null = undefined;
 	export let isRequired = false;
+
+	export let onBlur: ((value: string) => void) | undefined = undefined;
+
+	function handleBlur(e: any) {
+		onBlur && onBlur(e.target.value);
+	}
 </script>
 
 <div class="pb-6">
@@ -15,5 +21,6 @@
 		placeholder={label || ''}
 		required={isRequired}
 		bind:value
+		on:blur={handleBlur}
 	/>
 </div>

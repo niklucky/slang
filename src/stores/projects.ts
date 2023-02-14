@@ -1,13 +1,14 @@
-import type { Channel, Key, Locale, Namespace, Project } from "@prisma/client"
+import type { Channel, Key, Locale, Namespace, Project, Translation } from "@prisma/client"
 
 type Response<T> = {
   data: T
   error: Error | null
 }
 
-export type KeyExtended = Key & { namespaces: Namespace[] }
+export type KeyExtended = Key & { namespaces: Namespace[], translations: Translation[] }
 
 export type ProjectExtended = Project & { locales: Locale[], channels: Channel[], namespaces: Namespace[] }
+export type TranslationExtended = Translation & { locale: Locale, channel: Channel }
 
 export async function fetchProjectKeys(projectId: number) {
   return await request<Response<KeyExtended[]>>(`/api/projects/${projectId}/keys`)
