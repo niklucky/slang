@@ -60,6 +60,7 @@
 
 	function handleCreate(key: Key) {
 		handleCloseEditTranslation();
+		load();
 	}
 	function handleUpdate(key: Key) {
 		handleCloseEditTranslation();

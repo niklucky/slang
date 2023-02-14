@@ -1,7 +1,12 @@
-import type { Namespace } from "@prisma/client";
+import type { Namespace, Translation } from "@prisma/client";
 import type { RequestEvent } from "@sveltejs/kit";
+
 import { response } from "../../../../../../server/lib/response";
 import prisma from "../../../../../../server/prisma";
+import { saveTranslations } from "../../../../../../server/services/keys";
+
+
+
 
 
 export async function GET({ params }: RequestEvent) {
@@ -19,24 +24,9 @@ export async function PUT({ request, params }: RequestEvent) {
   }
   const id = parseInt(params.keyId)
   const data = await request.json()
-  console.log('data', data);
 
-  const translationsConnect: number[] = []
+  const translationsConnect: Translation[] = await saveTranslations(data.translations)
 
-  for (const t of data.translations) {
-    if (!t.value) {
-      continue
-    }
-    delete t.channel
-    delete t.locale
-    if (!t.id) {
-      const tr = await prisma.translation.create({ data: t })
-      translationsConnect.push(tr.id)
-    } else {
-      const tr = await prisma.translation.update({ where: { id: t.id }, data: t })
-      translationsConnect.push(tr.id)
-    }
-  }
   const key = await prisma.key.findFirstOrThrow({ where: { id }, include: { namespaces: true } })
 
   const namespacesConnect: number[] = data.namespaces.map((ns: Namespace) => ns.id)
@@ -51,7 +41,7 @@ export async function PUT({ request, params }: RequestEvent) {
         disconnect: namespacesDisconnect.map(ns => ({ id: ns.id }))
       },
       translations: {
-        connect: translationsConnect.map(id => ({ id }))
+        connect: translationsConnect.map(t => ({ id: t.id }))
       }
     }
   })
