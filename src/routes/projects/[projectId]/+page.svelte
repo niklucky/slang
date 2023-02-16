@@ -37,6 +37,7 @@
 		{
 			component: Button,
 			props: {
+				icon: 'edit',
 				title: 'Edit project',
 				onClick: () => {
 					isEditModal = true;
@@ -46,6 +47,7 @@
 		{
 			component: Button,
 			props: {
+				icon: 'globe',
 				title: 'Add translation',
 				onClick: () => {
 					isAddKey = true;
@@ -67,7 +69,7 @@
 {#if project != undefined}
 	<Title {toolbar}>{title}</Title>
 
-	<TranslationsTable {project} {isAddKey} />
+	<TranslationsTable {project} {isAddKey} onCloseAddTranslation={handleCloseAddTranslationModal} />
 {:else}
 	<p>empty</p>
 {/if}

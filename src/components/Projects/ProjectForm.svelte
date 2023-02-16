@@ -11,7 +11,7 @@
 		description: null
 	};
 
-	const submitTitle = project.id ? 'Update' : 'Create';
+	const submitTitle = project.id ? 'Save' : 'Create';
 
 	async function handleSubmit() {
 		if (!project.id) {
@@ -33,5 +33,5 @@
 	<Input label={'url'} bind:value={project.url} />
 	<Input label={'description'} bind:value={project.description} />
 
-	<Button onClick={handleSubmit} title={submitTitle} />
+	<Button onClick={handleSubmit} title={submitTitle} icon="save" />
 </form>

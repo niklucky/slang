@@ -1,0 +1,1 @@
+export type IconName = 'close' | 'save' | 'edit' | 'globe'

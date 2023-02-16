@@ -13,8 +13,7 @@
 
 	export let project: ProjectExtended;
 	export let isAddKey = false;
-
-	const projectId = project.id;
+	export let onCloseAddTranslation: () => void;
 
 	let keys: (Key & { namespaces: Namespace[] })[] = [];
 	let selectedKey: Key | undefined = undefined;
@@ -55,7 +54,7 @@
 
 	function handleCloseEditTranslation() {
 		selectedKey = undefined;
-		isAddKey = false;
+		onCloseAddTranslation();
 	}
 
 	function handleCreate(key: Key) {
@@ -70,7 +69,6 @@
 	async function load() {
 		const response = await fetchProjectKeys(project!.id);
 		keys = response.data;
-		console.log('keys', keys);
 		fields = updateFields();
 	}
 	onMount(() => {
