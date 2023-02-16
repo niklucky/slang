@@ -4,8 +4,9 @@
 	import ProjectForm from '../../components/Projects/ProjectForm.svelte';
 	import ProjectList from '../../components/Projects/ProjectList.svelte';
 	import Title from '../../components/Title.svelte';
+	import { t } from '../../library/i18n';
 
-	const title = 'Projects';
+	$: title = $t('h_projects');
 
 	let isCreateModal = false;
 
@@ -13,7 +14,7 @@
 		{
 			component: Button,
 			props: {
-				title: 'Create project',
+				title: 'a_create_project',
 				onClick: () => {
 					isCreateModal = true;
 				}

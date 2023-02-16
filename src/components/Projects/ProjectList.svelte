@@ -17,7 +17,7 @@
 		},
 		{
 			key: '_count',
-			title: 'keys',
+			title: 'keys_count',
 			render: (value: any) => {
 				return value.keys;
 			}

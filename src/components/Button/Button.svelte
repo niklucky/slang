@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { t } from '../../library/i18n';
 	import Icon from '../Icon/Icon.svelte';
 	import type { IconName } from '../Icon/Icons/types';
 
 	export let title: string = 'Button';
 	export let onClick = () => {};
 	export let icon: IconName | undefined = undefined;
+
+	$: btnTitle = $t(title);
 </script>
 
 <button
@@ -17,6 +20,6 @@
 			<Icon name={icon} />
 		{/if}
 	</span>
-	{title}
+	{btnTitle}
 	<slot />
 </button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '../../library/i18n';
 	import type { Field } from './types';
 
 	export let data: any[] = [];
@@ -10,15 +11,17 @@
 			onRowClick(row);
 		}
 	}
-	console.log('data', data);
+	$: titles = fields.map((field) => {
+		return $t(field.title || `${field.key}`);
+	});
 </script>
 
 <table class="table-auto w-[100%] mt-8">
 	<thead class="bg-slate-50">
 		<tr>
 			<td class="text-left p-4 text-gray-500 text-sm">#</td>
-			{#each fields as field}
-				<td class="text-left p-4 text-gray-500 text-sm">{field.title || field.key}</td>
+			{#each fields as field, i}
+				<td class="text-left p-4 text-gray-500 text-sm">{titles[i]}</td>
 			{/each}
 		</tr>
 	</thead>

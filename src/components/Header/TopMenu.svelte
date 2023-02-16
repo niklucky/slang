@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { t } from '../../library/i18n';
 
 	let segments = $page.url.pathname.split('/');
 	let selected = segments.length > 1 ? segments[1] : null;
 
-	const items = [
-		{ url: '', name: 'Dashboard', className: '' },
-		{ url: 'projects', name: 'Projects', className: '' }
+	let menuDashboard = $t('menu_dashboard');
+
+	let items = [
+		{ url: '', name: 'menu_dashboard', className: '' },
+		{ url: 'projects', name: 'menu_projects', className: '' }
 	];
 	function prepareMenu() {
 		return items.map((item) => {
@@ -24,15 +27,16 @@
 		selected = item.url;
 		menu = prepareMenu();
 	}
+	$: names = items.map((item) => $t(item.name));
 </script>
 
 <div class="hidden sm:ml-6 sm:block">
 	<div class="flex space-x-4">
-		{#each menu as item}
+		{#each menu as item, i}
 			<a
 				href={`/${item.url}`}
 				on:click={() => handleClick(item)}
-				class="text-sm font-medium px-3 py-4 {item.className}">{item.name}</a
+				class="text-sm font-medium px-3 py-4 {item.className}">{names[i]}</a
 			>
 		{/each}
 	</div>
