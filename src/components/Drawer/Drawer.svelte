@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fade, fly } from 'svelte/transition';
 	import Icon from '../Icon/Icon.svelte';
 
 	export let title: string | undefined = undefined;
@@ -9,6 +10,8 @@
 	export let onClose: (() => void) | undefined = undefined;
 
 	const style = `width: ${width}px`;
+
+	const duration = isOpened ? 200 : 200;
 
 	function handleClose(e?: any) {
 		console.log(e);
@@ -36,9 +39,14 @@
 			class="fixed bg-black w-full h-full top-0 left-0 opacity-30"
 			on:keydown={handleClose}
 			on:click={handleClose}
+			transition:fade
 		/>
 	{/if}
-	<div class="bg-white/90 backdrop-blur fixed right-0 h-full top-0 overflow-auto" {style}>
+	<div
+		class="bg-white/90 backdrop-blur fixed right-0 h-full top-0 overflow-auto"
+		transition:fly={{ x: width, duration: 500, opacity: 1 }}
+		{style}
+	>
 		<div class="absolute right-3 top-3"><Icon name="close" onClick={handleClose} /></div>
 		{#if title}
 			<div class="px-6 py-4 mb-0 border-b border-b-gray-200">
