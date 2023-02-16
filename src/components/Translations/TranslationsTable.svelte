@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Channel, Key, Namespace } from '@prisma/client';
 	import { onMount } from 'svelte';
+	import { getFlagEmoji } from '../../library/flags';
 	import { fetchProjectKeys, type ProjectExtended } from '../../stores/projects';
 
 	import Drawer from '../Drawer/Drawer.svelte';
@@ -39,7 +40,7 @@
 		const locales = project.locales.map((locale) => {
 			return {
 				key: locale.id,
-				title: locale.title,
+				title: getFlagEmoji(locale.countryCode) + ' ' + locale.title,
 				component: TranslationComponent,
 				data: project.channels
 			};

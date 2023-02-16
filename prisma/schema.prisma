@@ -10,6 +10,7 @@ datasource db {
 model Locale {
   id           Int           @id @default(autoincrement())
   iso2         String        @unique
+  countryCode  String        @default("us")
   name         String        @unique
   title        String
   translations Translation[]
