@@ -18,6 +18,7 @@ const translations: Record<i18Locale, Record<string, string>> = {
     "namespaces": 'Namespaces',
     "translations": 'Translations',
     "a_save": 'Save',
+    "a_delete": 'Delete',
     "description": 'Description',
     "add_translation": 'Add translation',
   },
@@ -41,6 +42,7 @@ const translations: Record<i18Locale, Record<string, string>> = {
     "a_save": 'Сохранить',
     "description": 'Описание',
     "add_translation": 'Добавить перевод',
+    "a_delete": 'Удалить',
   },
   uk: {
     "h_dashboard": "Привiт!",

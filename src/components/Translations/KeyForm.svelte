@@ -12,6 +12,7 @@
 	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
 	import InputTag from '../Form/InputTag.svelte';
+	import Toolbar from '../Form/Toolbar.svelte';
 	import H from '../Text/H.svelte';
 	import TranslationsByLocale from './TranslationsByLocale.svelte';
 
@@ -105,11 +106,11 @@
 				onUpdate={handleUpdateTranslations}
 			/>
 		{/each}
-		<div class="flex justify-around py-4 border-t border-slate-200 mt-4">
+		<Toolbar>
 			<Button mode="primary" onClick={handleSubmit} title={submitTitle} />
 			{#if key.id}
 				<Button mode={'danger'} onClick={handleSubmit} title={$t('a_delete')} />
 			{/if}
-		</div>
+		</Toolbar>
 	</form>
 </div>

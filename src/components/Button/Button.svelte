@@ -8,23 +8,27 @@
 	export let mode: 'default' | 'primary' | 'danger' = 'default';
 
 	const className = [
-		'inline-flex items-center rounded-md border  px-4 py-2 text-sm font-medium  shadow-sm  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
+		'group inline-flex items-center rounded-md border  px-4 py-2 text-sm font-medium  shadow-sm  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2'
 	];
+	let iconColor = '';
+
 	if (mode === 'default') {
 		className.push('border-gray-300 bg-white text-gray-700 hover:bg-gray-50');
 	}
 	if (mode === 'danger') {
 		className.push('border-red-500 bg-white-500 text-red-500 hover:bg-red-600 hover:text-white');
+		iconColor = 'text-red-500 group-hover:text-white';
 	}
 	if (mode === 'primary') {
 		className.push('border-indigo-500 bg-indigo-500 text-white hover:bg-indigo-600');
+		iconColor = 'text-indigo-500 group-hover:text-white';
 	}
 </script>
 
 <button type="button" class={className.join(' ')} on:click={onClick}>
 	{#if icon}
 		<span class={title ? 'mr-2' : ''}>
-			<Icon name={icon} />
+			<Icon name={icon} color={iconColor} />
 		</span>
 	{/if}
 	{#if title != ''}

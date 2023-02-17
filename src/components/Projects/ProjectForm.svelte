@@ -5,6 +5,7 @@
 	import Button from '../Button/Button.svelte';
 	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
+	import Toolbar from '../Form/Toolbar.svelte';
 
 	export let project: Partial<Project> = {
 		name: '',
@@ -12,7 +13,7 @@
 		description: null
 	};
 
-	const submitTitle = project.id ? 'a_save' : 'a_create';
+	const submitTitle = project.id ? $t('a_save') : $t('a_create');
 
 	async function handleSubmit() {
 		if (!project.id) {
@@ -37,6 +38,10 @@
 	<FormInput label={$t('description')}>
 		<Input bind:value={project.description} />
 	</FormInput>
-
-	<Button onClick={handleSubmit} title={submitTitle} icon="save" />
+	<Toolbar>
+		<Button onClick={handleSubmit} title={submitTitle} icon="save" />
+		{#if project.id}
+			<Button mode="danger" onClick={handleSubmit} title={$t('a_delete')} icon="trash" />
+		{/if}
+	</Toolbar>
 </form>

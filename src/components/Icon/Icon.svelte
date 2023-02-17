@@ -9,11 +9,13 @@
 	import Plus from './Icons/Plus.svelte';
 	import Save from './Icons/Save.svelte';
 	import Share from './Icons/Share.svelte';
+	import Trash from './Icons/Trash.svelte';
 	import type { IconName } from './Icons/types';
 
 	export let onClick: (() => void) | undefined = undefined;
 	export let name: IconName;
 	export let size: number = 20;
+	export let color: string = 'text-gray-500';
 
 	function handleClick() {
 		onClick && onClick();
@@ -22,7 +24,7 @@
 
 <span
 	on:click={handleClick}
-	class={onClick ? 'text-gray-500 cursor-pointer' : 'text-gray-500'}
+	class={onClick ? `cursor-pointer ${color}` : color}
 	on:keydown={handleClick}
 >
 	{#if name === 'check'} <Check {size} />{/if}
@@ -48,7 +50,6 @@
 	{#if name === 'save'}
 		<Save {size} />
 	{/if}
-	{#if name === 'share'}
-		<Share {size} />
-	{/if}
+	{#if name === 'share'} <Share {size} /> {/if}
+	{#if name === 'trash'} <Trash {size} /> {/if}
 </span>
