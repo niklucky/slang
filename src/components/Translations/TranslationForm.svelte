@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { TranslationExtended } from '../../stores/projects';
-	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
+	import Tag from '../Tag/Tag.svelte';
 
 	export let translation: Partial<TranslationExtended>;
 	export let onUpdate: (translation: Partial<TranslationExtended>) => void;
@@ -12,6 +12,11 @@
 	}
 </script>
 
-<FormInput label={translation?.channel?.name}>
-	<Input onBlur={(v) => handleChange(v)} value={translation.value} />
-</FormInput>
+<div class="flex flex-row items-center py-2">
+	<div class="flex w-24">
+		<Tag>{translation.channel?.name}</Tag>
+	</div>
+	<div class="flex-auto">
+		<Input onBlur={(v) => handleChange(v)} value={translation.value} />
+	</div>
+</div>

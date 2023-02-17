@@ -24,14 +24,33 @@
 	}
 
 	console.log({ locale, project, translationsByChannel });
+	const translations = project.channels.map((channel) => {
+		if (translationsByChannel) {
+			return {
+				...translationsByChannel[channel.id],
+				channelId: channel.id,
+				channel,
+				localeId: locale.id,
+				locale
+			};
+		}
+		return {
+			channelId: channel.id,
+			channel,
+			localeId: locale.id,
+			locale
+		};
+	});
 </script>
 
-<H size={4}>{getFlagEmoji(locale.countryCode)} {locale.title}</H>
-{#each project.channels as channel}
-	<TranslationForm
-		translation={translationsByChannel
-			? translationsByChannel[channel.id]
-			: { channelId: channel.id, channel, localeId: locale.id, locale }}
-		onUpdate={handleUpdate}
-	/>
-{/each}
+<div>
+	<div class="flex flex-row">
+		<div class="flex-1">
+			<H size={4}>{getFlagEmoji(locale.countryCode)} {locale.title}</H>
+		</div>
+		<div class="flex-4" />
+	</div>
+	{#each translations as channel}
+		<TranslationForm translation={channel} onUpdate={handleUpdate} />
+	{/each}
+</div>

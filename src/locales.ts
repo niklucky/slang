@@ -17,6 +17,9 @@ const translations: Record<i18Locale, Record<string, string>> = {
     "key": 'Key',
     "namespaces": 'Namespaces',
     "translations": 'Translations',
+    "a_save": 'Save',
+    "description": 'Description',
+    "add_translation": 'Add translation',
   },
   ru: {
     "h_dashboard": "Привет!",
@@ -35,6 +38,9 @@ const translations: Record<i18Locale, Record<string, string>> = {
     "key": 'Ключ',
     "namespaces": 'Пространство',
     "translations": 'Переводы',
+    "a_save": 'Сохранить',
+    "description": 'Описание',
+    "add_translation": 'Добавить перевод',
   },
   uk: {
     "h_dashboard": "Привiт!",

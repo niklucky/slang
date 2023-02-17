@@ -30,11 +30,11 @@
 </script>
 
 {#if isOpened}
-	<div class="fixed bg-black w-full h-full top-0 left-0 opacity-30" transition:fade />
-	<div class="fixed w-full h-full top-0 left-0 flex overflow-auto">
-		<div class="absolute z-0 w-full h-full" on:keydown={handleClose} on:click={handleClose} />
+	<div class="z-10 fixed bg-black w-full h-full top-0 left-0 opacity-30" transition:fade />
+	<div class="fixed w-full h-full top-0 left-0 flex overflow-auto z-20">
+		<div class="absolute z-50 w-full h-full" on:keydown={handleClose} on:click={handleClose} />
 		<div
-			class="bg-white/90 rounded-xl m-auto backdrop-blur relative z-10 "
+			class="bg-white/90 rounded-xl m-auto backdrop-blur relative z-50 "
 			{style}
 			transition:fly={{ y: 1000, duration: 300, opacity: 1 }}
 		>

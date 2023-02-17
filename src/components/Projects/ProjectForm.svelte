@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { t } from '../../library/i18n';
 	import { createProject, updateProject } from '../../stores/projects';
 	import type { Project } from '../../types';
 	import Button from '../Button/Button.svelte';
+	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
 
 	export let project: Partial<Project> = {
@@ -10,7 +12,7 @@
 		description: null
 	};
 
-	const submitTitle = project.id ? 'Save' : 'Create';
+	const submitTitle = project.id ? 'a_save' : 'a_create';
 
 	async function handleSubmit() {
 		if (!project.id) {
@@ -26,9 +28,15 @@
 </script>
 
 <form>
-	<Input label={'name'} bind:value={project.name} />
-	<Input label={'url'} bind:value={project.url} />
-	<Input label={'description'} bind:value={project.description} />
+	<FormInput label={$t('name')}>
+		<Input bind:value={project.name} />
+	</FormInput>
+	<FormInput label={$t('url')}>
+		<Input bind:value={project.url} />
+	</FormInput>
+	<FormInput label={$t('description')}>
+		<Input bind:value={project.description} />
+	</FormInput>
 
 	<Button onClick={handleSubmit} title={submitTitle} icon="save" />
 </form>

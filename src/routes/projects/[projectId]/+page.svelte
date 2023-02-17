@@ -11,6 +11,7 @@
 	import ProjectForm from '../../../components/Projects/ProjectForm.svelte';
 	import Title from '../../../components/Title.svelte';
 	import TranslationsTable from '../../../components/Translations/TranslationsTable.svelte';
+	import { t } from '../../../library/i18n';
 	import { fetchProject, type ProjectExtended } from '../../../stores/projects';
 
 	let title = 'Project loading...';
@@ -86,7 +87,7 @@
 			component: Button,
 			props: {
 				icon: 'lang',
-				title: 'a_add_translation',
+				title: $t('a_add_translation'),
 				onClick: () => {
 					isAddKey = true;
 				}

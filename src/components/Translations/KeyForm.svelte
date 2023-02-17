@@ -105,6 +105,11 @@
 				onUpdate={handleUpdateTranslations}
 			/>
 		{/each}
-		<Button onClick={handleSubmit} title={submitTitle} />
+		<div class="flex justify-around py-4 border-t border-slate-200 mt-4">
+			<Button mode="primary" onClick={handleSubmit} title={submitTitle} />
+			{#if key.id}
+				<Button mode={'danger'} onClick={handleSubmit} title={$t('a_delete')} />
+			{/if}
+		</div>
 	</form>
 </div>

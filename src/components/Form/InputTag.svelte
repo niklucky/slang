@@ -48,7 +48,7 @@
 	}
 </script>
 
-<div class="flex flex-row relative border-slate-300 border rounded-lg w-full bg-white p-1">
+<div class="flex flex-row relative z-0 border-slate-300 border rounded-lg w-full bg-white p-1">
 	{#each selected as item}
 		<Tag color={item.color}>{item.name}</Tag>
 	{/each}

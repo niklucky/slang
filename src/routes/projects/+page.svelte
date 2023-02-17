@@ -14,7 +14,7 @@
 		{
 			component: Button,
 			props: {
-				title: 'a_create_project',
+				title: $t('a_create_project'),
 				onClick: () => {
 					isCreateModal = true;
 				}

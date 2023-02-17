@@ -109,7 +109,7 @@
 {#if selectedKey || isAddKey}
 	<Drawer
 		width={600}
-		title={selectedKey ? selectedKey.name : 'Add'}
+		title={selectedKey ? selectedKey.name : $t('add_translation')}
 		isOpened={true}
 		onClose={handleCloseEditTranslation}
 	>
