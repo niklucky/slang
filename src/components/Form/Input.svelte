@@ -6,9 +6,13 @@
 	export let isRequired = false;
 
 	export let onBlur: ((value: string) => void) | undefined = undefined;
+	export let onChange: ((value: string) => void) | undefined = undefined;
 
 	function handleBlur(e: any) {
 		onBlur && onBlur(e.target.value);
+	}
+	function handleChange(e: any) {
+		onChange && onChange(e.target.value);
 	}
 </script>
 
@@ -22,5 +26,6 @@
 		required={isRequired}
 		bind:value
 		on:blur={handleBlur}
+		on:keyup={handleChange}
 	/>
 </div>

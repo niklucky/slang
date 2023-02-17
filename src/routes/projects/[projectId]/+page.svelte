@@ -24,6 +24,7 @@
 	let selectedNamespaces: TOption[] = [];
 	let selectedLocales: Locale[] = [];
 	let searchString: string = '';
+	let searchTimer: NodeJS.Timeout | null = null;
 
 	onMount(() => {
 		async function load() {
@@ -50,8 +51,13 @@
 		selectedLocales = selected;
 	}
 	function handleSearch(str: string) {
-		searchString = str;
-		console.log('str', str);
+		if (searchTimer) {
+			clearTimeout(searchTimer);
+		}
+		searchTimer = setTimeout(() => {
+			searchString = str;
+			searchTimer = null;
+		}, 500);
 	}
 
 	$: toolbar = [
@@ -59,7 +65,7 @@
 			component: Input,
 			props: {
 				value: searchString,
-				onBlur: handleSearch
+				onChange: handleSearch
 			}
 		},
 		{
