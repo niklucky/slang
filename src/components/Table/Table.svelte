@@ -12,14 +12,14 @@
 		}
 	}
 	$: titles = fields.map((field) => {
-		return $t(field.title || `${field.key}`);
+		return field.title || `${field.key}`;
 	});
 </script>
 
 <table class="table-auto w-[100%] mt-8">
 	<thead class="bg-slate-50">
 		<tr>
-			<td class="text-left p-4 text-gray-500 text-sm">#</td>
+			<td class="text-left p-4 text-gray-500 text-sm">{$t('#')}</td>
 			{#each fields as field, i}
 				<td class="text-left p-4 text-gray-500 text-sm">{titles[i]}</td>
 			{/each}

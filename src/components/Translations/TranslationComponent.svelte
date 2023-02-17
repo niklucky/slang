@@ -25,7 +25,7 @@
 	{#if translation.localeId === field.key}
 		<div class="mb-2">
 			<span class="bg-gray-100 rounded-md text-sm px-2 py-1">
-				{translation.channel.name}
+				{translation.channel?.name}
 			</span>
 			{translation.value}
 		</div>

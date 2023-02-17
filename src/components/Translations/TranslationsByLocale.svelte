@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Locale } from '@prisma/client';
+	import { getFlagEmoji } from '../../library/flags';
 	import type { ProjectExtended, TranslationExtended } from '../../stores/projects';
+	import H from '../Text/H.svelte';
 	import TranslationForm from './TranslationForm.svelte';
 
 	export let locale: Locale;
@@ -24,7 +26,7 @@
 	console.log({ locale, project, translationsByChannel });
 </script>
 
-<h4>{locale.title} ({locale.name})</h4>
+<H size={4}>{getFlagEmoji(locale.countryCode)} {locale.title}</H>
 {#each project.channels as channel}
 	<TranslationForm
 		translation={translationsByChannel

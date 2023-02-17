@@ -1,7 +1,9 @@
 <script lang="ts">
 	import type { Channel, Key, Locale, Namespace } from '@prisma/client';
+	import { format, parseISO } from 'date-fns';
 	import { onMount } from 'svelte';
 	import { getFlagEmoji } from '../../library/flags';
+	import { t } from '../../library/i18n';
 	import {
 		fetchProjectKeys,
 		type ProjectExtended,
@@ -31,11 +33,12 @@
 	let baseFields: Field<Channel[]>[] = [
 		{
 			key: 'name',
-			title: 'key',
+			title: $t('key'),
 			component: KeyColumn
 		},
 		{
 			key: 'namespaces',
+			title: $t('namespaces'),
 			component: NamespacesColumn
 		}
 	];
@@ -43,6 +46,10 @@
 	$: {
 		load(selectedNamespaces, selectedLocales, searchString);
 		fields = updateFields();
+	}
+
+	function formatDate(dt: any) {
+		return format(parseISO(dt), 'dd.MM.yyyy, HH:mm');
 	}
 
 	function updateFields() {
@@ -55,7 +62,11 @@
 			};
 		});
 
-		return [...baseFields, ...locales];
+		return [
+			...baseFields,
+			...locales,
+			{ key: 'createdAt', title: $t('createdAt'), render: formatDate }
+		];
 	}
 
 	function handleRowClick(key: Key) {

@@ -1,15 +1,10 @@
 <script lang="ts">
 	import Icon from '../Icon/Icon.svelte';
 	import Tag from '../Tag/Tag.svelte';
-	import Label from './Label.svelte';
 	import type { TOption } from './types';
 
-	type T = $$Generic;
-
-	export let label: string | undefined = undefined;
 	export let tags: TOption[] = [];
 	export let selected: TOption[] = [];
-
 	export let onSelect: ((options: TOption[]) => void) | undefined = undefined;
 
 	let isDropdown = false;
@@ -53,21 +48,21 @@
 	}
 </script>
 
-<div class="p-1 relative border-slate-300 border rounded-lg w-full">
-	<Label {label} />
-	<div class="flex flex-row justify-center align-middle w-full">
-		{#each selected as item}
-			<Tag color={item.color}>{item.name}</Tag>
-		{/each}
-		<span
-			contenteditable="true"
-			class="inline-block min-w-[100px] border-0 outline-0 padding-1 px-2"
-			on:blur={handleBlur}
-			on:focus={handleFocus}
-		/>
-	</div>
+<div class="flex flex-row relative border-slate-300 border rounded-lg w-full bg-white p-1">
+	{#each selected as item}
+		<Tag color={item.color}>{item.name}</Tag>
+	{/each}
+	<span
+		contenteditable="true"
+		class="inline-block w-full border-0 outline-0 px-2"
+		on:blur={handleBlur}
+		on:focus={handleFocus}
+	/>
+
 	{#if isDropdown}
-		<div class="bg-white border-slate-200 border rounded-md absolute w-full mt-2 shadow-md left-0">
+		<div
+			class="bg-white border-slate-200 border rounded-md absolute w-full shadow-md left-0 top-full"
+		>
 			{#each tags as item}
 				<div
 					class={item.isSelected ? classNameSelectedItem : classNameItem}

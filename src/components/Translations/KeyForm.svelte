@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Key } from '@prisma/client';
+	import { t } from '../../library/i18n';
 	import {
 		createKey,
 		updateKey,
@@ -8,7 +9,10 @@
 		type TranslationExtended
 	} from '../../stores/projects';
 	import Button from '../Button/Button.svelte';
+	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
+	import InputTag from '../Form/InputTag.svelte';
+	import H from '../Text/H.svelte';
 	import TranslationsByLocale from './TranslationsByLocale.svelte';
 
 	export let project: ProjectExtended;
@@ -47,7 +51,7 @@
 		});
 	});
 
-	const submitTitle = key.id ? 'Update' : 'Create';
+	const submitTitle = key.id ? $t('a_save') : $t('a_add');
 
 	function prepareTranslations(
 		translations: Record<number, Record<number, Partial<TranslationExtended>>>
@@ -85,17 +89,14 @@
 
 <div class="w-[500px]">
 	<form>
-		<h3>Namespaces</h3>
-		{#each project.namespaces as namespace}
-			<label>
-				<input type="checkbox" bind:group={namespaceId} value={namespace.id} />
-				{namespace.name}
-			</label>
-		{/each}
+		<FormInput label={$t('namespaces')}>
+			<InputTag tags={project.namespaces} selected={key.namespaces} />
+		</FormInput>
+		<FormInput label={$t('key')}>
+			<Input bind:value={key.name} />
+		</FormInput>
 
-		<Input label={'key'} bind:value={key.name} />
-
-		<h3>Translations</h3>
+		<H size={3}>{$t('translations')}</H>
 		{#each project.locales as locale}
 			<TranslationsByLocale
 				{locale}
