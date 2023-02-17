@@ -53,7 +53,7 @@
 	}
 </script>
 
-<div class="p-1 relative border-slate-200 border rounded-md w-full">
+<div class="p-1 relative border-slate-300 border rounded-lg w-full">
 	<Label {label} />
 	<div class="flex flex-row justify-center align-middle w-full">
 		{#each selected as item}

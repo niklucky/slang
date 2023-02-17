@@ -1,26 +1,25 @@
-import type { Channel, Translation } from "@prisma/client"
+import type { Channel, Prisma, Translation } from "@prisma/client"
 import prisma from "../prisma"
 
 export type TranslationExtended = (Translation & { channel: Channel, })
 
-export async function saveTranslations(translations: TranslationExtended[]) {
+export async function saveTranslations(keyId: number, translations: TranslationExtended[]) {
   const saved: Translation[] = []
   for (const t of translations) {
     if (!t.value) {
       continue
     }
-    const data = {
-      id: t.id,
-      keyId: t.keyId,
+    const data: Prisma.TranslationUncheckedCreateInput = {
+      keyId: keyId,
       value: t.value,
       localeId: t.localeId,
-      channelId: t.channelId,
+      channelId: t.channelId
     }
-    if (!data.id) {
+    if (!t.id) {
       const tr = await prisma.translation.create({ data })
       saved.push(tr)
     } else {
-      const tr = await prisma.translation.update({ where: { id: data.id }, data })
+      const tr = await prisma.translation.update({ where: { id: t.id }, data })
       saved.push(tr)
     }
   }

@@ -2,7 +2,11 @@
 	import type { Channel, Key, Locale, Namespace } from '@prisma/client';
 	import { onMount } from 'svelte';
 	import { getFlagEmoji } from '../../library/flags';
-	import { fetchProjectKeys, type ProjectExtended } from '../../stores/projects';
+	import {
+		fetchProjectKeys,
+		type ProjectExtended,
+		type ProjectKeysInput
+	} from '../../stores/projects';
 
 	import Drawer from '../Drawer/Drawer.svelte';
 	import type { TOption } from '../Form/types';
@@ -73,12 +77,15 @@
 	}
 
 	async function load(namespaces?: TOption[], locales?: TOption[], search?: string) {
-		const params = {
+		const params: ProjectKeysInput = {
 			projectId: project.id,
 			namespaces: namespaces || selectedNamespaces,
 			locales: locales || selectedLocales,
 			search: search || searchString
 		};
+		if (project.namespaces.length === params.namespaces?.length) {
+			delete params.namespaces;
+		}
 		const response = await fetchProjectKeys(params);
 		keys = response.data;
 		fields = updateFields();

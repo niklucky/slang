@@ -25,7 +25,7 @@ export async function PUT({ request, params }: RequestEvent) {
   const id = parseInt(params.keyId)
   const data = await request.json()
 
-  const translationsConnect: Translation[] = await saveTranslations(data.translations)
+  const translationsConnect: Translation[] = await saveTranslations(id, data.translations)
 
   const key = await prisma.key.findFirstOrThrow({ where: { id }, include: { namespaces: true } })
 
