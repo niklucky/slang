@@ -1,4 +1,5 @@
 import type { Channel, Key, Locale, Namespace, Project, Translation } from "@prisma/client"
+import type { TOption } from "../components/Form/types"
 
 type Response<T> = {
   data: T
@@ -10,8 +11,25 @@ export type KeyExtended = Key & { namespaces: Namespace[], translations: Transla
 export type ProjectExtended = Project & { locales: Locale[], channels: Channel[], namespaces: Namespace[] }
 export type TranslationExtended = Translation & { locale: Locale, channel: Channel }
 
-export async function fetchProjectKeys(projectId: number) {
-  return await request<Response<KeyExtended[]>>(`/api/projects/${projectId}/keys`)
+export type ProjectKeysInput = {
+  projectId: number
+  namespaces?: TOption[]
+  locales?: TOption[]
+  search?: string
+}
+
+export async function fetchProjectKeys(input: ProjectKeysInput) {
+  const params: string[] = []
+  if (input.namespaces) {
+    params.push(`namespaces=${input.namespaces.map(ns => ns.id).join(',')}`)
+  }
+  if (input.locales) {
+    params.push(`locales=${input.locales.map(ns => ns.id).join(',')}`)
+  }
+  if (input.search) {
+    params.push(`search=${input.search}`)
+  }
+  return await request<Response<KeyExtended[]>>(`/api/projects/${input.projectId}/keys?${params.join('&')}`)
 }
 export async function fetchProjectKeyById(projectId: number, id: number) {
   return await request<Response<KeyExtended>>(`/api/projects/${projectId}/keys/${id}`)

@@ -32,6 +32,8 @@ export async function PUT({ request, params }: RequestEvent) {
   const namespacesConnect: number[] = data.namespaces.map((ns: Namespace) => ns.id)
   const namespacesDisconnect = key.namespaces.filter(ns => !namespacesConnect.includes(ns.id))
 
+  data.searchIndex = `${data.name.toLowerCase()} ${data.translations.filter((tr: Translation) => !!tr.value).map((tr: Translation) => tr.value.toLowerCase()).join(' ')}`
+
   const updatedKey = await prisma.key.update({
     where: { id },
     data: {

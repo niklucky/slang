@@ -1,18 +1,51 @@
-import { PrismaClient, type Namespace, type Translation } from '@prisma/client';
+import type { Namespace, Prisma, Translation } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
 import { response } from '../../../../../server/lib/response';
+import prisma from '../../../../../server/prisma';
 import { saveTranslations } from '../../../../../server/services/keys';
 
 
-const prisma = new PrismaClient()
-
-export async function GET({ params }: RequestEvent) {
+export async function GET({ url, params }: RequestEvent) {
   const projectId = params.projectId ? parseInt(params.projectId) : undefined
+  const namespaces = url.searchParams.get('namespaces')
+  const locales = url.searchParams.get('locales')
+  const search = url.searchParams.get('search')
+
+  const where: Prisma.KeyWhereInput = {
+    projectId,
+  }
+
+  if (namespaces) {
+    where.namespaces = {
+      some: {
+        id: {
+          in: namespaces.split(',').map(item => +item)
+        }
+      }
+    }
+  }
+  if (locales) {
+    where.translations = {
+      some: {
+        locale: {
+          id: {
+            in: locales.split(',').map(item => +item)
+          }
+        }
+      }
+    }
+  }
+
+  if (search) {
+    where.searchIndex = {
+      contains: search.toLowerCase(),
+    }
+  }
+
+  console.log(where.OR);
 
   const keys = await prisma.key.findMany({
-    where: {
-      projectId
-    },
+    where,
     include: {
       namespaces: true,
       translations: true

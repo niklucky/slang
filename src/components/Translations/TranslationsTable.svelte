@@ -1,10 +1,11 @@
 <script lang="ts">
-	import type { Channel, Key, Namespace } from '@prisma/client';
+	import type { Channel, Key, Locale, Namespace } from '@prisma/client';
 	import { onMount } from 'svelte';
 	import { getFlagEmoji } from '../../library/flags';
 	import { fetchProjectKeys, type ProjectExtended } from '../../stores/projects';
 
 	import Drawer from '../Drawer/Drawer.svelte';
+	import type { TOption } from '../Form/types';
 	import Table from '../Table/Table.svelte';
 	import type { Field } from '../Table/types';
 	import KeyColumn from './KeyColumn.svelte';
@@ -15,6 +16,9 @@
 	export let project: ProjectExtended;
 	export let isAddKey = false;
 	export let onCloseAddTranslation: () => void;
+	export let selectedNamespaces: TOption[] = [];
+	export let selectedLocales: Locale[] = [];
+	export let searchString: string;
 
 	let keys: (Key & { namespaces: Namespace[] })[] = [];
 	let selectedKey: Key | undefined = undefined;
@@ -33,11 +37,12 @@
 	];
 
 	$: {
+		load(selectedNamespaces, selectedLocales, searchString);
 		fields = updateFields();
 	}
 
 	function updateFields() {
-		const locales = project.locales.map((locale) => {
+		const locales = selectedLocales.map((locale) => {
 			return {
 				key: locale.id,
 				title: getFlagEmoji(locale.countryCode) + ' ' + locale.title,
@@ -67,8 +72,14 @@
 		load();
 	}
 
-	async function load() {
-		const response = await fetchProjectKeys(project!.id);
+	async function load(namespaces?: TOption[], locales?: TOption[], search?: string) {
+		const params = {
+			projectId: project.id,
+			namespaces: namespaces || selectedNamespaces,
+			locales: locales || selectedLocales,
+			search: search || searchString
+		};
+		const response = await fetchProjectKeys(params);
 		keys = response.data;
 		fields = updateFields();
 	}

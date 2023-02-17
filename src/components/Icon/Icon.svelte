@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Check from './Icons/Check.svelte';
 	import Close from './Icons/Close.svelte';
 	import Edit from './Icons/Edit.svelte';
 	import Edit2 from './Icons/Edit2.svelte';
@@ -24,11 +25,14 @@
 	class={onClick ? 'text-gray-500 cursor-pointer' : 'text-gray-500'}
 	on:keydown={handleClick}
 >
-	{#if name === 'close'}
-		<Close {size} />
-	{/if}
+	{#if name === 'check'} <Check {size} />{/if}
+
+	{#if name === 'close'} <Close {size} />{/if}
+
 	{#if name === 'edit'} <Edit {size} /> {/if}
+
 	{#if name === 'edit2'} <Edit2 {size} /> {/if}
+
 	{#if name === 'globe'}
 		<Globe {size} />
 	{/if}

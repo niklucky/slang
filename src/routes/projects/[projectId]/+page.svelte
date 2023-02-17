@@ -1,7 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import type { Locale } from '@prisma/client';
 	import { onMount } from 'svelte';
 	import Button from '../../../components/Button/Button.svelte';
+	import Input from '../../../components/Form/Input.svelte';
+	import type { TOption } from '../../../components/Form/types';
+	import LocalesFilter from '../../../components/Locales/LocalesFilter.svelte';
 	import Modal from '../../../components/Modal/Modal.svelte';
 	import NamespacesFilter from '../../../components/Namespaces/NamespacesFilter.svelte';
 	import ProjectForm from '../../../components/Projects/ProjectForm.svelte';
@@ -17,12 +21,17 @@
 
 	let isEditModal = false;
 	let isAddKey = false;
+	let selectedNamespaces: TOption[] = [];
+	let selectedLocales: Locale[] = [];
+	let searchString: string = '';
 
 	onMount(() => {
 		async function load() {
 			const response = await fetchProject(projectId);
 			project = response.data;
 			title = project.name;
+			selectedNamespaces = project.namespaces;
+			selectedLocales = project.locales;
 		}
 		load();
 	});
@@ -34,20 +43,37 @@
 		isAddKey = false;
 	}
 
+	function handleSelectNamespace(selected: TOption[]) {
+		selectedNamespaces = selected;
+	}
+	function handleSelectLocales(selected: Locale[]) {
+		selectedLocales = selected;
+	}
+	function handleSearch(str: string) {
+		searchString = str;
+		console.log('str', str);
+	}
+
 	$: toolbar = [
 		{
-			component: NamespacesFilter,
+			component: Input,
 			props: {
-				namespaces: project?.namespaces
+				value: searchString,
+				onBlur: handleSearch
 			}
 		},
 		{
-			component: Button,
+			component: NamespacesFilter,
 			props: {
-				icon: 'layers',
-				onClick: () => {
-					isEditModal = true;
-				}
+				namespaces: project?.namespaces,
+				onSelect: handleSelectNamespace
+			}
+		},
+		{
+			component: LocalesFilter,
+			props: {
+				locales: project?.locales,
+				onSelect: handleSelectLocales
 			}
 		},
 		{
@@ -80,7 +106,14 @@
 		{title}
 	</Title>
 
-	<TranslationsTable {project} {isAddKey} onCloseAddTranslation={handleCloseAddTranslationModal} />
+	<TranslationsTable
+		{selectedNamespaces}
+		{selectedLocales}
+		{searchString}
+		{project}
+		{isAddKey}
+		onCloseAddTranslation={handleCloseAddTranslationModal}
+	/>
 {:else}
 	<p>Loading...</p>
 {/if}
