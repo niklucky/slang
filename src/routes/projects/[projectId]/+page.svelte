@@ -3,6 +3,7 @@
 	import { onMount } from 'svelte';
 	import Button from '../../../components/Button/Button.svelte';
 	import Modal from '../../../components/Modal/Modal.svelte';
+	import NamespacesFilter from '../../../components/Namespaces/NamespacesFilter.svelte';
 	import ProjectForm from '../../../components/Projects/ProjectForm.svelte';
 	import Title from '../../../components/Title.svelte';
 	import TranslationsTable from '../../../components/Translations/TranslationsTable.svelte';
@@ -12,7 +13,7 @@
 
 	const projectId = parseInt($page.params.projectId);
 
-	let project: ProjectExtended | undefined = undefined;
+	let project: ProjectExtended;
 
 	let isEditModal = false;
 	let isAddKey = false;
@@ -33,12 +34,17 @@
 		isAddKey = false;
 	}
 
-	const toolbar = [
+	$: toolbar = [
+		{
+			component: NamespacesFilter,
+			props: {
+				namespaces: project?.namespaces
+			}
+		},
 		{
 			component: Button,
 			props: {
-				icon: 'edit',
-				title: 'Edit project',
+				icon: 'layers',
 				onClick: () => {
 					isEditModal = true;
 				}
@@ -47,14 +53,17 @@
 		{
 			component: Button,
 			props: {
-				icon: 'globe',
-				title: 'Add translation',
+				icon: 'lang',
+				title: 'a_add_translation',
 				onClick: () => {
 					isAddKey = true;
 				}
 			}
 		}
 	];
+	function handleEdit() {
+		isEditModal = true;
+	}
 </script>
 
 <svelte:head>
@@ -67,9 +76,11 @@
 	>
 {/if}
 {#if project != undefined}
-	<Title {toolbar}>{title}</Title>
+	<Title {toolbar} isEditable={true} onClick={handleEdit}>
+		{title}
+	</Title>
 
 	<TranslationsTable {project} {isAddKey} onCloseAddTranslation={handleCloseAddTranslationModal} />
 {:else}
-	<p>empty</p>
+	<p>Loading...</p>
 {/if}

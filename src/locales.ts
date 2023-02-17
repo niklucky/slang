@@ -10,6 +10,7 @@ const translations: Record<i18Locale, Record<string, string>> = {
     "keys_count": 'Keys count',
     "menu_projects": 'Projects',
     "menu_dashboard": 'Dasboard',
+    "a_add_translation": 'Add translation',
   },
   ru: {
     "h_dashboard": "Привет!",
@@ -21,6 +22,7 @@ const translations: Record<i18Locale, Record<string, string>> = {
     "keys_count": 'Кол-во ключей',
     "menu_projects": 'Проекты',
     "menu_dashboard": 'Главная',
+    "a_add_translation": 'Добавить перевод',
   },
   uk: {
     "h_dashboard": "Привiт!",

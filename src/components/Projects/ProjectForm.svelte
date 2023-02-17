@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { navigate } from '../../library/navigate';
 	import { createProject, updateProject } from '../../stores/projects';
 	import type { Project } from '../../types';
 	import Button from '../Button/Button.svelte';
@@ -17,13 +16,11 @@
 		if (!project.id) {
 			const result = await createProject(project);
 			if (result.data && result.data.id) {
-				navigate('/projects/' + result.data.id);
+				// navigate('/projects/' + result.data.id);
 			}
 			console.log(result);
 		} else {
 			const result = await updateProject(project.id, project);
-			navigate('/projects/' + result.data.id);
-			console.log(result);
 		}
 	}
 </script>
