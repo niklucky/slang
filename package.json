@@ -6,6 +6,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
+		"start": "node -r dotenv/config build",
 		"test": "playwright test",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
@@ -42,6 +43,7 @@
 	"type": "module",
 	"dependencies": {
 		"@prisma/client": "^4.10.1",
-		"date-fns": "^2.29.3"
+		"date-fns": "^2.29.3",
+		"dotenv": "^16.0.3"
 	}
 }
