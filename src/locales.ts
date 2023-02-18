@@ -22,6 +22,8 @@ const translations: Record<i18Locale, Record<string, string>> = {
     "a_delete": 'Delete',
     "description": 'Description',
     "add_translation": 'Add translation',
+    "locales": 'Locales',
+    "channels": 'Channels',
   },
   ru: {
     "h_dashboard": "Привет!",
@@ -45,6 +47,8 @@ const translations: Record<i18Locale, Record<string, string>> = {
     "description": 'Описание',
     "add_translation": 'Добавить перевод',
     "a_delete": 'Удалить',
+    "locales": 'Языки',
+    "channels": 'Каналы',
   },
   uk: {
     "h_dashboard": "Привiт!",

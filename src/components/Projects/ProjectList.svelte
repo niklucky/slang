@@ -6,6 +6,9 @@
 	import { navigate } from '../../library/navigate';
 	import { fetchProjects } from '../../stores/projects';
 	import type { Project } from '../../types';
+	import ChannelsColumn from './ChannelsColumn.svelte';
+	import LocalesColumn from './LocalesColumn.svelte';
+	import NamespacesColumn from './NamespacesColumn.svelte';
 
 	let projects: Project[] = [];
 
@@ -17,6 +20,21 @@
 		{
 			key: 'url',
 			title: $t('url')
+		},
+		{
+			key: 'locales',
+			title: $t('locales'),
+			component: LocalesColumn
+		},
+		{
+			key: 'channels',
+			title: $t('channels'),
+			component: ChannelsColumn
+		},
+		{
+			key: 'namespaces',
+			title: $t('namespaces'),
+			component: NamespacesColumn
 		},
 		{
 			key: '_count',

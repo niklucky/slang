@@ -35,13 +35,16 @@
 			key: 'name',
 			title: $t('key'),
 			component: KeyColumn
-		},
-		{
+		}
+	];
+
+	if (project.namespaces.length) {
+		baseFields.push({
 			key: 'namespaces',
 			title: $t('namespaces'),
 			component: NamespacesColumn
-		}
-	];
+		});
+	}
 
 	$: {
 		load(selectedNamespaces, selectedLocales, searchString);

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Namespace } from '@prisma/client';
+	export let row;
+	export let field;
 
 	export let value: Namespace[];
 </script>

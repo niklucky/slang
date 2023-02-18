@@ -18,7 +18,6 @@
 		isOpened = false;
 	}
 	function handleDismiss(e: KeyboardEvent) {
-		console.log('e', e);
 		if (e.code === 'Escape') {
 			handleClose();
 		}

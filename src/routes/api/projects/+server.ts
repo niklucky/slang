@@ -7,6 +7,9 @@ const prisma = new PrismaClient()
 export async function GET() {
   const projects = await prisma.project.findMany({
     include: {
+      locales: true,
+      channels: true,
+      namespaces: true,
       _count: {
         select: {
           keys: true,

@@ -14,7 +14,6 @@
 	const duration = isOpened ? 200 : 200;
 
 	function handleClose(e?: any) {
-		console.log(e);
 		if (onClose) {
 			onClose();
 			return;

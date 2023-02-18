@@ -1,5 +1,8 @@
 <script lang="ts">
 	export let value: string;
+
+	export let row;
+	export let field;
 </script>
 
 {#if value}
