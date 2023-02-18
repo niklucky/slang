@@ -6,6 +6,7 @@ export type IconName =
   'globe' |
   'lang' |
   'layers' |
+  'minus-circle' |
   'plus' |
   'save' |
   'share' |

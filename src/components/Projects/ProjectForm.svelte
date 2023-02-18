@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { t } from '../../library/i18n';
-	import { createProject, updateProject } from '../../stores/projects';
-	import type { Project } from '../../types';
+	import { createProject, updateProject, type ProjectExtended } from '../../stores/projects';
 	import Button from '../Button/Button.svelte';
 	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
 	import Toolbar from '../Form/Toolbar.svelte';
+	import ChannelsForm from './ChannelsForm.svelte';
+	import LocalesForm from './LocalesForm.svelte';
+	import NamespacesForm from './NamespacesForm.svelte';
 
-	export let project: Partial<Project> = {
+	export let project: Partial<ProjectExtended> = {
 		name: '',
 		url: '',
 		description: null
@@ -29,15 +31,25 @@
 </script>
 
 <form>
-	<FormInput label={$t('name')}>
-		<Input bind:value={project.name} />
-	</FormInput>
-	<FormInput label={$t('url')}>
-		<Input bind:value={project.url} />
-	</FormInput>
-	<FormInput label={$t('description')}>
-		<Input bind:value={project.description} />
-	</FormInput>
+	<div class="flex flex-row">
+		<div class="flex-1 mr-6">
+			<FormInput label={$t('name')}>
+				<Input bind:value={project.name} />
+			</FormInput>
+			<FormInput label={$t('url')}>
+				<Input bind:value={project.url} />
+			</FormInput>
+			<FormInput label={$t('description')}>
+				<Input bind:value={project.description} />
+			</FormInput>
+		</div>
+		<div class="flex-1">
+			<LocalesForm locales={project.locales} />
+			<NamespacesForm namespaces={project.namespaces} />
+			<ChannelsForm channels={project.channels} />
+		</div>
+	</div>
+
 	<Toolbar>
 		<Button onClick={handleSubmit} title={submitTitle} icon="save" />
 		{#if project.id}

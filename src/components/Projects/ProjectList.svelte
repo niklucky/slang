@@ -2,22 +2,25 @@
 	import Table from '../Table/Table.svelte';
 
 	import { onMount } from 'svelte';
+	import { t } from '../../library/i18n';
 	import { navigate } from '../../library/navigate';
 	import { fetchProjects } from '../../stores/projects';
 	import type { Project } from '../../types';
 
 	let projects: Project[] = [];
 
-	const fields = [
+	$: fields = [
 		{
-			key: 'name'
+			key: 'name',
+			title: $t('name')
 		},
 		{
-			key: 'url'
+			key: 'url',
+			title: $t('url')
 		},
 		{
 			key: '_count',
-			title: 'keys_count',
+			title: $t('keys_count'),
 			render: (value: any) => {
 				return value.keys;
 			}

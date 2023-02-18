@@ -24,23 +24,31 @@
 	}
 
 	console.log({ locale, project, translationsByChannel });
-	const translations = project.channels.map((channel) => {
-		if (translationsByChannel) {
-			return {
-				...translationsByChannel[channel.id],
-				channelId: channel.id,
-				channel,
-				localeId: locale.id,
-				locale
-			};
-		}
-		return {
-			channelId: channel.id,
-			channel,
-			localeId: locale.id,
-			locale
-		};
-	});
+	const translations = project.channels.length
+		? project.channels.map((channel) => {
+				if (translationsByChannel) {
+					return {
+						...translationsByChannel[channel.id],
+						channelId: channel.id,
+						channel,
+						localeId: locale.id,
+						locale
+					};
+				}
+				return {
+					channelId: channel.id,
+					channel,
+					localeId: locale.id,
+					locale
+				};
+		  })
+		: [
+				{
+					localeId: locale.id,
+					locale
+				}
+		  ];
+	console.log('translations', translations);
 </script>
 
 <div>

@@ -8,7 +8,7 @@
 	export let width = 400;
 	export let onClose: (() => void) | undefined = undefined;
 
-	const style = `width: ${width}px`;
+	$: style = `width: ${width}px`;
 
 	function handleClose() {
 		if (onClose) {

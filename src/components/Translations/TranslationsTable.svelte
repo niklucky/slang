@@ -97,6 +97,9 @@
 		if (project.namespaces.length === params.namespaces?.length) {
 			delete params.namespaces;
 		}
+		if (project.locales.length === params.locales?.length) {
+			delete params.locales;
+		}
 		const response = await fetchProjectKeys(params);
 		keys = response.data;
 		fields = updateFields();

@@ -24,9 +24,11 @@
 {#each translations as translation, i}
 	{#if translation.localeId === field.key}
 		<div class="mb-2">
-			<span class="bg-gray-100 rounded-md text-sm px-2 py-1">
-				{translation.channel?.name}
-			</span>
+			{#if translation.channel}
+				<span class="bg-gray-100 rounded-md text-sm px-2 py-1">
+					{translation.channel.name}
+				</span>
+			{/if}
 			{translation.value}
 		</div>
 	{/if}

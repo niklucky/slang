@@ -57,13 +57,8 @@ export async function POST({ request }: RequestEvent) {
   console.log('data', data);
   const created: any = await prisma.key.create({
     data: {
-      ...data,
-      namespaces: {
-        connect: []
-      },
-      translations: {
-        connect: []
-      }
+      name: data.name,
+      projectId: data.projectId
     }
   })
   const translationsConnect: Translation[] = await saveTranslations(created.id, data.translations)

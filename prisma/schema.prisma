@@ -81,8 +81,8 @@ model Translation {
   localeId Int
 
   // default / dev / production
-  channel   Channel @relation(fields: [channelId], references: [id])
-  channelId Int
+  channel   Channel? @relation(fields: [channelId], references: [id])
+  channelId Int?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

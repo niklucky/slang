@@ -13,9 +13,11 @@
 </script>
 
 <div class="flex flex-row items-center py-2">
-	<div class="flex w-24">
-		<Tag>{translation.channel?.name}</Tag>
-	</div>
+	{#if translation.channel}
+		<div class="flex w-24">
+			<Tag>{translation.channel?.name}</Tag>
+		</div>
+	{/if}
 	<div class="flex-auto">
 		<Input onBlur={(v) => handleChange(v)} value={translation.value} />
 	</div>

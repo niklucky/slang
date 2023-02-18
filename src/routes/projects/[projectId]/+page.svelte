@@ -104,7 +104,7 @@
 </svelte:head>
 
 {#if isEditModal}
-	<Modal {title} isOpened={isEditModal} onClose={handleCloseEditModal}
+	<Modal {title} width={800} isOpened={isEditModal} onClose={handleCloseEditModal}
 		><ProjectForm {project} /></Modal
 	>
 {/if}
