@@ -57,6 +57,19 @@ export async function updateProject(id: number, project: Partial<Project>) {
   return await request<Response<Project>>(`/api/projects/${id}`, 'PUT', project)
 }
 
+export async function fetchLocales() {
+  return await request<Response<Locale[]>>('/api/locales')
+}
+export async function addLocaleToProject(projectId: number, localeId: number) {
+  return await request<Response<Locale>>(`/api/projects/${projectId}/locales`, 'POST', { localeId })
+}
+export async function deleteLocaleFromProject(projectId: number, localeId: number) {
+  return await request<Response<Locale>>(`/api/projects/${projectId}/locales`, 'DELETE', { localeId })
+}
+export async function updateLocaleInProject(projectId: number, fromLocaleId: number, toLocaleId: number) {
+  return await request<Response<Locale>>(`/api/projects/${projectId}/locales`, 'PUT', { fromLocaleId, toLocaleId })
+}
+
 // Implementation code where T is the returned data shape
 function request<T>(url: string, method?: string, data?: unknown): Promise<T> {
   let body: BodyInit | undefined = undefined

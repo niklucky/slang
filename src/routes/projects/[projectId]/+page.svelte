@@ -27,16 +27,20 @@
 	let searchString: string = '';
 	let searchTimer: NodeJS.Timeout | null = null;
 
+	async function load() {
+		const response = await fetchProject(projectId);
+		project = response.data;
+		title = project.name;
+		selectedNamespaces = project.namespaces;
+		selectedLocales = project.locales;
+	}
 	onMount(() => {
-		async function load() {
-			const response = await fetchProject(projectId);
-			project = response.data;
-			title = project.name;
-			selectedNamespaces = project.namespaces;
-			selectedLocales = project.locales;
-		}
 		load();
 	});
+
+	function handleUpdate() {
+		load();
+	}
 
 	function handleCloseEditModal() {
 		isEditModal = false;
@@ -105,7 +109,7 @@
 
 {#if isEditModal}
 	<Modal {title} width={800} isOpened={isEditModal} onClose={handleCloseEditModal}
-		><ProjectForm {project} /></Modal
+		><ProjectForm {project} onUpdate={handleUpdate} /></Modal
 	>
 {/if}
 {#if project != undefined}

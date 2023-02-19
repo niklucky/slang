@@ -32,6 +32,10 @@
 	let fields: Field<Channel[]>[] = [];
 	let baseFields: Field<Channel[]>[] = [
 		{
+			key: 'id',
+			title: $t('id')
+		},
+		{
 			key: 'name',
 			title: $t('key'),
 			component: KeyColumn

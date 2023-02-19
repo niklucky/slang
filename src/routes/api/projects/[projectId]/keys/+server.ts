@@ -46,7 +46,11 @@ export async function GET({ url, params }: RequestEvent) {
     where,
     include: {
       namespaces: true,
-      translations: true
+      translations: {
+        where: {
+          deletedAt: null
+        }
+      }
     }
   })
   return response(keys, null)

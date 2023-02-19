@@ -24,6 +24,10 @@ const translations: Record<i18Locale, Record<string, string>> = {
     "add_translation": 'Add translation',
     "locales": 'Locales',
     "channels": 'Channels',
+    "t_confirm_delete": 'Danger zone! You will delete entity',
+    "a_confirm": 'Confirm',
+    "a_cancel": 'Cancel',
+    "confirm_delete_locale": 'If you delete locale all translations will be deleted! Please be careful',
   },
   ru: {
     "h_dashboard": "Привет!",

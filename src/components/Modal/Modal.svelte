@@ -26,9 +26,10 @@
 		window.addEventListener('keydown', handleDismiss);
 		return () => window.removeEventListener('keydown', handleDismiss);
 	});
+	$: isShow = isOpened;
 </script>
 
-{#if isOpened}
+{#if isShow}
 	<div class="z-10 fixed bg-black w-full h-full top-0 left-0 opacity-30" transition:fade />
 	<div class="fixed w-full h-full top-0 left-0 flex overflow-auto z-20">
 		<div class="absolute z-50 w-full h-full" on:keydown={handleClose} on:click={handleClose} />

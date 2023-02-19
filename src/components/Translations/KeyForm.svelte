@@ -37,7 +37,8 @@
 			if (!translations[translation.localeId]) {
 				translations[translation.localeId] = {};
 			}
-			translations[translation.localeId][translation.channelId!] = translation;
+			const channelId = translation.channelId || 0;
+			translations[translation.localeId][channelId] = translation;
 		});
 		project.channels.forEach((channel) => {
 			if (!translations[locale.id][channel.id]) {

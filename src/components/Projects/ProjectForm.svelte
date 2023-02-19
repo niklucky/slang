@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { t } from '../../library/i18n';
-	import { createProject, updateProject, type ProjectExtended } from '../../stores/projects';
+	import {
+		createProject,
+		fetchProject,
+		updateProject,
+		type ProjectExtended
+	} from '../../stores/projects';
 	import Button from '../Button/Button.svelte';
 	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
@@ -9,11 +14,17 @@
 	import LocalesForm from './LocalesForm.svelte';
 	import NamespacesForm from './NamespacesForm.svelte';
 
-	export let project: Partial<ProjectExtended> = {
+	export let project: ProjectExtended = {
+		id: 0,
 		name: '',
 		url: '',
-		description: null
+		description: null,
+		locales: [],
+		channels: [],
+		namespaces: []
 	};
+
+	export let onUpdate: () => void;
 
 	const submitTitle = project.id ? $t('a_save') : $t('a_create');
 
@@ -27,6 +38,14 @@
 		} else {
 			const result = await updateProject(project.id, project);
 		}
+	}
+	function handleUpdate() {
+		loadProject();
+		onUpdate();
+	}
+	async function loadProject() {
+		const response = await fetchProject(project.id);
+		project = response.data;
 	}
 </script>
 
@@ -44,7 +63,7 @@
 			</FormInput>
 		</div>
 		<div class="flex-1">
-			<LocalesForm locales={project.locales} />
+			<LocalesForm {project} onUpdate={handleUpdate} />
 			<NamespacesForm namespaces={project.namespaces} />
 			<ChannelsForm channels={project.channels} />
 		</div>

@@ -23,32 +23,36 @@
 		onUpdate(locale.id, translationsByChannel);
 	}
 
-	console.log({ locale, project, translationsByChannel });
-	const translations = project.channels.length
-		? project.channels.map((channel) => {
-				if (translationsByChannel) {
-					return {
-						...translationsByChannel[channel.id],
-						channelId: channel.id,
-						channel,
-						localeId: locale.id,
-						locale
-					};
-				}
+	// console.log({ locale, project, translationsByChannel });
+	let translations: Partial<TranslationExtended>[] = [];
+	if (project.channels.length) {
+		translations = project.channels.map((channel) => {
+			if (translationsByChannel) {
 				return {
+					...translationsByChannel[channel.id],
 					channelId: channel.id,
 					channel,
 					localeId: locale.id,
 					locale
 				};
-		  })
-		: [
-				{
-					localeId: locale.id,
-					locale
-				}
-		  ];
-	console.log('translations', translations);
+			}
+			return {
+				channelId: channel.id,
+				channel,
+				localeId: locale.id,
+				locale
+			};
+		});
+	} else {
+		translations = translationsByChannel[0]
+			? [translationsByChannel[0]]
+			: [
+					{
+						localeId: locale.id,
+						locale
+					}
+			  ];
+	}
 </script>
 
 <div>

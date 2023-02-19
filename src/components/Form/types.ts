@@ -3,4 +3,5 @@ export type TOption = {
   name: string
   color?: string
   isSelected?: boolean
+  isDisabled?: boolean
 }
