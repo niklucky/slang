@@ -9,9 +9,9 @@ datasource db {
 
 model Locale {
   id           Int           @id @default(autoincrement())
-  iso2         String        @unique
+  code         String        @unique
   countryCode  String        @default("us")
-  name         String        @unique
+  name         String
   title        String
   translations Translation[]
   projects     Project[]
