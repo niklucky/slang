@@ -49,3 +49,28 @@ export async function PUT({ request, params }: RequestEvent) {
   })
   return response(updatedKey, null)
 }
+export async function DELETE({ params }: RequestEvent) {
+  if (!params.keyId) {
+    return response(null, new Error('id is empty'))
+  }
+  const id = parseInt(params.keyId)
+
+  await prisma.key.update({
+    where: { id },
+    data: {
+      deletedAt: new Date()
+    }
+  })
+
+  await prisma.translation.updateMany({
+    where: {
+      keyId: id,
+      deletedAt: null
+    },
+    data: {
+      deletedAt: new Date()
+    }
+  })
+
+  return response(true, null)
+}

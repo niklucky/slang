@@ -13,6 +13,7 @@ export async function GET({ url, params }: RequestEvent) {
 
   const where: any = {
     projectId,
+    deletedAt: null
   }
 
   if (namespaces) {

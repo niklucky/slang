@@ -93,6 +93,10 @@
 		handleCloseEditTranslation();
 		load();
 	}
+	function handleDelete(key: Key) {
+		handleCloseEditTranslation();
+		load();
+	}
 
 	async function load(namespaces?: TOption[], locales?: TOption[], search?: string) {
 		const params: ProjectKeysInput = {
@@ -123,7 +127,13 @@
 		isOpened={true}
 		onClose={handleCloseEditTranslation}
 	>
-		<KeyForm {project} key={selectedKey} onCreate={handleCreate} onUpdate={handleUpdate} />
+		<KeyForm
+			{project}
+			key={selectedKey}
+			onCreate={handleCreate}
+			onUpdate={handleUpdate}
+			onDelete={handleDelete}
+		/>
 	</Drawer>
 {/if}
 <Table onRowClick={handleRowClick} data={keys} {fields} />

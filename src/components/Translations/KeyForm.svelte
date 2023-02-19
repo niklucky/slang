@@ -3,6 +3,7 @@
 	import { t } from '../../library/i18n';
 	import {
 		createKey,
+		deleteProjectKeyById,
 		updateKey,
 		type KeyExtended,
 		type ProjectExtended,
@@ -13,12 +14,14 @@
 	import Input from '../Form/Input.svelte';
 	import InputTag from '../Form/InputTag.svelte';
 	import Toolbar from '../Form/Toolbar.svelte';
+	import Confirm from '../Modal/Confirm.svelte';
 	import H from '../Text/H.svelte';
 	import TranslationsByLocale from './TranslationsByLocale.svelte';
 
 	export let project: ProjectExtended;
 	export let onCreate: ((key: Key) => void) | undefined = undefined;
 	export let onUpdate: ((key: Key) => void) | undefined = undefined;
+	export let onDelete: (key: Key) => void;
 
 	export let key: Partial<KeyExtended> = {
 		name: '',
@@ -28,6 +31,7 @@
 
 	let namespaceId = key.namespaces?.map((ns) => ns.id);
 	let translations: Record<number, Record<number, Partial<TranslationExtended>>> = {};
+	let isConfirmModal = false;
 
 	project.locales.forEach((locale) => {
 		if (!translations[locale.id]) {
@@ -81,6 +85,17 @@
 		}
 	}
 
+	function handleDeleteConfirm() {
+		isConfirmModal = true;
+	}
+	async function handleDelete() {
+		isConfirmModal = false;
+		console.log('key', key);
+		const result = await deleteProjectKeyById(key.projectId as number, key.id as number);
+		console.log('result', result);
+		onDelete(key as Key);
+	}
+
 	function handleUpdateTranslations(
 		channelId: number,
 		items: Record<number, Partial<TranslationExtended>>
@@ -88,6 +103,15 @@
 		translations[channelId] = items;
 	}
 </script>
+
+<Confirm
+	isOpened={isConfirmModal}
+	title={$t('t_confirm_delete')}
+	onCancel={() => (isConfirmModal = false)}
+	onOK={handleDelete}
+	okText={$t('a_confirm')}
+	cancelText={$t('a_cancel')}>{$t('confirm_delete_locale')}</Confirm
+>
 
 <div class="w-[500px]">
 	<form>
@@ -110,7 +134,7 @@
 		<Toolbar>
 			<Button mode="primary" onClick={handleSubmit} title={submitTitle} />
 			{#if key.id}
-				<Button mode={'danger'} onClick={handleSubmit} title={$t('a_delete')} />
+				<Button mode={'danger'} onClick={handleDeleteConfirm} title={$t('a_delete')} />
 			{/if}
 		</Toolbar>
 	</form>

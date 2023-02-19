@@ -8,6 +8,7 @@
 	import Layers from './Icons/Layers.svelte';
 	import MinusCircle from './Icons/MinusCircle.svelte';
 	import Plus from './Icons/Plus.svelte';
+	import PlusCircle from './Icons/PlusCircle.svelte';
 	import Save from './Icons/Save.svelte';
 	import Share from './Icons/Share.svelte';
 	import Trash from './Icons/Trash.svelte';
@@ -45,6 +46,7 @@
 	{#if name === 'minus-circle'} <MinusCircle {size} />{/if}
 
 	{#if name === 'plus'} <Plus {size} /> {/if}
+	{#if name === 'plus-circle'} <PlusCircle {size} /> {/if}
 
 	{#if name === 'save'} <Save {size} /> {/if}
 

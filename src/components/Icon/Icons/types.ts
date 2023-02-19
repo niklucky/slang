@@ -8,6 +8,7 @@ export type IconName =
   'layers' |
   'minus-circle' |
   'plus' |
+  'plus-circle' |
   'save' |
   'share' |
   'trash'

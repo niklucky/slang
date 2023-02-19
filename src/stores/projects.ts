@@ -34,6 +34,9 @@ export async function fetchProjectKeys(input: ProjectKeysInput) {
 export async function fetchProjectKeyById(projectId: number, id: number) {
   return await request<Response<KeyExtended>>(`/api/projects/${projectId}/keys/${id}`)
 }
+export async function deleteProjectKeyById(projectId: number, id: number) {
+  return await request<Response<boolean>>(`/api/projects/${projectId}/keys/${id}`, 'DELETE')
+}
 export async function createKey(key: Partial<Key>) {
   return await request<Response<Key>>(`/api/projects/${key.projectId}/keys`, 'POST', key)
 }
