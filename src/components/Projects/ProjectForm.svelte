@@ -43,9 +43,7 @@
 		if (!project.id) {
 			const result = await createProject(project);
 			if (result.data && result.data.id) {
-				// navigate('/projects/' + result.data.id);
-				project = result.data as ProjectExtended;
-				onUpdate();
+				navigate('/projects/' + result.data.id);
 			}
 			console.log(result);
 		} else {
