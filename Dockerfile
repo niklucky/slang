@@ -17,7 +17,6 @@ WORKDIR /app
 RUN rm -rf ./*
 COPY --from=build /app/package.json .
 COPY --from=build /app/.env .
-COPY --from=build /app/countries-locales.json countries-locales.json
 COPY --from=build /app/build build
 COPY --from=build /app/scripts/start.sh slang.sh
 COPY --from=prisma /app/prisma prisma
