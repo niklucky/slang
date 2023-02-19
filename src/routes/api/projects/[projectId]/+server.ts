@@ -18,7 +18,11 @@ export async function GET({ params }: RequestEvent) {
           deletedAt: null
         }
       },
-      channels: true,
+      channels: {
+        where: {
+          deletedAt: null
+        }
+      },
       _count: {
         select: {
           keys: true

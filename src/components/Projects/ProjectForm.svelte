@@ -1,12 +1,15 @@
 <script lang="ts">
-	import type { Namespace } from '@prisma/client';
+	import type { Channel, Namespace } from '@prisma/client';
 	import { t } from '../../library/i18n';
 	import {
 		createProject,
+		createProjectChannel,
 		createProjectNamespace,
+		deleteProjectChannel,
 		deleteProjectNamespace,
 		fetchProject,
 		updateProject,
+		updateProjectChannel,
 		updateProjectNamespace,
 		type ProjectExtended
 	} from '../../stores/projects';
@@ -59,6 +62,18 @@
 		}
 		handleUpdate();
 	}
+	async function handleDeleteChannel(ns: Channel) {
+		await deleteProjectChannel(ns);
+		handleUpdate();
+	}
+	async function handleUpdateChannel(ns: Channel) {
+		if (ns.id === 0) {
+			await createProjectChannel(ns);
+		} else {
+			await updateProjectChannel(ns);
+		}
+		handleUpdate();
+	}
 	async function loadProject() {
 		const response = await fetchProject(project.id);
 		project = response.data;
@@ -81,7 +96,7 @@
 		<div class="flex-1">
 			<LocalesForm {project} onUpdate={handleUpdate} />
 			<NamespacesForm {project} onUpdate={handleUpdateNS} onDelete={handleDeleteNS} />
-			<ChannelsForm channels={project.channels} />
+			<ChannelsForm {project} onUpdate={handleUpdateChannel} onDelete={handleDeleteChannel} />
 		</div>
 	</div>
 

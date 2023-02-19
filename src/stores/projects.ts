@@ -81,6 +81,15 @@ export async function updateProjectNamespace(ns: Namespace) {
 export async function deleteProjectNamespace(ns: Namespace) {
   return await request<Response<Locale>>(`/api/projects/${ns.projectId}/namespaces/${ns.id}`, 'DELETE')
 }
+export async function createProjectChannel(ns: Channel) {
+  return await request<Response<Locale>>(`/api/projects/${ns.projectId}/channels`, 'POST', ns)
+}
+export async function updateProjectChannel(ns: Channel) {
+  return await request<Response<Locale>>(`/api/projects/${ns.projectId}/channels/${ns.id}`, 'PUT', ns)
+}
+export async function deleteProjectChannel(ns: Channel) {
+  return await request<Response<Locale>>(`/api/projects/${ns.projectId}/channels/${ns.id}`, 'DELETE')
+}
 
 // Implementation code where T is the returned data shape
 function request<T>(url: string, method?: string, data?: unknown): Promise<T> {

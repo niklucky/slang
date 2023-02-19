@@ -50,8 +50,9 @@ model Channel {
   project      Project       @relation(fields: [projectId], references: [id])
   projectId    Int
   translations Translation[]
+  deletedAt    DateTime?
 
-  @@unique([projectId, name])
+  @@unique([projectId, name, deletedAt])
   @@map("channels")
 }
 

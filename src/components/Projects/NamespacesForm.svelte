@@ -46,7 +46,7 @@
 	onCancel={() => (deleteNamespace = null)}
 	onOK={handleDelete}
 	okText={$t('a_confirm')}
-	cancelText={$t('a_cancel')}>{$t('confirm_delete_locale')}</Confirm
+	cancelText={$t('a_cancel')}>{$t('confirm_delete_namespace')}</Confirm
 >
 
 <div>
