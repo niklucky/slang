@@ -28,6 +28,9 @@
 	function handleCloseCreateModal() {
 		isCreateModal = false;
 	}
+	function handleUpdate() {
+		console.log('Project updated:');
+	}
 </script>
 
 <svelte:head>
@@ -36,7 +39,7 @@
 
 {#if isCreateModal}
 	<Modal {title} width={1200} isOpened={isCreateModal} onClose={handleCloseCreateModal}
-		><ProjectForm /></Modal
+		><ProjectForm onUpdate={handleUpdate} /></Modal
 	>
 {/if}
 

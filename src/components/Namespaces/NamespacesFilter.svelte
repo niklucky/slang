@@ -15,6 +15,8 @@
 	});
 </script>
 
-<div>
-	<InputTag {tags} selected={tags} {onSelect} />
-</div>
+{#if tags.length}
+	<div>
+		<InputTag {tags} selected={tags} {onSelect} />
+	</div>
+{/if}
