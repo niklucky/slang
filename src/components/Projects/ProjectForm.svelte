@@ -1,10 +1,12 @@
 <script lang="ts">
 	import type { Channel, Namespace } from '@prisma/client';
 	import { t } from '../../library/i18n';
+	import { navigate } from '../../library/navigate';
 	import {
 		createProject,
 		createProjectChannel,
 		createProjectNamespace,
+		deleteProject,
 		deleteProjectChannel,
 		deleteProjectNamespace,
 		fetchProject,
@@ -17,6 +19,7 @@
 	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
 	import Toolbar from '../Form/Toolbar.svelte';
+	import Confirm from '../Modal/Confirm.svelte';
 	import ChannelsForm from './ChannelsForm.svelte';
 	import LocalesForm from './LocalesForm.svelte';
 	import NamespacesForm from './NamespacesForm.svelte';
@@ -34,6 +37,7 @@
 	export let onUpdate: () => void;
 
 	const submitTitle = project.id ? $t('a_save') : $t('a_create');
+	let isDeleteConfirm = false;
 
 	async function handleSubmit() {
 		if (!project.id) {
@@ -78,7 +82,25 @@
 		const response = await fetchProject(project.id);
 		project = response.data;
 	}
+	function handleDeleteConfirm() {
+		isDeleteConfirm = true;
+	}
+	async function handleDelete() {
+		const response = await deleteProject(project.id);
+		if (response) {
+			navigate('/projects');
+		}
+	}
 </script>
+
+<Confirm
+	isOpened={isDeleteConfirm}
+	title={$t('t_confirm_delete')}
+	onCancel={() => (isDeleteConfirm = false)}
+	onOK={handleDelete}
+	okText={$t('a_confirm')}
+	cancelText={$t('a_cancel')}>{$t('confirm_delete_project')}</Confirm
+>
 
 <form>
 	<div class="flex flex-row">
@@ -103,7 +125,7 @@
 	<Toolbar>
 		<Button onClick={handleSubmit} title={submitTitle} icon="save" />
 		{#if project.id}
-			<Button mode="danger" onClick={handleSubmit} title={$t('a_delete')} icon="trash" />
+			<Button mode="danger" onClick={handleDeleteConfirm} title={$t('a_delete')} icon="trash" />
 		{/if}
 	</Toolbar>
 </form>

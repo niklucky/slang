@@ -43,10 +43,18 @@ export async function PUT({ request, params }: RequestEvent) {
     name: payload.name,
     url: payload.url,
     description: payload.description,
-    // namespaces: payload.namespaces,
-    // channels: payload.channels,
-    // locales: payload.locales,
   }
   const project = await prisma.project.update({ where: { id }, data })
+  return response(project, null)
+}
+export async function DELETE({ params }: RequestEvent) {
+  if (!params.projectId) {
+    return response(null, new Error('id is empty'))
+  }
+  const id = parseInt(params.projectId)
+  const project = await prisma.project.update({
+    where: { id },
+    data: { deletedAt: new Date() }
+  })
   return response(project, null)
 }

@@ -6,6 +6,9 @@ const prisma = new PrismaClient()
 
 export async function GET() {
   const projects = await prisma.project.findMany({
+    where: {
+      deletedAt: null
+    },
     include: {
       locales: true,
       channels: {

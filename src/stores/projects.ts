@@ -55,9 +55,11 @@ export async function fetchProject(id: number) {
 export async function createProject(project: Partial<Project>) {
   return await request<Response<Project>>('/api/projects', 'POST', project)
 }
-
 export async function updateProject(id: number, project: Partial<Project>) {
   return await request<Response<Project>>(`/api/projects/${id}`, 'PUT', project)
+}
+export async function deleteProject(id: number) {
+  return await request<Response<Project>>(`/api/projects/${id}`, 'DELETE')
 }
 
 export async function fetchLocales() {
