@@ -32,7 +32,33 @@ export async function GET() {
 }
 
 export async function POST({ request }: RequestEvent) {
-  const data = await request.json();
-  const project = await prisma.project.create({ data })
+  const payload = await request.json();
+  const data = {
+    name: payload.name,
+    url: payload.url,
+    description: payload.description,
+  }
+  const created = await prisma.project.create({ data })
+  const project = await prisma.project.findUnique({
+    where: { id: created.id },
+    include: {
+      locales: true,
+      namespaces: {
+        where: {
+          deletedAt: null
+        }
+      },
+      channels: {
+        where: {
+          deletedAt: null
+        }
+      },
+      _count: {
+        select: {
+          keys: true
+        }
+      }
+    },
+  })
   return response(project, null)
 }

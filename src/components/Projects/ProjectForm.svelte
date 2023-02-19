@@ -36,7 +36,7 @@
 
 	export let onUpdate: () => void;
 
-	const submitTitle = project.id ? $t('a_save') : $t('a_create');
+	$: submitTitle = project.id ? $t('a_save') : $t('a_create');
 	let isDeleteConfirm = false;
 
 	async function handleSubmit() {
@@ -44,6 +44,8 @@
 			const result = await createProject(project);
 			if (result.data && result.data.id) {
 				// navigate('/projects/' + result.data.id);
+				project = result.data as ProjectExtended;
+				onUpdate();
 			}
 			console.log(result);
 		} else {
@@ -116,9 +118,11 @@
 			</FormInput>
 		</div>
 		<div class="flex-1">
-			<LocalesForm {project} onUpdate={handleUpdate} />
-			<NamespacesForm {project} onUpdate={handleUpdateNS} onDelete={handleDeleteNS} />
-			<ChannelsForm {project} onUpdate={handleUpdateChannel} onDelete={handleDeleteChannel} />
+			{#if project.id}
+				<LocalesForm {project} onUpdate={handleUpdate} />
+				<NamespacesForm {project} onUpdate={handleUpdateNS} onDelete={handleDeleteNS} />
+				<ChannelsForm {project} onUpdate={handleUpdateChannel} onDelete={handleDeleteChannel} />
+			{/if}
 		</div>
 	</div>
 

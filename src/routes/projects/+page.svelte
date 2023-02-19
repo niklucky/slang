@@ -38,7 +38,7 @@
 </svelte:head>
 
 {#if isCreateModal}
-	<Modal {title} width={1200} isOpened={isCreateModal} onClose={handleCloseCreateModal}
+	<Modal {title} width={800} isOpened={isCreateModal} onClose={handleCloseCreateModal}
 		><ProjectForm onUpdate={handleUpdate} /></Modal
 	>
 {/if}
