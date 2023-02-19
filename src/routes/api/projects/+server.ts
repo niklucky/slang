@@ -8,12 +8,19 @@ export async function GET() {
   const projects = await prisma.project.findMany({
     include: {
       locales: true,
-      channels: true,
-      namespaces: true,
+      channels: {
+        where: {
+          deletedAt: null
+        }
+      },
+      namespaces: {
+        where: {
+          deletedAt: null
+        }
+      },
       _count: {
         select: {
           keys: true,
-          channels: true
         }
       }
     }

@@ -89,9 +89,7 @@
 	}
 	async function handleDelete() {
 		isConfirmModal = false;
-		console.log('key', key);
 		const result = await deleteProjectKeyById(key.projectId as number, key.id as number);
-		console.log('result', result);
 		onDelete(key as Key);
 	}
 
