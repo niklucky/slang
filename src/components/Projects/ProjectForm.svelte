@@ -1,9 +1,13 @@
 <script lang="ts">
+	import type { Namespace } from '@prisma/client';
 	import { t } from '../../library/i18n';
 	import {
 		createProject,
+		createProjectNamespace,
+		deleteProjectNamespace,
 		fetchProject,
 		updateProject,
+		updateProjectNamespace,
 		type ProjectExtended
 	} from '../../stores/projects';
 	import Button from '../Button/Button.svelte';
@@ -43,6 +47,18 @@
 		loadProject();
 		onUpdate();
 	}
+	async function handleDeleteNS(ns: Namespace) {
+		await deleteProjectNamespace(ns);
+		handleUpdate();
+	}
+	async function handleUpdateNS(ns: Namespace) {
+		if (ns.id === 0) {
+			await createProjectNamespace(ns);
+		} else {
+			await updateProjectNamespace(ns);
+		}
+		handleUpdate();
+	}
 	async function loadProject() {
 		const response = await fetchProject(project.id);
 		project = response.data;
@@ -64,7 +80,7 @@
 		</div>
 		<div class="flex-1">
 			<LocalesForm {project} onUpdate={handleUpdate} />
-			<NamespacesForm namespaces={project.namespaces} />
+			<NamespacesForm {project} onUpdate={handleUpdateNS} onDelete={handleDeleteNS} />
 			<ChannelsForm channels={project.channels} />
 		</div>
 	</div>

@@ -13,7 +13,11 @@ export async function GET({ params }: RequestEvent) {
     where: { id },
     include: {
       locales: true,
-      namespaces: true,
+      namespaces: {
+        where: {
+          deletedAt: null
+        }
+      },
       channels: true,
       _count: {
         select: {

@@ -72,6 +72,15 @@ export async function deleteLocaleFromProject(projectId: number, localeId: numbe
 export async function updateLocaleInProject(projectId: number, fromLocaleId: number, toLocaleId: number) {
   return await request<Response<Locale>>(`/api/projects/${projectId}/locales`, 'PUT', { fromLocaleId, toLocaleId })
 }
+export async function createProjectNamespace(ns: Namespace) {
+  return await request<Response<Locale>>(`/api/projects/${ns.projectId}/namespaces`, 'POST', ns)
+}
+export async function updateProjectNamespace(ns: Namespace) {
+  return await request<Response<Locale>>(`/api/projects/${ns.projectId}/namespaces/${ns.id}`, 'PUT', ns)
+}
+export async function deleteProjectNamespace(ns: Namespace) {
+  return await request<Response<Locale>>(`/api/projects/${ns.projectId}/namespaces/${ns.id}`, 'DELETE')
+}
 
 // Implementation code where T is the returned data shape
 function request<T>(url: string, method?: string, data?: unknown): Promise<T> {

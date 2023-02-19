@@ -1,7 +1,7 @@
 <script lang="ts">
 	export let size: number = 7;
 
-	const className = [`text-slate-600`];
+	const className = [`text-slate-600 flex flex-row items-center`];
 	if (size === 1) {
 		className.push('text-4xl');
 		className.push('mt-4');

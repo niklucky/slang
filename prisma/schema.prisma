@@ -33,13 +33,14 @@ model Project {
 }
 
 model Namespace {
-  id        Int     @id @default(autoincrement())
-  project   Project @relation(fields: [projectId], references: [id])
+  id        Int       @id @default(autoincrement())
+  project   Project   @relation(fields: [projectId], references: [id])
   projectId Int
   name      String
   keys      Key[]
+  deletedAt DateTime?
 
-  @@unique([projectId, name])
+  @@unique([projectId, name, deletedAt])
   @@map("namespaces")
 }
 
