@@ -69,7 +69,7 @@ model Key {
   namespaces   Namespace[]
   translations Translation[]
 
-  @@unique([projectId, name])
+  @@unique([projectId, name, deletedAt])
   @@map("keys")
 }
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Key } from '@prisma/client';
+	import type { Key, Namespace } from '@prisma/client';
 	import { t } from '../../library/i18n';
 	import {
 		createKey,
@@ -14,6 +14,7 @@
 	import Input from '../Form/Input.svelte';
 	import InputTag from '../Form/InputTag.svelte';
 	import Toolbar from '../Form/Toolbar.svelte';
+	import type { TOption } from '../Form/types';
 	import Confirm from '../Modal/Confirm.svelte';
 	import H from '../Text/H.svelte';
 	import TranslationsByLocale from './TranslationsByLocale.svelte';
@@ -29,7 +30,6 @@
 		namespaces: []
 	};
 
-	let namespaceId = key.namespaces?.map((ns) => ns.id);
 	let translations: Record<number, Record<number, Partial<TranslationExtended>>> = {};
 	let isConfirmModal = false;
 
@@ -73,7 +73,6 @@
 	async function handleSubmit() {
 		key.translations = prepareTranslations(translations);
 
-		key.namespaces = project.namespaces.filter((ns) => namespaceId?.includes(ns.id));
 		if (!key.id) {
 			const result = await createKey(key);
 			if (result.data && result.data.id) {
@@ -102,6 +101,12 @@
 	) {
 		translations[channelId] = items;
 	}
+
+	function handleSelectNS(options: TOption[]) {
+		console.log('options', options);
+		key.namespaces = options as Namespace[];
+		key = key;
+	}
 </script>
 
 <Confirm
@@ -116,7 +121,7 @@
 <div class="w-[500px]">
 	<form>
 		<FormInput label={$t('namespaces')}>
-			<InputTag tags={project.namespaces} selected={key.namespaces} />
+			<InputTag tags={project.namespaces} selected={key.namespaces} onSelect={handleSelectNS} />
 		</FormInput>
 		<FormInput label={$t('key')}>
 			<Input bind:value={key.name} />
