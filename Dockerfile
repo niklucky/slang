@@ -22,5 +22,7 @@ COPY --from=build /app/scripts/start.sh slang.sh
 COPY --from=prisma /app/prisma prisma
 COPY --from=prisma /app/node_modules node_modules
 
+RUN chmod u+x ./slang.sh
+
 EXPOSE 3000
 CMD ["./slang.sh"]

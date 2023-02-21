@@ -8,6 +8,15 @@ This is just a draft and not event tested properly yet!
 
 # Usage
 
+## Docker run commands
+
+docker run -d \
+  -p 3001:3000 \
+  --name slang \
+  -e DATABASE_URL=file:/data/slang.db \
+  -v /data/slang/sqlite:/data \
+  niklucky/slang:latest
+
 ## Simple docker-compose
 
 Super easy way to kickstart project
@@ -19,7 +28,7 @@ version: '3.8'
 
 services:
   slang:
-    image: niklucky/slang:latest
+    image: niklucky/slang:0.1-pg
     environment:
       - DATABASE_URL: postgres://dbslang:secure_pass@slang-db:5432/slang
     ports:
@@ -54,7 +63,7 @@ version: '3.8'
 
 services:
   slang:
-    image: niklucky/slang:latest-sqlite
+    image: niklucky/slang:latest
     environment:
       - DATABASE_URL: file:/data/slang.db
     volumes:
