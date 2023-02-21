@@ -29,6 +29,8 @@
 		name: '',
 		url: '',
 		description: null,
+		apiKey: '',
+		deletedAt: null,
 		locales: [],
 		channels: [],
 		namespaces: []
@@ -113,6 +115,9 @@
 			</FormInput>
 			<FormInput label={$t('description')}>
 				<Input bind:value={project.description} />
+			</FormInput>
+			<FormInput label={$t('apiKey')}>
+				<Input disabled bind:value={project.apiKey} />
 			</FormInput>
 		</div>
 		<div class="flex-1">

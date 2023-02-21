@@ -6,7 +6,7 @@
 
 This is just a draft and not event tested properly yet!
 
-# Usage
+# Starting & deploying project
 
 ## Docker run commands
 
@@ -21,7 +21,7 @@ docker run -d \
 
 Super easy way to kickstart project
 
-### Postgres version
+### Postgres version (not implemented yet!)
 
 ```yml
 version: '3.8'
@@ -78,3 +78,9 @@ services:
         max-size: '50k'
         max-file: '2'
 ```
+
+## Usage in code
+
+### React/React native
+
+🚧 Will put code in `examples` folder after implementation
