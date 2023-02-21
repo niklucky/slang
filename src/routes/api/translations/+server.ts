@@ -1,7 +1,7 @@
-import type { RequestEvent } from '@sveltejs/kit';
-import { response } from '../../../server/lib/response';
+import { json, type RequestEvent } from '@sveltejs/kit';
 import prisma from '../../../server/prisma';
 
+type I18nFormat = 'i18next'
 
 export async function GET({ url, request }: RequestEvent) {
   const apiKey = request.headers.get('x-api-key')
@@ -14,6 +14,7 @@ export async function GET({ url, request }: RequestEvent) {
     }
   })
 
+  const format = url.searchParams.get('format') as I18nFormat
   const channel = url.searchParams.get('channel')
   const namespace = url.searchParams.get('namespace')
   const locale = url.searchParams.get('locale')
@@ -64,15 +65,54 @@ export async function GET({ url, request }: RequestEvent) {
       }
     }
   })
-  const prepared = translations.map(item => {
-    return {
-      key: item.key.name,
-      value: item.value,
-      ns: namespace ? undefined : item.key.namespaces.map(ns => ns.name),
-      channel: channel ? undefined : item.channel?.name,
-      locale: locale ? undefined : item.locale.code
-    }
-  })
-  return response(prepared, null)
+  if (format === 'i18next') {
+    return json(prepareI18Next(translations))
+  }
+  return json(translations)
 }
 
+
+type RawTranslation = {
+  id: number;
+  channel: {
+    id: number;
+    name: string;
+  } | null;
+  locale: {
+    id: number;
+    code: string;
+  };
+  value: string;
+  key: {
+    name: never;
+    namespaces: {
+      name: string;
+    }[];
+  };
+}
+
+type TranslationWithNS = Record<string, Record<string, string> | string>
+type TranslationWithoutNS = Record<string, Record<string, string>>
+
+function prepareI18Next(items: RawTranslation[]) {
+  const result: Record<string, TranslationWithNS | TranslationWithoutNS> = {}
+  for (const item of items) {
+    if (!result[item.locale.code]) {
+      result[item.locale.code] = {}
+    }
+    if (item.key.namespaces) {
+      for (const ns of item.key.namespaces) {
+        if (!result[item.locale.code][ns.name]) {
+          result[item.locale.code][ns.name] = {}
+        }
+        (result[item.locale.code][ns.name] as TranslationWithNS)[item.key.name] = item.value
+      }
+    } else {
+      if (!result[item.locale.code][item.key.name]) {
+        result[item.locale.code][item.key.name] = item.value
+      }
+      result[item.locale.code][item.key.name] = item.value
+    }
+  }
+  return result
+}
