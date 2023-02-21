@@ -21,14 +21,11 @@ async function initLocales() {
   })
   if (localesToCreate.size > 0) {
     const locales = Array.from(localesToCreate.values())
-    for (const locale of locales) {
+    for (const data of locales) {
 
       await prisma.locale.create({
         data: {
-          code: locale.code as string,
-          countryCode: locale.code,
-          name: locale.name as string,
-          title: locale.name as string
+          ...data as Locale
         }
       })
     }

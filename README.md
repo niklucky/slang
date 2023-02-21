@@ -1,38 +1,71 @@
-# create-svelte
+# Slang: UI & API for i18n
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+> This is an educational pet-project to learn SvelteKit by practice.
 
-## Creating a project
+🚨🚧🚧🚧🚧🚧🚧🚧🚧🚧🚨
 
-If you're seeing this, you've probably already done this step. Congrats!
+This is just a draft and not event tested properly yet!
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+# Usage
 
-# create a new project in my-app
-npm create svelte@latest my-app
+## Simple docker-compose
+
+Super easy way to kickstart project
+
+### Postgres version
+
+```yml
+version: '3.8'
+
+services:
+  slang:
+    image: niklucky/slang:latest
+    environment:
+      - DATABASE_URL: postgres://dbslang:secure_pass@slang-db:5432/slang
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50k'
+        max-file: '2'
+
+  slang-db:
+    image: postgres:15
+    ports:
+      - target: 5432
+        published: 3001
+        protocol: tcp
+    volumes:
+      - /data/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: dbslang
+      POSTGRES_PASSWORD: secure_pass
+      POSTGRES_DB: slang
+
 ```
 
-## Developing
+### Sqlite version
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+```yml
+version: '3.8'
 
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+services:
+  slang:
+    image: niklucky/slang:latest-sqlite
+    environment:
+      - DATABASE_URL: file:/data/slang.db
+    volumes:
+      - /data/slang:/data
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50k'
+        max-file: '2'
 ```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
