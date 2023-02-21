@@ -5,24 +5,40 @@ import { response } from '../../../../server/lib/response';
 
 const prisma = new PrismaClient()
 
-export async function GET({ url }: RequestEvent) {
+export async function GET({ url, request }: RequestEvent) {
   try {
-    const projectId = parseInt(url.searchParams.get('projectId') || '')
+    const apiKey = request.headers.get('x-api-key')
+    if (!apiKey) {
+      throw new Error('auth_error')
+    }
+    const project = await prisma.project.findFirstOrThrow({
+      where: {
+        apiKey,
+      }
+    })
+
     const channel = url.searchParams.get('channel')
     const namespace = url.searchParams.get('namespace')
     const locale = url.searchParams.get('locale')
 
     const last = await prisma.translation.findFirstOrThrow({
       where: {
-        projectId,
+        key: {
+          project: {
+            id: project.id
+          },
+          namespaces: {
+            some: {
+              name: namespace || undefined
+            }
+          },
+
+        },
         channel: {
           name: channel || undefined,
         },
-        namespace: {
-          name: namespace || undefined
-        },
         locale: {
-          name: locale || undefined
+          code: locale || undefined
         }
       },
       orderBy: {

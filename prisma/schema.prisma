@@ -29,6 +29,7 @@ model Project {
   keys        Key[]
   locales     Locale[]
   deletedAt   DateTime?
+  apiKey      String      @default("")
 
   @@map("projects")
 }

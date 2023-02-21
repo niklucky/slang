@@ -1,37 +1,78 @@
-import { PrismaClient } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
 import { response } from '../../../server/lib/response';
+import prisma from '../../../server/prisma';
 
-const prisma = new PrismaClient()
 
-export async function GET({ url }: RequestEvent) {
-  const projectId = parseInt(url.searchParams.get('projectId') || '')
+export async function GET({ url, request }: RequestEvent) {
+  const apiKey = request.headers.get('x-api-key')
+  if (!apiKey) {
+    throw new Error('auth_error')
+  }
+  const project = await prisma.project.findFirstOrThrow({
+    where: {
+      apiKey,
+    }
+  })
+
   const channel = url.searchParams.get('channel')
   const namespace = url.searchParams.get('namespace')
   const locale = url.searchParams.get('locale')
 
-  const projects = await prisma.translation.findMany({
+  const translations = await prisma.translation.findMany({
     where: {
-      projectId,
+      key: {
+        project: {
+          id: project.id,
+        },
+        namespaces: {
+          some: {
+            name: namespace || undefined
+          }
+        }
+      },
       channel: {
         name: channel || undefined,
       },
-      namespace: {
-        name: namespace || undefined
-      },
       locale: {
-        name: locale || undefined
+        code: locale || undefined
       }
     },
     select: {
       id: true,
-      key: true,
+      key: {
+        select: {
+          name: true,
+          namespaces: {
+            select: {
+              name: true
+            }
+          }
+        }
+      },
       value: true,
-      projectId: !projectId,
-      namespaceId: !namespace,
-      localeId: !locale,
-      channelId: !channel
+      locale: {
+        select: {
+          id: true,
+          code: true,
+        }
+      },
+      channel: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
     }
   })
-  return response(projects, null)
+  const prepared = translations.map(item => {
+    return {
+      key: item.key.name,
+      value: item.value,
+      ns: namespace ? undefined : item.key.namespaces.map(ns => ns.name),
+      channel: channel ? undefined : item.channel?.name,
+      locale: locale ? undefined : item.locale.code
+    }
+  })
+  return response(prepared, null)
 }
+

@@ -1,10 +1,10 @@
-import { PrismaClient } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
+import { generateId } from '../../../library/uid';
 import { response } from '../../../server/lib/response';
-
-const prisma = new PrismaClient()
+import prisma from '../../../server/prisma';
 
 export async function GET() {
+
   const projects = await prisma.project.findMany({
     where: {
       deletedAt: null
@@ -37,7 +37,11 @@ export async function POST({ request }: RequestEvent) {
     name: payload.name,
     url: payload.url,
     description: payload.description,
+    apiKey: generateId(64)
   }
+
+  console.log('data', data);
+
   const created = await prisma.project.create({ data })
   const project = await prisma.project.findUnique({
     where: { id: created.id },
