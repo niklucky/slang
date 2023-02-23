@@ -8,7 +8,7 @@
 	let menuDashboard = $t('menu_dashboard');
 
 	let items = [
-		{ url: '', name: 'menu_dashboard', className: '' },
+		{ url: 'dashboard', name: 'menu_dashboard', className: '' },
 		{ url: 'projects', name: 'menu_projects', className: '' }
 	];
 	function prepareMenu() {
