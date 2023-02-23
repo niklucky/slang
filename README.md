@@ -10,12 +10,14 @@ This is just a draft and not event tested properly yet!
 
 ## Docker run commands
 
+```shell
 docker run -d \
   -p 3001:3000 \
   --name slang \
   -e DATABASE_URL=file:/data/slang.db \
   -v /data/slang/sqlite:/data \
   niklucky/slang:latest
+```
 
 ## Simple docker-compose
 

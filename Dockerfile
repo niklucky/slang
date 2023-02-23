@@ -5,8 +5,13 @@ RUN npm install
 RUN npm run build
 
 FROM node:18-alpine as prisma
+ARG dbprovider=sqlite
+
 WORKDIR /app
 COPY package.json package.json
+
+RUN sed -i "s/sqlite/${dbprovider}/g" ./prisma/schema.prisma
+
 COPY prisma prisma
 RUN npm install --omit=dev
 RUN npx prisma generate
