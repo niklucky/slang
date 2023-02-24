@@ -2,26 +2,52 @@
 	import { browser } from '$app/environment';
 	import { onDestroy } from 'svelte';
 	import Button from '../../components/Button/Button.svelte';
+	import Content from '../../components/Content.svelte';
+	import FormInput from '../../components/Form/FormInput.svelte';
+	import Input from '../../components/Form/Input.svelte';
+	import Toolbar from '../../components/Form/Toolbar.svelte';
 	import H from '../../components/Text/H.svelte';
 	import type { Auth } from '../../data/api/auth';
+	import { t } from '../../library/i18n';
 	import { navigate } from '../../library/navigate';
 	import { authStore } from '../../stores/auth';
 
-	let user: Auth['user'] | null;
-	const unUser = authStore.subscribe((v) => (user = v));
+	let user: Auth['user'] | null = null;
+	const unUser = authStore.subscribe((v) => {
+		user = v;
+	});
 	onDestroy(unUser);
 
-	$: if (browser) {
-		if (!!user) {
+	let username = '';
+	let password = '';
+	let title = $t('h_setup');
+
+	$: {
+		title = $t('h_setup');
+		if (browser && user) {
 			navigate('/dashboard');
 		}
 	}
 
 	function handleLogin() {
-		console.log('login');
-		// userStore.login();
+		authStore.login(username, password);
 	}
 </script>
 
-<H size={1}>Login</H>
-<Button onClick={handleLogin} title="Login" />
+<svelte:head>
+	<title>{title}</title>
+</svelte:head>
+<Content>
+	<H size={1}>{title}</H>
+	<form>
+		<FormInput label={'username'}>
+			<Input bind:value={username} />
+		</FormInput>
+		<FormInput label={'password'}>
+			<Input type="password" bind:value={password} />
+		</FormInput>
+		<Toolbar>
+			<Button onClick={handleLogin}>Login</Button>
+		</Toolbar>
+	</form>
+</Content>

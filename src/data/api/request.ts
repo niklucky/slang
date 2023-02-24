@@ -1,3 +1,5 @@
+import { accessToken } from "../../stores/auth"
+
 export type Response<T> = {
   data: T
   error: Error | null
@@ -10,7 +12,11 @@ export function request<T>(url: string, method?: string, data?: unknown): Promis
   if (data) {
     body = JSON.stringify(data)
   }
-  return fetch(url, { method, body })
+  const headers = new Headers()
+  if (accessToken) {
+    headers.set('authorization', accessToken)
+  }
+  return fetch(url, { method, body, headers })
     .then(response => {
       if (!response.ok) {
         throw new Error(response.statusText)

@@ -10,6 +10,10 @@ export async function setupUser(name: string, username: string, password: string
   return await request<Response<Auth>>(`/api/auth/setup`, 'POST', { name, username, password })
 }
 
+export async function login(username: string, password: string) {
+  return await request<Response<Auth>>(`/api/auth/login`, 'POST', { username, password })
+}
+
 export async function profile() {
   return await request<Response<User>>(`/api/auth/profile`)
 }
