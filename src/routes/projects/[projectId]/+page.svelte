@@ -39,6 +39,7 @@
 	});
 
 	function handleUpdate() {
+		isEditModal = false;
 		load();
 	}
 

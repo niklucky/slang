@@ -49,7 +49,8 @@
 			}
 			console.log(result);
 		} else {
-			const result = await updateProject(project.id, project);
+			await updateProject(project.id, project);
+			onUpdate();
 		}
 	}
 	function handleUpdate() {
