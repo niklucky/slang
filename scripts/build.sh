@@ -1,6 +1,9 @@
 #!/bin/sh
 
-docker image build --build-arg dbprovider=$2 --platform linux/amd64 --tag niklucky/slang:$1 .
+# For the different db providers
+#docker image build --build-arg dbprovider=$2 --platform linux/amd64 --tag niklucky/slang:$1 .
+
+docker image build --platform linux/amd64 --tag niklucky/slang:$1 .
 docker tag niklucky/slang:$1 niklucky/slang:latest
 
 echo "Publishing image to docker:"

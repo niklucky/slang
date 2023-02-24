@@ -10,9 +10,9 @@ ARG dbprovider=sqlite
 WORKDIR /app
 COPY package.json package.json
 
+COPY prisma prisma
 RUN sed -i "s/sqlite/${dbprovider}/g" ./prisma/schema.prisma
 
-COPY prisma prisma
 RUN npm install --omit=dev
 RUN npx prisma generate
 
