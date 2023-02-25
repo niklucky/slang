@@ -1,4 +1,4 @@
-import { json, type RequestEvent } from '@sveltejs/kit';
+import { error, json, type RequestEvent } from '@sveltejs/kit';
 import prisma from '../../../server/prisma';
 
 type I18nFormat = 'i18next'
@@ -6,7 +6,7 @@ type I18nFormat = 'i18next'
 export async function GET({ url, request }: RequestEvent) {
   const apiKey = request.headers.get('x-api-key')
   if (!apiKey) {
-    throw new Error('auth_error')
+    throw error(401, { message: 'api_key_invalid' })
   }
   const project = await prisma.project.findFirstOrThrow({
     where: {
@@ -25,11 +25,11 @@ export async function GET({ url, request }: RequestEvent) {
         project: {
           id: project.id,
         },
-        namespaces: {
+        namespaces: namespace ? {
           some: {
-            name: namespace || undefined
+            name: namespace
           }
-        }
+        } : undefined
       },
       channel: {
         name: channel || undefined,
@@ -100,7 +100,7 @@ function prepareI18Next(items: RawTranslation[]) {
     if (!result[item.locale.code]) {
       result[item.locale.code] = {}
     }
-    if (item.key.namespaces) {
+    if (item.key.namespaces && item.key.namespaces.length) {
       for (const ns of item.key.namespaces) {
         if (!result[item.locale.code][ns.name]) {
           result[item.locale.code][ns.name] = {}
