@@ -101,10 +101,11 @@
 	}
 
 	function handleSelectNS(options: TOption[]) {
-		console.log('options', options);
 		key.namespaces = options as Namespace[];
 		key = key;
 	}
+	console.log('project.namespaces', project.namespaces);
+	console.log('key.namespaces', key.namespaces);
 </script>
 
 <Confirm
@@ -118,9 +119,11 @@
 
 <div class="w-[500px]">
 	<form>
-		<FormInput label={$t('namespaces')}>
-			<InputTag tags={project.namespaces} selected={key.namespaces} onSelect={handleSelectNS} />
-		</FormInput>
+		{#if project.namespaces.length}
+			<FormInput label={$t('namespaces')}>
+				<InputTag tags={project.namespaces} selected={key.namespaces} onSelect={handleSelectNS} />
+			</FormInput>
+		{/if}
 		<FormInput label={$t('key')}>
 			<Input bind:value={key.name} />
 		</FormInput>

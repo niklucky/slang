@@ -46,7 +46,11 @@ export async function GET({ url, params }: RequestEvent) {
   const keys = await prisma.key.findMany({
     where,
     include: {
-      namespaces: true,
+      namespaces: {
+        where: {
+          deletedAt: null
+        }
+      },
       translations: {
         where: {
           deletedAt: null
