@@ -27,19 +27,19 @@ export async function GET({ url, request }: RequestEvent) {
           project: {
             id: project.id
           },
-          namespaces: {
+          namespaces: namespace ? {
             some: {
-              name: namespace || undefined
+              name: namespace
             }
-          },
+          } : undefined,
 
         },
-        channel: {
-          name: channel || undefined,
-        },
-        locale: {
-          code: locale || undefined
-        }
+        channel: channel ? {
+          name: channel,
+        } : undefined,
+        locale: locale ? {
+          code: locale
+        } : undefined
       },
       orderBy: {
         updatedAt: 'desc'

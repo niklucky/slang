@@ -72,7 +72,7 @@
 		return [
 			...baseFields,
 			...locales,
-			{ key: 'createdAt', title: $t('createdAt'), render: formatDate }
+			{ key: 'updatedAt', title: $t('updatedAt'), render: formatDate }
 		];
 	}
 

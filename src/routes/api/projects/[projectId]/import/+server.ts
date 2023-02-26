@@ -111,9 +111,9 @@ async function save(projectId: number, rows: string[][]) {
           translations: true
         }
       })
-      const searchIndex: string[] = [key.name]
+      const searchIndex: string[] = [key.name.toLowerCase()]
       key.translations.forEach(v => {
-        searchIndex.push(v.value)
+        searchIndex.push(v.value.toLowerCase())
       })
       await prisma.key.update({
         where: {
