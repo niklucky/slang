@@ -15,7 +15,6 @@ export function requiredAuth(headers: Headers) {
     throw new Error('auth_token_invalid')
   }
   const result = jwt.verify(token, process.env.JWT_SECRET as string) as JWTPayload
-  console.log('result', result);
 
   return result.uid
 }

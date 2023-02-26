@@ -5,6 +5,7 @@
 	import Button from '../../../components/Button/Button.svelte';
 	import Input from '../../../components/Form/Input.svelte';
 	import type { TOption } from '../../../components/Form/types';
+	import Import from '../../../components/Import/Import.svelte';
 	import LocalesFilter from '../../../components/Locales/LocalesFilter.svelte';
 	import Modal from '../../../components/Modal/Modal.svelte';
 	import NamespacesFilter from '../../../components/Namespaces/NamespacesFilter.svelte';
@@ -22,6 +23,7 @@
 
 	let isEditModal = false;
 	let isAddKey = false;
+	let isImport = false;
 	let selectedNamespaces: TOption[] = [];
 	let selectedLocales: Locale[] = [];
 	let searchString: string = '';
@@ -97,6 +99,16 @@
 					isAddKey = true;
 				}
 			}
+		},
+		{
+			component: Button,
+			props: {
+				icon: 'upload',
+				title: $t('a_import'),
+				onClick: () => {
+					isImport = true;
+				}
+			}
 		}
 	];
 	function handleEdit() {
@@ -111,6 +123,12 @@
 {#if isEditModal}
 	<Modal {title} width={800} isOpened={isEditModal} onClose={handleCloseEditModal}
 		><ProjectForm {project} onUpdate={handleUpdate} /></Modal
+	>
+{/if}
+
+{#if isImport}
+	<Modal {title} width={800} isOpened={isImport} onClose={() => (isImport = false)}
+		><Import {project} /></Modal
 	>
 {/if}
 {#if project != undefined}

@@ -13,6 +13,7 @@
 	import Share from './Icons/Share.svelte';
 	import Trash from './Icons/Trash.svelte';
 	import type { IconName } from './Icons/types';
+	import Upload from './Icons/Upload.svelte';
 
 	export let onClick: (() => void) | undefined = undefined;
 	export let name: IconName;
@@ -53,4 +54,5 @@
 	{#if name === 'share'} <Share {size} /> {/if}
 
 	{#if name === 'trash'} <Trash {size} /> {/if}
+	{#if name === 'upload'} <Upload {size} /> {/if}
 </span>

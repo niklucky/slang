@@ -11,4 +11,5 @@ export type IconName =
   'plus-circle' |
   'save' |
   'share' |
-  'trash'
+  'trash' |
+  'upload'
