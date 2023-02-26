@@ -22,7 +22,7 @@
 		const formData = new FormData();
 		// formData.append('file', value);
 		formData.append('file', files[0]);
-		const upload = fetch(`http://localhost:5173/api/projects/${project.id}/import`, {
+		const upload = fetch(`/api/projects/${project.id}/import`, {
 			method: 'POST',
 			body: formData
 		})

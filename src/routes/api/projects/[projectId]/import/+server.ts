@@ -17,7 +17,7 @@ export async function POST({ params, request }: RequestEvent) {
 
   const name = generateId(36)
   if (file) {
-    const fileName = `./data/tmp/${name}.csv`
+    const fileName = `/tmp/${name}.csv`
     await writeFile(fileName, await file.text())
 
     const rows: string[][] = []
@@ -105,6 +105,24 @@ async function save(projectId: number, rows: string[][]) {
           }
         })
       }
+      key = await prisma.key.findUnique({
+        where: { id: key.id },
+        include: {
+          translations: true
+        }
+      })
+      const searchIndex: string[] = [key.name]
+      key.translations.forEach(v => {
+        searchIndex.push(v.value)
+      })
+      await prisma.key.update({
+        where: {
+          id: key.id
+        },
+        data: {
+          searchIndex: searchIndex.join(' ')
+        }
+      })
       console.log(row);
     } catch (e) {
       console.log('e', e);
