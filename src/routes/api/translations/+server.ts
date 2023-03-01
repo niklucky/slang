@@ -21,10 +21,12 @@ export async function GET({ url, request }: RequestEvent) {
 
   const translations = await prisma.translation.findMany({
     where: {
+      deletedAt: null,
       key: {
         project: {
           id: project.id,
         },
+        deletedAt: null,
         namespaces: namespace ? {
           some: {
             name: namespace

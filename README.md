@@ -30,7 +30,7 @@ version: '3.8'
 
 services:
   slang:
-    image: niklucky/slang:0.1-pg
+    image: niklucky/slang:latest-postgres
     environment:
       - DATABASE_URL: postgres://dbslang:secure_pass@slang-db:5432/slang
     ports:

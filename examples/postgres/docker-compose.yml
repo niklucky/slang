@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  slang:
+    image: niklucky/slang:latest-postgres
+    environment:
+      - "DATABASE_URL=postgres://dbslang:${DB_PASSWORD}@slang-db:5432/slang"
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50k'
+        max-file: '2'
+
+  slang-db:
+    image: postgres:15
+    ports:
+      - target: 5432
+        published: 3001
+        protocol: tcp
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: dbslang
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: slang

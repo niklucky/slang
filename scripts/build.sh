@@ -1,11 +1,28 @@
-#!/bin/sh
+#!/bin/bash
 
 # For the different db providers
-#docker image build --build-arg dbprovider=$2 --platform linux/amd64 --tag niklucky/slang:$1 .
+VERSION=$1
+DB_PROVIDER=${2:-sqlite}
 
-docker image build --platform linux/amd64 --tag niklucky/slang:$1 .
-docker tag niklucky/slang:$1 niklucky/slang:latest
+if [ "$VERSION" = "" ]; then
+  echo "You need to provide new version"
+  exit 1
+fi
 
-echo "Publishing image to docker:"
-docker push niklucky/slang:$1
-docker push niklucky/slang:latest 
+V=$VERSION
+LATEST=latest
+
+if [ "$DB_PROVIDER" = "postgres" ]; then
+  V="$VERSION-$DB_PROVIDER"
+  LATEST="$LATEST-$DB_PROVIDER"
+fi
+
+echo "Building image version $V ($LATEST), DB: $DB_PROVIDER"
+
+docker image build --build-arg dbprovider=$DB_PROVIDER --platform linux/amd64 --tag niklucky/slang:$V .
+docker tag niklucky/slang:$V niklucky/slang:$LATEST
+
+# echo "Publishing image to docker:"
+docker push niklucky/slang:$V
+docker push niklucky/slang:$LATEST
+
