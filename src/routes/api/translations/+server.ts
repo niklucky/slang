@@ -22,7 +22,7 @@ export async function GET({ url, request }: RequestEvent) {
   const translations = await prisma.translation.findMany({
     where: {
       deletedAt: null,
-      key: {
+      word: {
         project: {
           id: project.id,
         },
@@ -42,9 +42,9 @@ export async function GET({ url, request }: RequestEvent) {
     },
     select: {
       id: true,
-      key: {
+      word: {
         select: {
-          name: true,
+          key: true,
           namespaces: {
             select: {
               name: true
@@ -85,8 +85,8 @@ type RawTranslation = {
     code: string;
   };
   value: string;
-  key: {
-    name: never;
+  word: {
+    key: string;
     namespaces: {
       name: string;
     }[];
@@ -96,24 +96,24 @@ type RawTranslation = {
 type TranslationWithNS = Record<string, Record<string, string> | string>
 type TranslationWithoutNS = Record<string, Record<string, string>>
 
-function prepareI18Next(items: RawTranslation[], namespace?: string) {
+function prepareI18Next(items: RawTranslation[], namespace?: string | null) {
   const result: Record<string, TranslationWithNS | TranslationWithoutNS> = {}
   for (const item of items) {
     if (!result[item.locale.code]) {
       result[item.locale.code] = {}
     }
-    if (item.key.namespaces && item.key.namespaces.length && !namespace) {
-      for (const ns of item.key.namespaces) {
+    if (item.word.namespaces && item.word.namespaces.length && !namespace) {
+      for (const ns of item.word.namespaces) {
         if (!result[item.locale.code][ns.name]) {
           result[item.locale.code][ns.name] = {}
         }
-        (result[item.locale.code][ns.name] as TranslationWithNS)[item.key.name] = item.value
+        (result[item.locale.code][ns.name] as TranslationWithNS)[item.word.key] = item.value
       }
     } else {
-      if (!result[item.locale.code][item.key.name]) {
-        result[item.locale.code][item.key.name] = item.value
+      if (!result[item.locale.code][item.word.key]) {
+        result[item.locale.code][item.word.key] = item.value
       }
-      result[item.locale.code][item.key.name] = item.value
+      result[item.locale.code][item.word.key] = item.value
     }
   }
   return result

@@ -9,7 +9,8 @@
 
 	let items = [
 		{ url: 'dashboard', name: 'menu_dashboard', className: '' },
-		{ url: 'projects', name: 'menu_projects', className: '' }
+		{ url: 'projects', name: 'menu_projects', className: '' },
+		{ url: 'users', name: 'menu_users', className: '' }
 	];
 	function prepareMenu() {
 		return items.map((item) => {
