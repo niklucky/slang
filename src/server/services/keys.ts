@@ -3,14 +3,14 @@ import prisma from "../prisma"
 
 export type TranslationExtended = (Translation & { channel: Channel, })
 
-export async function saveTranslations(keyId: number, translations: TranslationExtended[]) {
+export async function saveTranslations(wordId: number, translations: TranslationExtended[]) {
   const saved: Translation[] = []
   for (const t of translations) {
     if (!t.value) {
       continue
     }
     const data: Prisma.TranslationUncheckedCreateInput = {
-      keyId: keyId,
+      wordId,
       value: t.value,
       localeId: t.localeId,
       channelId: t.channelId

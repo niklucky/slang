@@ -37,7 +37,7 @@ model Project {
   description String?
   namespaces  Namespace[]
   channels    Channel[]
-  keys        Key[]
+  words       Word[]
   locales     Locale[]
   deletedAt   DateTime?
   apiKey      String      @default("")
@@ -50,7 +50,7 @@ model Namespace {
   project   Project   @relation(fields: [projectId], references: [id])
   projectId Int
   name      String
-  keys      Key[]
+  words     Word[]
   deletedAt DateTime?
 
   @@unique([projectId, name, deletedAt])
@@ -69,9 +69,9 @@ model Channel {
   @@map("channels")
 }
 
-model Key {
+model Word {
   id          Int     @id @default(autoincrement())
-  name        String
+  key         String
   project     Project @relation(fields: [projectId], references: [id])
   projectId   Int
   searchIndex String  @default("")
@@ -82,15 +82,15 @@ model Key {
   namespaces   Namespace[]
   translations Translation[]
 
-  @@unique([projectId, name, deletedAt])
-  @@map("keys")
+  @@unique([projectId, key, deletedAt])
+  @@map("words")
 }
 
 model Translation {
-  id    Int    @id @default(autoincrement())
-  key   Key    @relation(fields: [keyId], references: [id])
-  keyId Int
-  value String
+  id     Int    @id @default(autoincrement())
+  word   Word   @relation(fields: [wordId], references: [id])
+  wordId Int
+  value  String
 
   locale   Locale @relation(fields: [localeId], references: [id])
   localeId Int
@@ -105,7 +105,7 @@ model Translation {
 
   versions TranslationVersion[]
 
-  @@unique([keyId, localeId, channelId])
+  @@unique([wordId, localeId, channelId])
   @@map("translations")
 }
 

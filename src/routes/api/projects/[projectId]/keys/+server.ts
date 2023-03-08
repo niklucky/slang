@@ -1,4 +1,4 @@
-import type { Namespace, Translation } from '@prisma/client';
+import type { Namespace, Prisma, Translation } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
 import { response } from '../../../../../server/lib/response';
 import prisma from '../../../../../server/prisma';
@@ -11,7 +11,7 @@ export async function GET({ url, params }: RequestEvent) {
   const locales = url.searchParams.get('locales')
   const search = url.searchParams.get('search')
 
-  const where: any = {
+  const where: Prisma.WordFindManyArgs['where'] = {
     projectId,
     deletedAt: null
   }
@@ -43,7 +43,7 @@ export async function GET({ url, params }: RequestEvent) {
     }
   }
 
-  const keys = await prisma.key.findMany({
+  const words = await prisma.word.findMany({
     where,
     include: {
       namespaces: {
@@ -58,21 +58,21 @@ export async function GET({ url, params }: RequestEvent) {
       }
     }
   })
-  return response(keys, null)
+  return response(words, null)
 }
 
 export async function POST({ request }: RequestEvent) {
   const data = await request.json();
   console.log('data', data);
-  const created: any = await prisma.key.create({
+  const created = await prisma.word.create({
     data: {
-      name: data.name,
+      key: data.key,
       projectId: data.projectId
     }
   })
   const translationsConnect: Translation[] = await saveTranslations(created.id, data.translations)
   data.searchIndex = `${data.name.toLowerCase()} ${data.translations.filter((tr: Translation) => !!tr.value).map((tr: Translation) => tr.value.toLowerCase()).join(' ')}`
-  const updated = await prisma.key.update({
+  const updated = await prisma.word.update({
     where: { id: created.id },
     data: {
       ...data,

@@ -20,10 +20,10 @@
 
 	let username = '';
 	let password = '';
-	let title = $t('h_setup');
+	let title = $t('h_login');
 
 	$: {
-		title = $t('h_setup');
+		title = $t('h_login');
 		if (browser && user) {
 			navigate('/dashboard');
 		}
@@ -40,10 +40,10 @@
 <Content>
 	<H size={1}>{title}</H>
 	<form>
-		<FormInput label={'username'}>
+		<FormInput label={$t('username')}>
 			<Input bind:value={username} />
 		</FormInput>
-		<FormInput label={'password'}>
+		<FormInput label={$t('password')}>
 			<Input type="password" bind:value={password} />
 		</FormInput>
 		<Toolbar>

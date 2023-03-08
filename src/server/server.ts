@@ -1,5 +1,5 @@
 import type { Locale } from '@prisma/client';
-import allLocales from '../config/locales';
+import allLocales from '../data/locales/locales';
 import prisma from "./prisma";
 
 export function init() {

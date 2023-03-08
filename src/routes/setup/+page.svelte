@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
 	import { onDestroy } from 'svelte';
 	import Button from '../../components/Button/Button.svelte';
 	import Content from '../../components/Content.svelte';
@@ -7,10 +8,13 @@
 	import Toolbar from '../../components/Form/Toolbar.svelte';
 	import H from '../../components/Text/H.svelte';
 	import { t } from '../../library/i18n';
+	import { navigate } from '../../library/navigate';
 	import { authStore } from '../../stores/auth';
 
 	const unUser = authStore.subscribe((v) => {
-		console.log('updated', v);
+		if (browser && v) {
+			navigate('/dashboard');
+		}
 	});
 	onDestroy(unUser);
 
