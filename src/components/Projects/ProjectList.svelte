@@ -40,7 +40,7 @@
 			key: '_count',
 			title: $t('keys_count'),
 			render: (value: any) => {
-				return value.keys;
+				return value.words;
 			}
 		}
 	];

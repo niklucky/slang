@@ -30,4 +30,5 @@ export default {
   username: 'Username',
   password: 'Password',
   h_setup: 'Setup account',
+  a_import: 'Import',
 }

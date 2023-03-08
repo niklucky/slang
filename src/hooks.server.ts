@@ -2,9 +2,7 @@ import type { Handle } from '@sveltejs/kit';
 import { init } from "./server/server";
 import { authUserByAccessToken } from './server/services/auth';
 
-
 init()
-
 
 export const handle = (async ({ event, resolve }) => {
   if (event.url.pathname.indexOf('/api') === 0) {

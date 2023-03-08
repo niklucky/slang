@@ -22,4 +22,5 @@ export default {
   a_delete: 'Удалить',
   locales: 'Языки',
   channels: 'Каналы',
+  a_import: 'Импорт'
 }
