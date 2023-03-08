@@ -1,57 +1,27 @@
-import type { Namespace, Translation } from "@prisma/client";
 import type { RequestEvent } from "@sveltejs/kit";
 
 import { response } from "../../../../../../server/lib/response";
+import { requireParam } from "../../../../../../server/lib/validation";
 import prisma from "../../../../../../server/prisma";
-import { saveTranslations } from "../../../../../../server/services/keys";
+import { requireUser } from "../../../../../../server/services/auth";
+import { updateWord } from "../../../../../../server/services/word";
 
 
 export async function GET({ params }: RequestEvent) {
-
-  if (!params.wordId) {
-    return response(null, new Error('id is empty'))
-  }
-  const id = parseInt(params.wordId)
-  const key = await prisma.word.findUnique({ where: { id } })
-  return response(key, null)
+  const id = parseInt(requireParam(params, 'wordId'))
+  const word = await prisma.word.findUnique({ where: { id } })
+  return response(word, null)
 }
 
-export async function PUT({ request, params }: RequestEvent) {
-  if (!params.wordId) {
-    return response(null, new Error('id is empty'))
-  }
-  const id = parseInt(params.wordId)
-  const data = await request.json()
-
-  const translationsConnect: Translation[] = await saveTranslations(id, data.translations)
-
-  const key = await prisma.word.findFirstOrThrow({ where: { id }, include: { namespaces: true } })
-
-  const namespacesConnect: number[] = data.namespaces.map((ns: Namespace) => ns.id)
-  const namespacesDisconnect = key.namespaces.filter(ns => !namespacesConnect.includes(ns.id))
-
-  data.searchIndex = `${data.name.toLowerCase()} ${data.translations.filter((tr: Translation) => !!tr.value).map((tr: Translation) => tr.value.toLowerCase()).join(' ')}`
-
-  const updatedKey = await prisma.word.update({
-    where: { id },
-    data: {
-      ...data,
-      namespaces: {
-        connect: namespacesConnect.map((id: number) => ({ id })),
-        disconnect: namespacesDisconnect.map(ns => ({ id: ns.id }))
-      },
-      translations: {
-        connect: translationsConnect.map(t => ({ id: t.id }))
-      }
-    }
-  })
-  return response(updatedKey, null)
+export async function PUT({ request, params, locals }: RequestEvent) {
+  const id = parseInt(requireParam(params, 'wordId'))
+  const data = await request.json();
+  const word = await updateWord(requireUser(locals.user), id, data)
+  return response(word, null)
 }
+
 export async function DELETE({ params }: RequestEvent) {
-  if (!params.wordId) {
-    return response(null, new Error('id is empty'))
-  }
-  const id = parseInt(params.wordId)
+  const id = parseInt(requireParam(params, 'wordId'))
 
   await prisma.word.update({
     where: { id },

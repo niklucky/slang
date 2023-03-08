@@ -18,6 +18,31 @@ export async function createWord(user: User, payload: Partial<Word> & { translat
   return word
 }
 
+export async function updateWord(user: User, id: number, data: Word & { translations: TranslationExtended[], namespaces: Namespace[] }) {
+  const word = await prisma.word.findFirstOrThrow({ where: { id }, include: { namespaces: true } })
+
+  const translationsConnect: Translation[] = await saveTranslations(word, data.translations)
+
+  const namespacesConnect: number[] = data.namespaces.map((ns: Namespace) => ns.id)
+  const namespacesDisconnect = word.namespaces.filter(ns => !namespacesConnect.includes(ns.id))
+
+  data.searchIndex = setSearchIndex(word, data.translations)
+
+  return await prisma.word.update({
+    where: { id },
+    data: {
+      ...data,
+      namespaces: {
+        connect: namespacesConnect.map((id: number) => ({ id })),
+        disconnect: namespacesDisconnect.map(ns => ({ id: ns.id }))
+      },
+      translations: {
+        connect: translationsConnect.map(t => ({ id: t.id }))
+      }
+    }
+  })
+}
+
 export async function saveTranslations(word: Word, translations: TranslationExtended[]) {
   const saved: Translation[] = []
   for (const t of translations) {
