@@ -1,12 +1,13 @@
-import type { Channel, Key, Locale, Namespace, Project, Translation } from "@prisma/client"
-import type { TOption } from "../components/Form/types"
+import type { Channel, Locale, Namespace, Project, Translation, Word } from "@prisma/client"
+import type { TOption } from "../../components/Form/types"
+import { request } from "./request"
 
 type Response<T> = {
   data: T
   error: Error | null
 }
 
-export type KeyExtended = Key & { namespaces: Namespace[], translations: Translation[] }
+export type WordExtended = Word & { namespaces: Namespace[], translations: Translation[] }
 
 export type ProjectExtended = Project & { locales: Locale[], channels: Channel[], namespaces: Namespace[] }
 export type TranslationExtended = Translation & { locale: Locale, channel: Channel }
@@ -29,19 +30,19 @@ export async function fetchProjectKeys(input: ProjectKeysInput) {
   if (input.search) {
     params.push(`search=${input.search}`)
   }
-  return await request<Response<KeyExtended[]>>(`/api/projects/${input.projectId}/keys?${params.join('&')}`)
+  return await request<Response<WordExtended[]>>(`/api/projects/${input.projectId}/words?${params.join('&')}`)
 }
 export async function fetchProjectKeyById(projectId: number, id: number) {
-  return await request<Response<KeyExtended>>(`/api/projects/${projectId}/keys/${id}`)
+  return await request<Response<WordExtended>>(`/api/projects/${projectId}/words/${id}`)
 }
 export async function deleteProjectKeyById(projectId: number, id: number) {
-  return await request<Response<boolean>>(`/api/projects/${projectId}/keys/${id}`, 'DELETE')
+  return await request<Response<boolean>>(`/api/projects/${projectId}/words/${id}`, 'DELETE')
 }
-export async function createKey(key: Partial<Key>) {
-  return await request<Response<Key>>(`/api/projects/${key.projectId}/keys`, 'POST', key)
+export async function createKey(key: Partial<Word>) {
+  return await request<Response<Word>>(`/api/projects/${key.projectId}/words`, 'POST', key)
 }
-export async function updateKey(id: number, key: Key) {
-  return await request<Response<Key>>(`/api/projects/${key.projectId}/keys/${id}`, 'PUT', key)
+export async function updateKey(id: number, key: Word) {
+  return await request<Response<Word>>(`/api/projects/${key.projectId}/words/${id}`, 'PUT', key)
 }
 
 export async function fetchProjects() {
@@ -91,20 +92,4 @@ export async function updateProjectChannel(ns: Channel) {
 }
 export async function deleteProjectChannel(ns: Channel) {
   return await request<Response<Locale>>(`/api/projects/${ns.projectId}/channels/${ns.id}`, 'DELETE')
-}
-
-// Implementation code where T is the returned data shape
-function request<T>(url: string, method?: string, data?: unknown): Promise<T> {
-  let body: BodyInit | undefined = undefined
-
-  if (data) {
-    body = JSON.stringify(data)
-  }
-  return fetch(url, { method, body })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(response.statusText)
-      }
-      return response.json() as T
-    })
 }

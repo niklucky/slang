@@ -12,8 +12,8 @@
 	import ProjectForm from '../../../components/Projects/ProjectForm.svelte';
 	import Title from '../../../components/Title.svelte';
 	import TranslationsTable from '../../../components/Translations/TranslationsTable.svelte';
-	import { t } from '../../../library/i18n';
-	import { fetchProject, type ProjectExtended } from '../../../stores/projects';
+	import { fetchProject, type ProjectExtended } from '../../../data/api/projects';
+	import { t } from '../../../stores/i18n';
 
 	let title = 'Project loading...';
 

@@ -8,9 +8,9 @@
 	import Toolbar from '../../components/Form/Toolbar.svelte';
 	import H from '../../components/Text/H.svelte';
 	import type { Auth } from '../../data/api/auth';
-	import { t } from '../../library/i18n';
 	import { navigate } from '../../library/navigate';
 	import { authStore } from '../../stores/auth';
+	import { t } from '../../stores/i18n';
 
 	let user: Auth['user'] | null = null;
 	const unUser = authStore.subscribe((v) => {

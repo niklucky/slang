@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Channel } from '@prisma/client';
-	import { t } from '../../library/i18n';
-	import type { ProjectExtended } from '../../stores/projects';
+	import type { ProjectExtended } from '../../data/api/projects';
+	import { t } from '../../stores/i18n';
 	import Input from '../Form/Input.svelte';
 	import Icon from '../Icon/Icon.svelte';
 	import Confirm from '../Modal/Confirm.svelte';
@@ -18,7 +18,8 @@
 		channels.push({
 			id: 0,
 			name: '',
-			projectId: project.id
+			projectId: project.id,
+			deletedAt: null
 		});
 		channels = channels;
 	}

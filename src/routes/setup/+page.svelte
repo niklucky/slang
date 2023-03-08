@@ -7,9 +7,9 @@
 	import Input from '../../components/Form/Input.svelte';
 	import Toolbar from '../../components/Form/Toolbar.svelte';
 	import H from '../../components/Text/H.svelte';
-	import { t } from '../../library/i18n';
 	import { navigate } from '../../library/navigate';
 	import { authStore } from '../../stores/auth';
+	import { t } from '../../stores/i18n';
 
 	const unUser = authStore.subscribe((v) => {
 		if (browser && v) {

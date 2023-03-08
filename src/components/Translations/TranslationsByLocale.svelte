@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Locale } from '@prisma/client';
+	import type { ProjectExtended, TranslationExtended } from '../../data/api/projects';
 	import { getFlagEmoji } from '../../library/flags';
-	import type { ProjectExtended, TranslationExtended } from '../../stores/projects';
 	import H from '../Text/H.svelte';
 	import TranslationForm from './TranslationForm.svelte';
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '../../library/i18n';
+	import { t } from '../../stores/i18n';
 	import type { Field } from './types';
 
 	export let data: any[] = [];

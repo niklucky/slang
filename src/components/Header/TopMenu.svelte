@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { t } from '../../library/i18n';
+	import { t } from '../../stores/i18n';
 
 	let segments = $page.url.pathname.split('/');
 	let selected = segments.length > 1 ? segments[1] : null;

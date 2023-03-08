@@ -1,14 +1,14 @@
 <script lang="ts">
 	import type { Key, Namespace } from '@prisma/client';
-	import { t } from '../../library/i18n';
 	import {
 		createKey,
 		deleteProjectKeyById,
 		updateKey,
-		type KeyExtended,
 		type ProjectExtended,
-		type TranslationExtended
-	} from '../../stores/projects';
+		type TranslationExtended,
+		type WordExtended
+	} from '../../data/api/projects';
+	import { t } from '../../stores/i18n';
 	import Button from '../Button/Button.svelte';
 	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
@@ -24,7 +24,7 @@
 	export let onUpdate: ((key: Key) => void) | undefined = undefined;
 	export let onDelete: (key: Key) => void;
 
-	export let key: Partial<KeyExtended> = {
+	export let key: Partial<WordExtended> = {
 		name: '',
 		projectId: project.id,
 		namespaces: []

@@ -1,68 +1,15 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { generateId } from '../../../library/uid';
 import { response } from '../../../server/lib/response';
-import prisma from '../../../server/prisma';
+import { requireUser } from '../../../server/services/auth';
+import { createProject, findProjects } from '../../../server/services/project';
 
-export async function GET() {
-
-  const projects = await prisma.project.findMany({
-    where: {
-      deletedAt: null
-    },
-    include: {
-      locales: true,
-      channels: {
-        where: {
-          deletedAt: null
-        }
-      },
-      namespaces: {
-        where: {
-          deletedAt: null
-        }
-      },
-      _count: {
-        select: {
-          keys: true,
-        }
-      }
-    }
-  })
+export async function GET({ locals }: RequestEvent) {
+  const projects = await findProjects(requireUser(locals.user))
   return response(projects, null)
 }
 
-export async function POST({ request }: RequestEvent) {
+export async function POST({ request, locals }: RequestEvent) {
   const payload = await request.json();
-  const data = {
-    name: payload.name,
-    url: payload.url,
-    description: payload.description,
-    apiKey: generateId(64)
-  }
-
-  console.log('data', data);
-
-  const created = await prisma.project.create({ data })
-  const project = await prisma.project.findUnique({
-    where: { id: created.id },
-    include: {
-      locales: true,
-      namespaces: {
-        where: {
-          deletedAt: null
-        }
-      },
-      channels: {
-        where: {
-          deletedAt: null
-        }
-      },
-      _count: {
-        select: {
-          keys: true
-        }
-      }
-    },
-  })
+  const project = await createProject(requireUser(locals.user), payload)
   return response(project, null)
 }

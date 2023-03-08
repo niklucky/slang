@@ -1,7 +1,5 @@
 <script lang="ts">
 	import type { Channel, Namespace } from '@prisma/client';
-	import { t } from '../../library/i18n';
-	import { navigate } from '../../library/navigate';
 	import {
 		createProject,
 		createProjectChannel,
@@ -14,7 +12,9 @@
 		updateProjectChannel,
 		updateProjectNamespace,
 		type ProjectExtended
-	} from '../../stores/projects';
+	} from '../../data/api/projects';
+	import { navigate } from '../../library/navigate';
+	import { t } from '../../stores/i18n';
 	import Button from '../Button/Button.svelte';
 	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';

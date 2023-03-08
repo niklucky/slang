@@ -4,7 +4,7 @@
 	import ProjectForm from '../../components/Projects/ProjectForm.svelte';
 	import ProjectList from '../../components/Projects/ProjectList.svelte';
 	import Title from '../../components/Title.svelte';
-	import { t } from '../../library/i18n';
+	import { t } from '../../stores/i18n';
 
 	let title = $t('h_projects');
 	let toolbar: any[] = [];

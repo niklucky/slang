@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { TranslationExtended } from '../../stores/projects';
+	import type { TranslationExtended } from '../../data/api/projects';
 	import Input from '../Form/Input.svelte';
 	import Tag from '../Tag/Tag.svelte';
 

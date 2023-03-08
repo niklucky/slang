@@ -2,9 +2,9 @@
 	import Table from '../Table/Table.svelte';
 
 	import { onMount } from 'svelte';
-	import { t } from '../../library/i18n';
+	import { fetchProjects } from '../../data/api/projects';
 	import { navigate } from '../../library/navigate';
-	import { fetchProjects } from '../../stores/projects';
+	import { t } from '../../stores/i18n';
 	import type { Project } from '../../types';
 	import ChannelsColumn from './ChannelsColumn.svelte';
 	import LocalesColumn from './LocalesColumn.svelte';

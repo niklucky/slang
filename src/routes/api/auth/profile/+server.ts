@@ -1,10 +1,8 @@
-import { requiredAuth } from "../../../../library/jwt";
 import { response } from "../../../../server/lib/response";
-import prisma from "../../../../server/prisma";
+import { authUserByAccessToken } from "../../../../server/services/auth";
 import type { RequestEvent } from "./$types";
 
 export async function GET({ request }: RequestEvent) {
-  const id = requiredAuth(request.headers)
-  const user = await prisma.user.findFirstOrThrow({ where: { id } })
+  const user = await authUserByAccessToken(request.headers)
   return response(user, null)
 }

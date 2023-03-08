@@ -1,14 +1,14 @@
 <script lang="ts">
 	import type { Locale } from '@prisma/client';
 	import { onMount } from 'svelte';
-	import { t } from '../../library/i18n';
 	import {
 		addLocaleToProject,
 		deleteLocaleFromProject,
 		fetchLocales,
 		updateLocaleInProject,
 		type ProjectExtended
-	} from '../../stores/projects';
+	} from '../../data/api/projects';
+	import { t } from '../../stores/i18n';
 	import Select from '../Form/Select.svelte';
 	import type { TOption } from '../Form/types';
 	import Icon from '../Icon/Icon.svelte';

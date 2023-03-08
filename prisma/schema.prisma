@@ -8,12 +8,14 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  name      String
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int               @id @default(autoincrement())
+  username    String            @unique
+  name        String
+  password    String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  ownProjects Project[]
+  projects    UsersToProjects[]
 
   @@map("users")
 }
@@ -31,7 +33,10 @@ model Locale {
 }
 
 model Project {
-  id          Int         @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
+  ownerId     Int
+  owner       User              @relation(fields: [ownerId], references: [id])
+  users       UsersToProjects[]
   name        String
   url         String
   description String?
@@ -40,9 +45,23 @@ model Project {
   words       Word[]
   locales     Locale[]
   deletedAt   DateTime?
-  apiKey      String      @default("")
+  apiKey      String            @default("")
 
   @@map("projects")
+}
+
+model UsersToProjects {
+  projectId Int
+  project   Project @relation(fields: [projectId], references: [id])
+  userId    Int
+  user      User    @relation(fields: [userId], references: [id])
+
+  assignedById Int
+  assignedAt   DateTime
+  roleId       Int
+
+  @@id([projectId, userId])
+  @@map("usersToProjects")
 }
 
 model Namespace {

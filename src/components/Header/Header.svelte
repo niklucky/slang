@@ -1,5 +1,5 @@
 <script>
-	import { locale, locales } from '../../library/i18n';
+	import { locale, locales } from '../../stores/i18n';
 
 	import NotificationMenu from './NotificationMenu.svelte';
 	import ProfileMenu from './ProfileMenu.svelte';

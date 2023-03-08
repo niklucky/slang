@@ -2,13 +2,13 @@
 	import type { Channel, Key, Locale, Namespace } from '@prisma/client';
 	import { format, parseISO } from 'date-fns';
 	import { onMount } from 'svelte';
-	import { getFlagEmoji } from '../../library/flags';
-	import { t } from '../../library/i18n';
 	import {
 		fetchProjectKeys,
 		type ProjectExtended,
 		type ProjectKeysInput
-	} from '../../stores/projects';
+	} from '../../data/api/projects';
+	import { getFlagEmoji } from '../../library/flags';
+	import { t } from '../../stores/i18n';
 
 	import Drawer from '../Drawer/Drawer.svelte';
 	import type { TOption } from '../Form/types';
