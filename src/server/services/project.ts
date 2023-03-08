@@ -1,4 +1,4 @@
-import type { Project, User } from "@prisma/client";
+import type { Prisma, Project, User } from "@prisma/client";
 import { generateId } from "../../library/uid";
 import prisma from "../prisma";
 
@@ -28,11 +28,45 @@ export async function createProject(user: User, payload: Partial<Project>) {
       }
     },
   })
-  return findProjectById(created.id)
+  return findProject({ id: created.id })
 }
-export async function findProjectById(id: number) {
-  return await prisma.project.findUnique({
+
+export async function deleteProject(user: User, id: number) {
+  await prisma.project.findFirstOrThrow({
+    where: { id, ownerId: user.id }
+  })
+
+  return await prisma.project.update({
     where: { id },
+    data: { deletedAt: new Date() }
+  })
+
+}
+export async function updateProject(user: User, id: number, payload: Partial<Project>) {
+  const project = await prisma.project.findFirstOrThrow({
+    where: { id, ownerId: user.id }
+  })
+  const data = {
+    name: payload.name,
+    url: payload.url,
+    description: payload.description,
+  }
+  return await prisma.project.update({ where: { id: project.id }, data })
+}
+
+export async function findProjectById(user: User, id: number) {
+  return findProject({
+    id,
+    users: {
+      some: {
+        userId: user.id
+      }
+    }
+  })
+}
+export async function findProject(where: Prisma.ProjectWhereInput) {
+  return await prisma.project.findFirstOrThrow({
+    where,
     include: {
       owner: true,
       users: true,

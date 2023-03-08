@@ -1,60 +1,24 @@
-import { PrismaClient } from "@prisma/client";
 import type { RequestEvent } from "@sveltejs/kit";
 import { response } from "../../../../server/lib/response";
+import { requireParam } from "../../../../server/lib/validation";
+import { requireUser } from "../../../../server/services/auth";
+import { deleteProject, findProjectById, updateProject } from "../../../../server/services/project";
 
-const prisma = new PrismaClient()
-
-export async function GET({ params }: RequestEvent) {
-  if (!params.projectId) {
-    return response(null, new Error('id is empty'))
-  }
-  const id = parseInt(params.projectId)
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
-      locales: true,
-      namespaces: {
-        where: {
-          deletedAt: null
-        }
-      },
-      channels: {
-        where: {
-          deletedAt: null
-        }
-      },
-      _count: {
-        select: {
-          keys: true
-        }
-      }
-    },
-  })
+export async function GET({ locals, params }: RequestEvent) {
+  const id = parseInt(requireParam(params, 'projectId'))
+  const project = await findProjectById(requireUser(locals.user), id)
   return response(project, null)
 }
 
-export async function PUT({ request, params }: RequestEvent) {
-  if (!params.projectId) {
-    return response(null, new Error('id is empty'))
-  }
-  const id = parseInt(params.projectId)
+export async function PUT({ request, params, locals }: RequestEvent) {
+  const id = parseInt(requireParam(params, 'projectId'))
   const payload = await request.json()
-  const data = {
-    name: payload.name,
-    url: payload.url,
-    description: payload.description,
-  }
-  const project = await prisma.project.update({ where: { id }, data })
+  const project = await updateProject(requireUser(locals.user), id, payload)
   return response(project, null)
 }
-export async function DELETE({ params }: RequestEvent) {
-  if (!params.projectId) {
-    return response(null, new Error('id is empty'))
-  }
-  const id = parseInt(params.projectId)
-  const project = await prisma.project.update({
-    where: { id },
-    data: { deletedAt: new Date() }
-  })
+
+export async function DELETE({ params, locals }: RequestEvent) {
+  const id = parseInt(requireParam(params, 'projectId'))
+  const project = await deleteProject(requireUser(locals.user), id)
   return response(project, null)
 }
