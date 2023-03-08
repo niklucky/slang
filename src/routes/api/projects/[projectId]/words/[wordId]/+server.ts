@@ -6,9 +6,6 @@ import prisma from "../../../../../../server/prisma";
 import { saveTranslations } from "../../../../../../server/services/keys";
 
 
-
-
-
 export async function GET({ params }: RequestEvent) {
 
   if (!params.wordId) {

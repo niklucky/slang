@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Channel, Key, Locale, Namespace } from '@prisma/client';
+	import type { Channel, Locale, Namespace, Word } from '@prisma/client';
 	import { format, parseISO } from 'date-fns';
 	import { onMount } from 'svelte';
 	import {
@@ -26,8 +26,8 @@
 	export let selectedLocales: Locale[] = [];
 	export let searchString: string;
 
-	let keys: (Key & { namespaces: Namespace[] })[] = [];
-	let selectedKey: Key | undefined = undefined;
+	let keys: (Word & { namespaces: Namespace[] })[] = [];
+	let selectedKey: Word | undefined = undefined;
 
 	let fields: Field<Channel[]>[] = [];
 	let baseFields: Field<Channel[]>[] = [
@@ -36,7 +36,7 @@
 			title: $t('id')
 		},
 		{
-			key: 'name',
+			key: 'key',
 			title: $t('key'),
 			component: KeyColumn
 		}
@@ -76,7 +76,7 @@
 		];
 	}
 
-	function handleRowClick(key: Key) {
+	function handleRowClick(key: Word) {
 		selectedKey = key;
 	}
 
@@ -85,15 +85,15 @@
 		onCloseAddTranslation();
 	}
 
-	function handleCreate(key: Key) {
+	function handleCreate(key: Word) {
 		handleCloseEditTranslation();
 		load();
 	}
-	function handleUpdate(key: Key) {
+	function handleUpdate(key: Word) {
 		handleCloseEditTranslation();
 		load();
 	}
-	function handleDelete(key: Key) {
+	function handleDelete(key: Word) {
 		handleCloseEditTranslation();
 		load();
 	}
@@ -123,13 +123,13 @@
 {#if selectedKey || isAddKey}
 	<Drawer
 		width={600}
-		title={selectedKey ? selectedKey.name : $t('add_translation')}
+		title={selectedKey ? selectedKey.key : $t('add_translation')}
 		isOpened={true}
 		onClose={handleCloseEditTranslation}
 	>
 		<KeyForm
 			{project}
-			key={selectedKey}
+			word={selectedKey}
 			onCreate={handleCreate}
 			onUpdate={handleUpdate}
 			onDelete={handleDelete}

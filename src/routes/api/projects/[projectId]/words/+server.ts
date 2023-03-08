@@ -1,8 +1,9 @@
-import type { Namespace, Prisma, Translation } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import type { RequestEvent } from '@sveltejs/kit';
 import { response } from '../../../../../server/lib/response';
 import prisma from '../../../../../server/prisma';
-import { saveTranslations } from '../../../../../server/services/keys';
+import { requireUser } from '../../../../../server/services/auth';
+import { createWord } from '../../../../../server/services/word';
 
 
 export async function GET({ url, params }: RequestEvent) {
@@ -61,28 +62,8 @@ export async function GET({ url, params }: RequestEvent) {
   return response(words, null)
 }
 
-export async function POST({ request }: RequestEvent) {
+export async function POST({ locals, request }: RequestEvent) {
   const data = await request.json();
-  console.log('data', data);
-  const created = await prisma.word.create({
-    data: {
-      key: data.key,
-      projectId: data.projectId
-    }
-  })
-  const translationsConnect: Translation[] = await saveTranslations(created.id, data.translations)
-  data.searchIndex = `${data.name.toLowerCase()} ${data.translations.filter((tr: Translation) => !!tr.value).map((tr: Translation) => tr.value.toLowerCase()).join(' ')}`
-  const updated = await prisma.word.update({
-    where: { id: created.id },
-    data: {
-      ...data,
-      namespaces: {
-        connect: data.namespaces.map((ns: Namespace) => ({ id: ns.id }))
-      },
-      translations: {
-        connect: translationsConnect.map(item => ({ id: item.id }))
-      }
-    }
-  })
-  return response(updated, null)
+  const word = await createWord(requireUser(locals.user), data)
+  return response(word, null)
 }
