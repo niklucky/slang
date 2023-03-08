@@ -10,11 +10,12 @@ import { saveTranslations } from "../../../../../../server/services/keys";
 
 
 export async function GET({ params }: RequestEvent) {
+
   if (!params.keyId) {
     return response(null, new Error('id is empty'))
   }
   const id = parseInt(params.keyId)
-  const key = await prisma.key.findUnique({ where: { id } })
+  const key = await prisma.word.findUnique({ where: { id } })
   return response(key, null)
 }
 
@@ -27,14 +28,14 @@ export async function PUT({ request, params }: RequestEvent) {
 
   const translationsConnect: Translation[] = await saveTranslations(id, data.translations)
 
-  const key = await prisma.key.findFirstOrThrow({ where: { id }, include: { namespaces: true } })
+  const key = await prisma.word.findFirstOrThrow({ where: { id }, include: { namespaces: true } })
 
   const namespacesConnect: number[] = data.namespaces.map((ns: Namespace) => ns.id)
   const namespacesDisconnect = key.namespaces.filter(ns => !namespacesConnect.includes(ns.id))
 
   data.searchIndex = `${data.name.toLowerCase()} ${data.translations.filter((tr: Translation) => !!tr.value).map((tr: Translation) => tr.value.toLowerCase()).join(' ')}`
 
-  const updatedKey = await prisma.key.update({
+  const updatedKey = await prisma.word.update({
     where: { id },
     data: {
       ...data,
@@ -55,7 +56,7 @@ export async function DELETE({ params }: RequestEvent) {
   }
   const id = parseInt(params.keyId)
 
-  await prisma.key.update({
+  await prisma.word.update({
     where: { id },
     data: {
       deletedAt: new Date()
@@ -64,7 +65,7 @@ export async function DELETE({ params }: RequestEvent) {
 
   await prisma.translation.updateMany({
     where: {
-      keyId: id,
+      wordId: id,
       deletedAt: null
     },
     data: {
