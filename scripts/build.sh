@@ -1,6 +1,9 @@
 #!/bin/bash
 
 # For the different db providers
+# npm pkg get version | tr -d '"'`
+# npm pkg get version | sed 's/"//g'
+
 VERSION=$1
 DB_PROVIDER=${2:-sqlite}
 

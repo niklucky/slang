@@ -11,19 +11,19 @@ import { saveTranslations } from "../../../../../../server/services/keys";
 
 export async function GET({ params }: RequestEvent) {
 
-  if (!params.keyId) {
+  if (!params.wordId) {
     return response(null, new Error('id is empty'))
   }
-  const id = parseInt(params.keyId)
+  const id = parseInt(params.wordId)
   const key = await prisma.word.findUnique({ where: { id } })
   return response(key, null)
 }
 
 export async function PUT({ request, params }: RequestEvent) {
-  if (!params.keyId) {
+  if (!params.wordId) {
     return response(null, new Error('id is empty'))
   }
-  const id = parseInt(params.keyId)
+  const id = parseInt(params.wordId)
   const data = await request.json()
 
   const translationsConnect: Translation[] = await saveTranslations(id, data.translations)
@@ -51,10 +51,10 @@ export async function PUT({ request, params }: RequestEvent) {
   return response(updatedKey, null)
 }
 export async function DELETE({ params }: RequestEvent) {
-  if (!params.keyId) {
+  if (!params.wordId) {
     return response(null, new Error('id is empty'))
   }
-  const id = parseInt(params.keyId)
+  const id = parseInt(params.wordId)
 
   await prisma.word.update({
     where: { id },

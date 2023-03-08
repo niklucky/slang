@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Key, Namespace } from '@prisma/client';
+	import type { Namespace, Word } from '@prisma/client';
 	import {
 		createKey,
 		deleteProjectKeyById,
@@ -20,12 +20,12 @@
 	import TranslationsByLocale from './TranslationsByLocale.svelte';
 
 	export let project: ProjectExtended;
-	export let onCreate: ((key: Key) => void) | undefined = undefined;
-	export let onUpdate: ((key: Key) => void) | undefined = undefined;
-	export let onDelete: (key: Key) => void;
+	export let onCreate: ((word: Word) => void) | undefined = undefined;
+	export let onUpdate: ((word: Word) => void) | undefined = undefined;
+	export let onDelete: (word: Word) => void;
 
-	export let key: Partial<WordExtended> = {
-		name: '',
+	export let word: Partial<WordExtended> = {
+		key: '',
 		projectId: project.id,
 		namespaces: []
 	};
@@ -37,7 +37,7 @@
 		if (!translations[locale.id]) {
 			translations[locale.id] = {};
 		}
-		key.translations?.forEach((translation) => {
+		word.translations?.forEach((translation) => {
 			if (!translations[translation.localeId]) {
 				translations[translation.localeId] = {};
 			}
@@ -47,7 +47,7 @@
 		project.channels.forEach((channel) => {
 			if (!translations[locale.id][channel.id]) {
 				translations[locale.id][channel.id] = {
-					keyId: key.id,
+					wordId: word.id,
 					localeId: locale.id,
 					locale: locale,
 					channelId: channel.id,
@@ -57,7 +57,7 @@
 		});
 	});
 
-	const submitTitle = key.id ? $t('a_save') : $t('a_add');
+	const submitTitle = word.id ? $t('a_save') : $t('a_add');
 
 	function prepareTranslations(
 		translations: Record<number, Record<number, Partial<TranslationExtended>>>
@@ -71,15 +71,15 @@
 		return t;
 	}
 	async function handleSubmit() {
-		key.translations = prepareTranslations(translations);
+		word.translations = prepareTranslations(translations);
 
-		if (!key.id) {
-			const result = await createKey(key);
+		if (!word.id) {
+			const result = await createKey(word);
 			if (result.data && result.data.id) {
 				onCreate && onCreate(result.data);
 			}
 		} else {
-			const result = await updateKey(key.id, key as Key);
+			const result = await updateKey(word.id, word as Word);
 			onUpdate && onUpdate(result.data);
 		}
 	}
@@ -89,8 +89,8 @@
 	}
 	async function handleDelete() {
 		isConfirmModal = false;
-		const result = await deleteProjectKeyById(key.projectId as number, key.id as number);
-		onDelete(key as Key);
+		const result = await deleteProjectKeyById(word.projectId as number, word.id as number);
+		onDelete(word as Word);
 	}
 
 	function handleUpdateTranslations(
@@ -101,11 +101,11 @@
 	}
 
 	function handleSelectNS(options: TOption[]) {
-		key.namespaces = options as Namespace[];
-		key = key;
+		word.namespaces = options as Namespace[];
+		word = word;
 	}
 	console.log('project.namespaces', project.namespaces);
-	console.log('key.namespaces', key.namespaces);
+	console.log('word.namespaces', word.namespaces);
 </script>
 
 <Confirm
@@ -121,11 +121,11 @@
 	<form>
 		{#if project.namespaces.length}
 			<FormInput label={$t('namespaces')}>
-				<InputTag tags={project.namespaces} selected={key.namespaces} onSelect={handleSelectNS} />
+				<InputTag tags={project.namespaces} selected={word.namespaces} onSelect={handleSelectNS} />
 			</FormInput>
 		{/if}
 		<FormInput label={$t('key')}>
-			<Input bind:value={key.name} />
+			<Input bind:value={word.key} />
 		</FormInput>
 
 		<H size={3}>{$t('translations')}</H>
@@ -139,7 +139,7 @@
 		{/each}
 		<Toolbar>
 			<Button mode="primary" onClick={handleSubmit} title={submitTitle} />
-			{#if key.id}
+			{#if word.id}
 				<Button mode={'danger'} onClick={handleDeleteConfirm} title={$t('a_delete')} />
 			{/if}
 		</Toolbar>

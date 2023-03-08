@@ -36,7 +36,7 @@ export async function POST({ params, request }: RequestEvent) {
 
 async function save(projectId: number, rows: string[][]) {
   const deletedAt = null
-  const channelId = null
+  // const channelId = null
 
   const localesMap: Map<string, Locale> = new Map()
 
@@ -58,25 +58,31 @@ async function save(projectId: number, rows: string[][]) {
       localesMap.set(locale.code, locale)
       const localeId = locale.id
 
-      let key = await prisma.key.findFirst({
+      let word = await prisma.word.findFirst({
         where: {
-          name: row[1],
+          key: row[1],
           deletedAt: null,
           projectId,
+        },
+        include: {
+          translations: true
         }
       })
-      if (key) {
-        await prisma.key.update({
-          where: { id: key.id },
+      if (word) {
+        await prisma.word.update({
+          where: { id: word.id },
           data: {
-            name: row[1]
+            key: row[1]
           }
         })
       } else {
-        key = await prisma.key.create({
+        word = await prisma.word.create({
           data: {
-            name: row[1],
+            key: row[1],
             projectId,
+          },
+          include: {
+            translations: true
           }
         })
 
@@ -84,7 +90,7 @@ async function save(projectId: number, rows: string[][]) {
 
       const translation = await prisma.translation.findFirst({
         where: {
-          keyId: key.id,
+          wordId: word.id,
           localeId,
           deletedAt,
         }
@@ -100,24 +106,28 @@ async function save(projectId: number, rows: string[][]) {
         await prisma.translation.create({
           data: {
             value: row[2],
-            keyId: key.id,
+            wordId: word.id,
             localeId,
           }
         })
       }
-      key = await prisma.key.findUnique({
-        where: { id: key.id },
+      word = await prisma.word.findUnique({
+        where: { id: word.id },
         include: {
           translations: true
         }
       })
-      const searchIndex: string[] = [key.name.toLowerCase()]
-      key.translations.forEach(v => {
+      if (!word) {
+        continue
+      }
+      const searchIndex: string[] = [word.key.toLowerCase()]
+
+      word.translations.forEach(v => {
         searchIndex.push(v.value.toLowerCase())
       })
-      await prisma.key.update({
+      await prisma.word.update({
         where: {
-          id: key.id
+          id: word.id
         },
         data: {
           searchIndex: searchIndex.join(' ')
