@@ -20,8 +20,8 @@
 		iconColor = 'text-red-500 group-hover:text-white';
 	}
 	if (mode === 'primary') {
-		className.push('border-indigo-500 bg-indigo-500 text-white hover:bg-indigo-600');
-		iconColor = 'text-indigo-500 group-hover:text-white';
+		className.push('border-sky-400 bg-sky-400 text-white hover:bg-sky-600');
+		iconColor = 'text-sky-400 group-hover:text-white';
 	}
 </script>
 

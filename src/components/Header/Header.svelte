@@ -1,5 +1,6 @@
 <script>
 	import { locale, locales } from '../../stores/i18n';
+	import Logo from '../Logo/Logo.svelte';
 
 	import NotificationMenu from './NotificationMenu.svelte';
 	import ProfileMenu from './ProfileMenu.svelte';
@@ -61,18 +62,9 @@
 				</button>
 			</div>
 			<div class="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-				<div class="flex flex-shrink-0 items-center w-20">
+				<div class="flex items-center w-[100px]">
 					<a href="/">
-						<img
-							class="block h-8 w-auto lg:hidden"
-							src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-							alt="Your Company"
-						/>
-						<img
-							class="hidden h-8 w-auto lg:block"
-							src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500"
-							alt="Your Company"
-						/>
+						<Logo />
 					</a>
 				</div>
 				<TopMenu />

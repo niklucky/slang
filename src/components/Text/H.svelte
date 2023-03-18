@@ -3,8 +3,9 @@
 
 	const className = [`text-slate-600 flex flex-row items-center`];
 	if (size === 1) {
-		className.push('text-4xl');
+		className.push('text-6xl');
 		className.push('mt-4');
+		className.push('font-bold');
 	}
 	if (size === 2) {
 		className.push('text-3xl');

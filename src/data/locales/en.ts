@@ -1,6 +1,6 @@
 export default {
   '#': '#',
-  h_dashboard: "Hi! This is your dashboard",
+  h_dashboard: 'Your dashboard',
   a_create_project: 'Create project',
   h_projects: 'Projects',
   name: 'Name',
@@ -31,4 +31,11 @@ export default {
   password: 'Password',
   h_setup: 'Setup account',
   a_import: 'Import',
+  h_users: 'Users',
+  a_invite_user: 'Invite users',
+  a_invite: 'Invite',
+  menu_users: 'Users',
+  h_invite_user: 'Invite user to projects ',
+  projects: 'Projects',
+  id: 'ID',
 }
