@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Table from '../Table/Table.svelte';
+	import DataTable from '../DataTable/DataTable.svelte';
 
 	import { onMount } from 'svelte';
 	import { fetchProjects } from '../../data/api/projects';
@@ -58,4 +58,4 @@
 	});
 </script>
 
-<Table onRowClick={handleRowClick} data={projects} {fields} />
+<DataTable onRowClick={handleRowClick} data={projects} {fields} />

@@ -38,4 +38,7 @@ export default {
   h_invite_user: 'Invite user to projects ',
   projects: 'Projects',
   id: 'ID',
+  OWNER: 'Owner',
+  EDITOR: 'Editor',
+  TRANSLATOR: 'Translator',
 }

@@ -38,5 +38,8 @@ export default {
   h_invite_user: 'Пригласить пользователя в проект',
   projects: 'Проекты',
   id: 'ID',
-  updatedAt: 'Дата обновления'
+  updatedAt: 'Дата обновления',
+  OWNER: 'Владелец',
+  EDITOR: 'Редактор',
+  TRANSLATOR: 'Переводчик',
 }

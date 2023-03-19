@@ -1,8 +1,11 @@
 import type { User } from "@prisma/client";
+import type UserProjects from "../../components/UserList/UserProjects.svelte";
 import { request, type Response } from "./request";
 
+export type UserWithProjects = User & { projects: UserProjects[] }
+
 export async function fetchUsers() {
-  return await request<Response<User[]>>(`/api/users`)
+  return await request<Response<UserWithProjects[]>>(`/api/users`)
 }
 
 export async function fetchUser(id: number) {

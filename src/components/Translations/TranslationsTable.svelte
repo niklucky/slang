@@ -10,10 +10,10 @@
 	import { getFlagEmoji } from '../../library/flags';
 	import { t } from '../../stores/i18n';
 
+	import DataTable from '../DataTable/DataTable.svelte';
+	import type { Field } from '../DataTable/types';
 	import Drawer from '../Drawer/Drawer.svelte';
 	import type { TOption } from '../Form/types';
-	import Table from '../Table/Table.svelte';
-	import type { Field } from '../Table/types';
 	import KeyColumn from './KeyColumn.svelte';
 	import KeyForm from './KeyForm.svelte';
 	import NamespacesColumn from './NamespacesColumn.svelte';
@@ -136,4 +136,4 @@
 		/>
 	</Drawer>
 {/if}
-<Table onRowClick={handleRowClick} data={keys} {fields} />
+<DataTable onRowClick={handleRowClick} data={keys} {fields} />
