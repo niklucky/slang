@@ -1,8 +1,25 @@
+import { browser } from '$app/environment';
 import { derived, writable } from "svelte/store";
 import translations, { type SystemLocale } from "../data/locales";
 
-export const locale = writable("en");
+let initialLocale = 'en' as SystemLocale
+
+if (browser) {
+  const savedLocale = localStorage.getItem('locale')
+  if (savedLocale) {
+    initialLocale = savedLocale as SystemLocale
+  }
+}
+export const locale = writable(initialLocale);
 export const locales = Object.keys(translations);
+
+if (browser) {
+  locale.subscribe(value => {
+    localStorage.setItem('locale', value)
+  })
+}
+
+console.log('store init');
 
 function translate(locale: SystemLocale, key: string, vars?: Record<string, string>) {
   // Let's throw some errors if we're trying to use keys/locales that don't exist.

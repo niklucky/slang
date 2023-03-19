@@ -1,8 +1,8 @@
 <script>
-	import { locale, locales } from '../../stores/i18n';
+	import LanguageSelector from '../LanguageSelector/LanguageSelector.svelte';
 	import Logo from '../Logo/Logo.svelte';
-
 	import NotificationMenu from './NotificationMenu.svelte';
+
 	import ProfileMenu from './ProfileMenu.svelte';
 	import TopMenu from './TopMenu.svelte';
 </script>
@@ -72,15 +72,11 @@
 			<div
 				class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0"
 			>
-				<select bind:value={$locale}>
-					{#each locales as l}
-						<option value={l}>{l}</option>
-					{/each}
-				</select>
-
-				<NotificationMenu />
-
-				<ProfileMenu />
+				<div class="grid grid-cols-3 gap-2">
+					<LanguageSelector />
+					<NotificationMenu />
+					<ProfileMenu />
+				</div>
 			</div>
 		</div>
 	</div>
