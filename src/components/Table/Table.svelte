@@ -17,20 +17,17 @@
 </script>
 
 <table class="table-auto w-[100%] mt-8">
-	<thead class="bg-slate-50">
+	<thead class="bg-white border-b font-medium">
 		<tr>
-			<td class="text-left p-4 text-gray-500 text-sm">{$t('#')}</td>
+			<td class="text-left p-4 text-gray-500 uppercase text-sm">{$t('#')}</td>
 			{#each fields as field, i}
-				<td class="text-left p-4 text-gray-500 text-sm">{titles[i]}</td>
+				<td class="text-left p-4 text-gray-500  uppercase text-xs">{titles[i]}</td>
 			{/each}
 		</tr>
 	</thead>
 	<tbody>
 		{#each data as row, i}
-			<tr
-				on:click={() => handleRowClick(row)}
-				class="align-top border-b cursor-pointer hover:bg-slate-50"
-			>
+			<tr on:click={() => handleRowClick(row)} class="align-top cursor-pointer hover:bg-slate-50">
 				<td class="text-left py-2 px-4 text-gray-800 text-sm">{i + 1}</td>
 				{#each fields as field}
 					<td class="text-left py-2 px-4 text-gray-800 text-sm">

@@ -22,5 +22,21 @@ export default {
   a_delete: 'Удалить',
   locales: 'Языки',
   channels: 'Каналы',
-  a_import: 'Импорт'
+  a_import: 'Импорт',
+  t_confirm_delete: 'Внимание! Вы хотите удалить сущность',
+  a_confirm: 'Подтвердить',
+  a_cancel: 'Отмена',
+  confirm_delete_locale: 'Если вы удалите локаль, то переводы тоже будут удалены',
+  h_login: 'Авторизация',
+  username: 'Логин',
+  password: 'Пароль',
+  h_setup: 'Настройка учетной записи ',
+  h_users: 'Пользователи',
+  a_invite_user: 'Пригласить пользователя',
+  a_invite: 'Пригласить',
+  menu_users: 'Пользователи',
+  h_invite_user: 'Пригласить пользователя в проект',
+  projects: 'Проекты',
+  id: 'ID',
+  updatedAt: 'Дата обновления'
 }
