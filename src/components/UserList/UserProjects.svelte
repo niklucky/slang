@@ -22,7 +22,7 @@
 			</div>
 			<div class="absolute bottom-[120%] -left-[50px] group-hover:block py-2 px-4 z-10 hidden ">
 				<div
-					class="bg-slate-50 opacity-95 backdrop-blur-lg shadow-xl w-full h-full rounded-lg  absolute top-0 left-0 z-0"
+					class="bg-white opacity-90 backdrop-blur-lg shadow-xl w-full h-full rounded-lg  absolute top-0 left-0 z-0"
 				/>
 				<div class="relative z-10">
 					<div class="text-lg">{$t(roles[userProject.roleId].name)}</div>

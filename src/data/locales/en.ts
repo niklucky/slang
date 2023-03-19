@@ -38,7 +38,11 @@ export default {
   h_invite_user: 'Invite user to projects ',
   projects: 'Projects',
   id: 'ID',
+  assignedAt: 'Assigned at',
   OWNER: 'Owner',
+  OWNER_info: 'The user created this project and can do anything',
   EDITOR: 'Editor',
+  EDITOR_info: 'Can create keys, translate them and add languages ​​for translations',
   TRANSLATOR: 'Translator',
+  TRANSLATOR_info: 'Can only translate existing keys',
 }
