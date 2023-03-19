@@ -11,8 +11,11 @@
 	import Button from '../Button/Button.svelte';
 	import FormInput from '../Form/FormInput.svelte';
 	import Input from '../Form/Input.svelte';
+	import Select from '../Form/Select.svelte';
 	import Toolbar from '../Form/Toolbar.svelte';
+	import Icon from '../Icon/Icon.svelte';
 	import Confirm from '../Modal/Confirm.svelte';
+	import H from '../Text/H.svelte';
 
 	export let user: User = {
 		id: 0,
@@ -69,6 +72,10 @@
 			navigate('/projects');
 		}
 	}
+
+	function handleChangeProject() {
+		console.log('handleChangeProject');
+	}
 </script>
 
 <Confirm
@@ -81,8 +88,8 @@
 >
 
 <form>
-	<div class="flex flex-row">
-		<div class="flex-1 mr-6">
+	<div class="grid grid-cols-2 gap-8">
+		<div>
 			<FormInput label={$t('name')}>
 				<Input bind:value={user.name} />
 			</FormInput>
@@ -93,7 +100,23 @@
 				<Input bind:value={user.password} />
 			</FormInput>
 		</div>
-		<div class="flex-1" />
+		<div>
+			<div class="mb-4">
+				<H size={4}>Add to projects</H>
+				<Select onChange={handleChangeProject} options={[{ id: 1, name: 'Project 1' }]} />
+			</div>
+			<div class="flex flex-row justify-between items-center align-middle content-center">
+				<div class="flex-1">Peoject</div>
+				<div class="flex-1">
+					<Select onChange={handleChangeProject} options={[{ id: 1, name: 'Select role' }]}>
+						<option>Project</option>
+					</Select>
+				</div>
+				<div class="w-8 flex justify-end">
+					<Icon name="minus-circle" />
+				</div>
+			</div>
+		</div>
 	</div>
 
 	<Toolbar>

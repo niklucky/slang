@@ -43,6 +43,7 @@
 		async function load() {
 			const response = await fetchUsers();
 			users = response.data;
+			console.log('users', users);
 		}
 		load();
 	});

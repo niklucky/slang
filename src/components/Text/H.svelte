@@ -1,5 +1,5 @@
 <script lang="ts">
-	export let size: number = 7;
+	export let size: number = 1;
 
 	const className = [`text-slate-600 flex flex-row items-center`];
 	if (size === 1) {
