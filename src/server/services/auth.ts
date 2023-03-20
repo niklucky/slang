@@ -2,6 +2,7 @@ import type { User } from '@prisma/client';
 import { error } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
 import { JWT_EXPIRY } from '../../config/constants';
+import { checkPassword, cryptPassword } from '../lib/crypt';
 import prisma from '../prisma';
 
 export type JWTPayload = {
@@ -32,4 +33,27 @@ export function getIdFromAccessToken(headers: Headers) {
 export async function authUserByAccessToken(headers: Headers) {
   const uid = getIdFromAccessToken(headers)
   return await prisma.user.findUniqueOrThrow({ where: { id: uid } })
+}
+
+export async function login(username: string, password: string) {
+  const user = await prisma.user.findFirstOrThrow({
+    where: {
+      username
+    }
+  })
+  if (!checkPassword(user.password, password)) {
+    throw new Error('username_or_password_invalid')
+  }
+
+  const accessToken = generateAccessToken({ uid: user.id })
+  return { user, accessToken }
+}
+
+export async function register(data: User) {
+  data.password = cryptPassword(data.password)
+  const user = await prisma.user.create({ data })
+
+  const accessToken = generateAccessToken({ uid: user.id })
+  return { user, accessToken }
+
 }

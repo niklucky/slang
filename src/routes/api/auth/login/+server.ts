@@ -1,17 +1,9 @@
-import { generateAccessToken } from "../../../../library/jwt";
 import { response } from "../../../../server/lib/response";
-import prisma from "../../../../server/prisma";
+import { login } from "../../../../server/services/auth";
 import type { RequestEvent } from "./$types";
 
 export async function POST({ request }: RequestEvent) {
   const payload = await request.json();
-  const user = await prisma.user.findFirstOrThrow({
-    where: {
-      username: payload.username
-    }
-  })
-
-
-  const accessToken = generateAccessToken({ uid: user.id })
-  return response({ user, accessToken }, null)
+  const result = await login(payload.username, payload.password)
+  return response(result, null)
 }

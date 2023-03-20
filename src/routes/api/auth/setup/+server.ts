@@ -1,16 +1,15 @@
-import { generateAccessToken } from "../../../../library/jwt";
 import { response } from "../../../../server/lib/response";
 import prisma from "../../../../server/prisma";
+import { register } from "../../../../server/services/auth";
 import type { RequestEvent } from "./$types";
 
 export async function POST({ request }: RequestEvent) {
   const existed = await prisma.user.count()
   if (existed) {
-    throw new Error('Account is set up')
+    throw new Error('account_set_up')
   }
   const payload = await request.json();
-  const user = await prisma.user.create({ data: payload })
+  const result = await register(payload)
 
-  const accessToken = generateAccessToken({ uid: user.id })
-  return response({ user, accessToken }, null)
+  return response(result, null)
 }
