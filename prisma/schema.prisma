@@ -56,9 +56,10 @@ model UsersToProjects {
   userId    Int
   user      User    @relation(fields: [userId], references: [id])
 
-  assignedById Int
-  assignedAt   DateTime
-  roleId       Int
+  assignedById  Int
+  assignedAt    DateTime
+  roleId        Int
+  invitationKey String   @unique @default(uuid())
 
   @@id([projectId, userId])
   @@map("usersToProjects")

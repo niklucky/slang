@@ -15,7 +15,7 @@
 	$: fields = [
 		{
 			key: 'name',
-			title: $t('name')
+			title: $t('title')
 		},
 		{
 			key: 'url',
