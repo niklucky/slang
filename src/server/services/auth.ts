@@ -23,15 +23,21 @@ export function generateAccessToken(payload: JWTPayload) {
 export function getIdFromAccessToken(headers: Headers) {
   const token = headers.get('authorization')
   if (!token) {
+    return null
+  }
+  try {
+    const result = jwt.verify(token, process.env.JWT_SECRET as string) as JWTPayload
+    return result.uid
+  } catch (e) {
     throw new Error('auth_token_invalid')
   }
-  const result = jwt.verify(token, process.env.JWT_SECRET as string) as JWTPayload
-
-  return result.uid
 }
 
 export async function authUserByAccessToken(headers: Headers) {
   const uid = getIdFromAccessToken(headers)
+  if (!uid) {
+    return
+  }
   return await prisma.user.findUniqueOrThrow({ where: { id: uid } })
 }
 

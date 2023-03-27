@@ -8,6 +8,13 @@ const { subscribe: subscribeToken, set: setToken } = writable<string | null>(nul
 
 export let accessToken: string | null = null
 
+const logout = () => {
+  set(null)
+  setToken(null)
+  localStorage.removeItem('accessToken')
+}
+
+
 export const authStore = function () {
   let isInitialized = false;
   if (browser) {
@@ -18,6 +25,9 @@ export const authStore = function () {
       profile().then(response => {
         set(response.data)
         isInitialized = true;
+      }).catch(error => {
+        console.log('error', error);
+        logout()
       })
     }
   }
@@ -31,7 +41,7 @@ export const authStore = function () {
     accessToken: () => {
       return accessToken
     },
-    logout: () => { set(null), setToken(null) },
+    logout,
     login: async (username: string, password: string) => {
       const response = await login(username, password)
       if (browser) {
