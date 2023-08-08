@@ -1,7 +1,36 @@
 import { error, json, type RequestEvent } from '@sveltejs/kit';
+import { response } from '../../../server/lib/response';
 import prisma from '../../../server/prisma';
+import { requireUser } from '../../../server/services/auth';
+import { createWord } from '../../../server/services/word';
 
 type I18nFormat = 'i18next'
+
+async function getProjectFromAuth(headers: Headers) {
+
+const apiKey = headers.get('x-api-key')
+if (!apiKey) {
+  throw error(401, { message: 'api_key_invalid' })
+}
+const project = await prisma.project.findFirstOrThrow({
+  where: {
+    apiKey,
+  }
+})
+if (!project) {
+  throw error(401, { message: 'api_key_invalid' })
+}
+return project
+}
+
+export async function POST({ request, locals }: RequestEvent) {
+  const payload = await request.json();
+  const project = await getProjectFromAuth(request.headers)
+  payload.projectId = project.id
+
+  const translation = await createWord(requireUser(locals.user), payload)
+  return response(translation, null)
+}
 
 export async function GET({ url, request }: RequestEvent) {
   const apiKey = request.headers.get('x-api-key')

@@ -8,13 +8,14 @@ export async function createWord(user: User, payload: Partial<Word> & { translat
     data: {
       key: payload.key as string,
       projectId: payload.projectId as number,
-
     }
   })
-  const translations: Translation[] = await saveTranslations(word, payload.translations)
-  word.searchIndex = setSearchIndex(word, translations)
-  await connect(word, translations, payload.namespaces)
-  // return findById(word.id)
+  if (payload.translations.length) {
+    const translations: Translation[] = await saveTranslations(word, payload.translations)
+    word.searchIndex = setSearchIndex(word, translations)
+    await connect(word, translations, payload.namespaces)
+    // return findById(word.id)
+  }
   return word
 }
 

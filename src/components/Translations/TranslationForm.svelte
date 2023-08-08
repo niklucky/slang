@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { TranslationExtended } from '../../data/api/projects';
-	import Input from '../Form/Input.svelte';
+	import Textarea from '../Form/Textarea.svelte';
 	import Tag from '../Tag/Tag.svelte';
 
 	export let translation: Partial<TranslationExtended>;
@@ -19,6 +19,6 @@
 		</div>
 	{/if}
 	<div class="flex-auto">
-		<Input onBlur={(v) => handleChange(v)} value={translation.value} />
+		<Textarea onBlur={(v) => handleChange(v)} value={translation.value} />
 	</div>
 </div>
