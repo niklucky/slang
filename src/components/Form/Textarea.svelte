@@ -3,7 +3,6 @@
 	export let value: string | number | undefined | null = undefined;
 	export let isRequired = false;
 	export let disabled = false;
-	export let type: 'text' | 'password' = 'text';
 
 	export let onBlur: ((value: string) => void) | undefined = undefined;
 	export let onChange: ((value: string) => void) | undefined = undefined;

@@ -1,7 +1,7 @@
 import { error, json, type RequestEvent } from '@sveltejs/kit';
 import { response } from '../../../server/lib/response';
 import prisma from '../../../server/prisma';
-import { requireUser } from '../../../server/services/auth';
+import { getUserById } from '../../../server/services/user';
 import { createWord } from '../../../server/services/word';
 
 type I18nFormat = 'i18next'
@@ -23,12 +23,17 @@ if (!project) {
 return project
 }
 
-export async function POST({ request, locals }: RequestEvent) {
+export async function POST({ request }: RequestEvent) {
   const payload = await request.json();
+
   const project = await getProjectFromAuth(request.headers)
   payload.projectId = project.id
+  if (!payload.translations) {
+    payload.translations = []
+  }
+  const user = await getUserById(project.ownerId)
 
-  const translation = await createWord(requireUser(locals.user), payload)
+  const translation = await createWord(user, payload)
   return response(translation, null)
 }
 
