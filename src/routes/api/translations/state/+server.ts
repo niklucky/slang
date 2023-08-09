@@ -21,9 +21,11 @@ export async function GET({ url, request }: RequestEvent) {
     const namespace = url.searchParams.get('namespace')
     const locale = url.searchParams.get('locale')
 
+    console.log('locale, projectId', locale, project.id);
+
     const last = await prisma.translation.findFirstOrThrow({
       where: {
-        key: {
+        word: {
           project: {
             id: project.id
           },

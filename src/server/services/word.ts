@@ -4,12 +4,20 @@ import prisma from "../prisma";
 export type TranslationExtended = (Translation & { channel: Channel, })
 
 export async function createWord(user: User, payload: Partial<Word> & { translations: TranslationExtended[], namespaces: Namespace[] }) {
-  const word = await prisma.word.create({
-    data: {
-      key: payload.key as string,
-      projectId: payload.projectId as number,
+  let word = await prisma.word.findFirst({
+    where: {
+      projectId: Number(payload.projectId),
+      key: String(payload.key)
     }
   })
+  if (!word) {
+    word = await prisma.word.create({
+      data: {
+        key: payload.key as string,
+        projectId: payload.projectId as number,
+      }
+    })
+  }
   if (payload.translations.length) {
     const translations: Translation[] = await saveTranslations(word, payload.translations)
     word.searchIndex = setSearchIndex(word, translations)

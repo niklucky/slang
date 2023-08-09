@@ -4,8 +4,8 @@
 # npm pkg get version | tr -d '"'`
 # npm pkg get version | sed 's/"//g'
 
-VERSION=$1
-DB_PROVIDER=${2:-sqlite}
+VERSION=$(npm pkg get version | head -1 | tr -d \")
+DB_PROVIDER=${1:-sqlite}
 
 if [ "$VERSION" = "" ]; then
   echo "You need to provide new version"
