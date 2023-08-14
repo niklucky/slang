@@ -57,6 +57,9 @@ export async function GET({ url, params }: RequestEvent) {
           deletedAt: null
         }
       }
+    },
+    orderBy: {
+      createdAt: 'desc'
     }
   })
   return response(words, null)

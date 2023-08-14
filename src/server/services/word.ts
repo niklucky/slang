@@ -14,6 +14,7 @@ export async function createWord(user: User, payload: Partial<Word> & { translat
     word = await prisma.word.create({
       data: {
         key: payload.key as string,
+        searchIndex: payload.key as string,
         projectId: payload.projectId as number,
       }
     })
