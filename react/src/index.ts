@@ -3,6 +3,7 @@ export { SlangContext, type SlangContextValue } from './context.js';
 export { useSlang, useT, useTranslation } from './hooks.js';
 
 export { interpolate, resolve } from './resolve.js';
+export { negotiateLocale, type NegotiateOptions } from './negotiate.js';
 export {
   DEFAULT_API_URL,
   DEFAULT_TIMEOUT_MS,

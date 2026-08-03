@@ -64,6 +64,40 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 Translations are flat `key => string`. No namespaces, no nesting, no plurals.
 
+## `negotiateLocale(available, preferences, fallback, options?)`
+
+Which of the locales you ship to open in. Reading the preferences off the
+platform is your job — that is the part that differs between a browser, a phone
+and a server — but deciding what they mean is not.
+
+```ts
+import { negotiateLocale } from '@warpunit/slang-react';
+
+const SUPPORTED = ['en', 'fr', 'zh-Hans', 'zh-Hant', 'es-ES', 'es-MX'] as const;
+
+negotiateLocale(SUPPORTED, navigator.languages, 'en');
+negotiateLocale(SUPPORTED, ['zh-TW'], 'en'); // 'zh-Hant'
+negotiateLocale(SUPPORTED, ['de-AT', 'fr'], 'en'); // 'fr'
+```
+
+**Pass the whole list.** Every platform ranks them — `navigator.languages`,
+`AppleLanguages`, Android's `LocaleList` — and taking only the first sends a
+phone set to German-then-French to English in an app that ships French.
+Preferences are exhausted in order, so a partial match on someone's first
+language beats an exact match on their second.
+
+A tag is matched exactly; then by script inferred from its region (`zh-TW` finds
+`zh-Hant` — region implies script as a matter of fact, not preference); then by
+dropping subtags from the right (RFC 4647 lookup); then by language.
+
+`options.languageDefaults` decides which regional variant wins when only the
+language matches — `{ es: 'es-ES' }` sends `es-AR` to Spain rather than Mexico.
+That one *is* a product decision, so it stays with the product; left unset, the
+first matching variant in `available` wins.
+
+The return type is narrowed to `available`'s element type, so a `SupportedLocale`
+union survives the call.
+
 ## Configuration
 
 | Option | Default | |
