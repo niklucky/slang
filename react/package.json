@@ -1,9 +1,9 @@
 {
-  "name": "slang-react",
+  "name": "@warpunit/slang-react",
   "version": "0.1.0",
   "description": "Dependency-free React client for the Slang translation service.",
   "license": "MIT",
-  "author": "Nikita Lukyanenko <iam@niklucky.com>",
+  "author": "Nikita Zhuravlev <iam@niklucky.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/niklucky/slang.git",
