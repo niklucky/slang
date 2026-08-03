@@ -64,6 +64,9 @@ export function SlangProvider(props: SlangProviderProps) {
 
   const [seed] = useState(() => readCacheSync(storage, storageKey));
   const [locale, setLocaleState] = useState<string>(() => seed?.locale ?? initialLocale);
+  // An explicit choice made after mount must win over a slower async-storage
+  // read that began during startup.
+  const localeWasSet = useRef(false);
 
   const [resources, setResources] = useState<Resources>(() => {
     const initial: Resources = { ...bundled };
@@ -103,6 +106,29 @@ export function SlangProvider(props: SlangProviderProps) {
     if (handler) handler(error);
     else console.warn('[slang]', error);
   }, []);
+
+  /**
+   * Async storages cannot contribute to `seed`: their `getItem` returns a
+   * promise, so `readCacheSync` deliberately leaves the initial paint alone.
+   * Restore the saved locale once that promise resolves. Cached dictionaries
+   * continue to be loaded by `syncLocale` below.
+   */
+  useEffect(() => {
+    if (seed || !storage) return;
+    let active = true;
+
+    void readCache(storage, storageKey)
+      .then((cache) => {
+        if (active && cache.locale && !localeWasSet.current) {
+          setLocaleState(cache.locale);
+        }
+      })
+      .catch(report);
+
+    return () => {
+      active = false;
+    };
+  }, [report, seed, storage, storageKey]);
 
   /**
    * Brings one locale up to date: cached copy first, then a freshness check,
@@ -193,6 +219,7 @@ export function SlangProvider(props: SlangProviderProps) {
 
   const setLocale = useCallback(
     (next: string) => {
+      localeWasSet.current = true;
       setLocaleState(next);
       const config = latest.current;
       void (async () => {

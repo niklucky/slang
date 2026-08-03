@@ -42,6 +42,8 @@ paint; the cache and then the network top them up in the background.
 ### React Native
 
 `AsyncStorage` already satisfies the `StorageAdapter` interface — pass it straight in.
+Because it is asynchronous, bundled copy renders first and a locale previously chosen with
+`setLocale` is restored as soon as the storage read resolves.
 
 ```tsx
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -102,7 +104,8 @@ Writes flat, unwrapped, key-sorted JSON so the diff stays readable when one stri
 
 1. **Mount** — bundled `resources` render synchronously. With `localStorage` the cache is
    read synchronously too, so a returning user sees their saved locale on the first paint.
-2. **Cache** — the persisted dictionary merges in.
+2. **Cache** — the persisted locale and dictionary merge in. With asynchronous storage this
+   happens after the first paint; an explicit `setLocale` call made meanwhile always wins.
 3. **Freshness** — `GET /state` returns the locale's last-updated timestamp.
 4. **Download** — only if the server's timestamp is newer than the cached one.
 

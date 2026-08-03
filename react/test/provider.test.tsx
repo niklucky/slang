@@ -231,6 +231,45 @@ describe('SlangProvider', () => {
     expect(screen.getByTestId('hello').textContent).toBe('Привет');
   });
 
+  it('restores a persisted locale from promise-returning storage', async () => {
+    const storage = asyncMemoryStorage({
+      slang: JSON.stringify({ version: CACHE_VERSION, locale: 'ru', locales: {} }),
+    });
+    renderProvider({
+      storage,
+      resources: { en: { hello: 'Hello' }, ru: { hello: 'Привет' } },
+      checkForUpdate: false,
+    });
+
+    // Async storage cannot affect the first paint.
+    expect(screen.getByTestId('locale').textContent).toBe('en');
+    expect(screen.getByTestId('hello').textContent).toBe('Hello');
+
+    await waitFor(() => expect(screen.getByTestId('locale').textContent).toBe('ru'));
+    expect(screen.getByTestId('hello').textContent).toBe('Привет');
+  });
+
+  it('does not overwrite a locale selected while async storage is loading', async () => {
+    let resolveRead!: (value: string | null) => void;
+    const pendingRead = new Promise<string | null>((resolve) => (resolveRead = resolve));
+    const storage: StorageAdapter = {
+      getItem: () => pendingRead,
+      setItem: async () => {},
+    };
+    renderProvider({
+      storage,
+      resources: { en: { hello: 'Hello' }, ru: { hello: 'Привет' } },
+      checkForUpdate: false,
+    });
+
+    screen.getByRole('button', { name: 'ru' }).click();
+    resolveRead(JSON.stringify({ version: CACHE_VERSION, locale: 'en', locales: {} }));
+
+    await act(async () => {});
+    expect(screen.getByTestId('locale').textContent).toBe('ru');
+    expect(screen.getByTestId('hello').textContent).toBe('Привет');
+  });
+
   it('fetches the fallback locale too, so it works unbundled', async () => {
     const { fetchImpl } = serverStub({ ru: {}, en: { hello: 'Hello' } });
     vi.stubGlobal('fetch', fetchImpl);
