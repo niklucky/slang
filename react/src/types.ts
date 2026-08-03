@@ -1,5 +1,5 @@
 /**
- * Public types for @slang/react.
+ * Public types for slang-react.
  *
  * Everything here is plain data. The package has no runtime dependencies and
  * imports nothing platform-specific, so the same types describe the browser,

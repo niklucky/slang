@@ -1,5 +1,5 @@
 {
-  "name": "@slang/react",
+  "name": "slang-react",
   "version": "0.1.0",
   "description": "Dependency-free React client for the Slang translation service.",
   "license": "MIT",

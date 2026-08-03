@@ -1,4 +1,4 @@
-# @slang/react
+# slang-react
 
 React and React Native client for the [Slang](https://slang.hgdev.me) translation service.
 
@@ -6,13 +6,13 @@ React and React Native client for the [Slang](https://slang.hgdev.me) translatio
 Node (the CLI), because it imports nothing platform-specific.
 
 ```bash
-pnpm add @slang/react
+pnpm add slang-react
 ```
 
 ## Quick start
 
 ```tsx
-import { SlangProvider, useTranslation } from '@slang/react';
+import { SlangProvider, useTranslation } from 'slang-react';
 import en from './locales/en.json';
 import ru from './locales/ru.json';
 
