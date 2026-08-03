@@ -1,0 +1,5 @@
+packages:
+  - "react"
+  # - "server"   # the rewritten slang server lands here later
+allowBuilds:
+  esbuild: true
