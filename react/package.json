@@ -3,7 +3,20 @@
   "version": "0.1.0",
   "description": "Dependency-free React client for the Slang translation service.",
   "license": "MIT",
+  "author": "Nikita Lukyanenko <iam@niklucky.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/niklucky/slang.git",
+    "directory": "react"
+  },
+  "homepage": "https://github.com/niklucky/slang/tree/main/react#readme",
+  "bugs": {
+    "url": "https://github.com/niklucky/slang/issues"
+  },
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -15,12 +28,13 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "slang": "./bin/slang.mjs"
+    "slang": "bin/slang.mjs"
   },
   "files": [
     "dist",
     "bin",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -28,7 +42,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "prepublishOnly": "pnpm build"
+    "clean": "rm -rf dist",
+    "prepack": "npm run clean && npm run build",
+    "prepublishOnly": "npm run typecheck && npm run test"
   },
   "peerDependencies": {
     "react": ">=18"
