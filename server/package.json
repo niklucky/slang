@@ -1,0 +1,41 @@
+{
+  "name": "slang-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Slang i18n server: management UI hosting, tRPC API and the client-facing translations API.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "exports": {
+    "./trpc": "./src/trpc/index.ts"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.0",
+    "@trpc/server": "^11.18.0",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.13.0",
+    "jose": "^6.2.8",
+    "postgres": "^3.4.9",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.5",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}

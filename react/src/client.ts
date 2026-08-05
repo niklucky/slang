@@ -16,6 +16,17 @@ export interface RequestOptions {
   signal?: AbortSignal;
 }
 
+/** Extra targeting for a push; both default server-side ("default" channel, no namespace). */
+export interface PushLocaleOptions extends RequestOptions {
+  channel?: string;
+  namespace?: string;
+}
+
+/** Server's answer to a push: how many keys it wrote. */
+export interface PushResult {
+  keys: number;
+}
+
 /** Thrown for any non-2xx response so callers can see the status. */
 export class SlangHttpError extends Error {
   constructor(
@@ -95,6 +106,15 @@ export interface SlangClient {
   fetchDictionary(locale: string, options?: RequestOptions): Promise<Dictionary>;
   /** Every locale the project has. Used by the CLI's `--all`. */
   fetchAll(options?: RequestOptions): Promise<Resources>;
+  /**
+   * Upserts one locale's dictionary. Empty values are skipped server-side;
+   * existing keys keep their other locales untouched. Used by the CLI's `push`.
+   */
+  pushLocale(
+    locale: string,
+    translations: Dictionary,
+    options?: PushLocaleOptions,
+  ): Promise<PushResult>;
 }
 
 export function createClient(options: ClientOptions = {}): SlangClient {
@@ -110,17 +130,19 @@ export function createClient(options: ClientOptions = {}): SlangClient {
   // StrictMode double-invokes effects, so without this every mount fetches twice.
   const inFlight = new Map<string, Promise<unknown>>();
 
-  async function request(path: string): Promise<unknown> {
+  async function request(path: string, init?: { method: 'GET' | 'POST'; body?: unknown }): Promise<unknown> {
     const url = `${base}${path}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(new Error('timeout')), fetchTimeoutMs);
     try {
       const response = await fetchImpl(url, {
-        method: 'GET',
+        method: init?.method ?? 'GET',
         headers: {
           accept: 'application/json',
           ...(apiKey ? { 'x-api-key': apiKey } : {}),
+          ...(init?.body !== undefined ? { 'content-type': 'application/json' } : {}),
         },
+        ...(init?.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
         signal: controller.signal,
       });
       if (!response.ok) throw new SlangHttpError(response.status, url);
@@ -187,6 +209,21 @@ export function createClient(options: ClientOptions = {}): SlangClient {
         async () => unwrapResources(await request('/api/translations?format=i18next')),
         requestOptions?.signal,
       );
+    },
+
+    async pushLocale(locale, translations, options) {
+      // Mutations are never deduped: two pushes are two pushes.
+      const body = await request('/api/translations/push', {
+        method: 'POST',
+        body: {
+          locale,
+          translations,
+          ...(options?.channel ? { channel: options.channel } : {}),
+          ...(options?.namespace ? { namespace: options.namespace } : {}),
+        },
+      });
+      const keys = (body as { data?: { keys?: unknown } } | null)?.data?.keys;
+      return { keys: typeof keys === 'number' ? keys : 0 };
     },
   };
 }

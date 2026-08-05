@@ -185,4 +185,50 @@ describe('createClient', () => {
     expect(await client.fetchAll()).toEqual({ en: { a: '1' }, ru: { a: '2' } });
     expect(callArgs(fetchImpl)[0]).toContain('/api/translations?format=i18next');
   });
+
+  it('pushLocale posts the dictionary to /api/translations/push', async () => {
+    const fetchImpl = stubFetch(() => jsonResponse({ data: { keys: 2 }, error: null }));
+    const client = createClient({ fetchImpl, apiKey: 'secret' });
+
+    const result = await client.pushLocale('en', { hello: 'Hello', bye: 'Bye' });
+    expect(result).toEqual({ keys: 2 });
+
+    const [url, init] = callArgs(fetchImpl);
+    expect(url).toContain('/api/translations/push');
+    expect(init.method).toBe('POST');
+    expect(init.headers).toMatchObject({
+      'x-api-key': 'secret',
+      'content-type': 'application/json',
+    });
+    expect(JSON.parse(String(init.body))).toEqual({
+      locale: 'en',
+      translations: { hello: 'Hello', bye: 'Bye' },
+    });
+  });
+
+  it('pushLocale only includes channel and namespace when given', async () => {
+    const fetchImpl = stubFetch(() => jsonResponse({ data: { keys: 1 }, error: null }));
+    const client = createClient({ fetchImpl });
+
+    await client.pushLocale('en', { a: 'b' });
+    expect(JSON.parse(String(callArgs(fetchImpl, 0)[1].body))).toEqual({
+      locale: 'en',
+      translations: { a: 'b' },
+    });
+
+    await client.pushLocale('en', { a: 'b' }, { channel: 'staging', namespace: 'common' });
+    expect(JSON.parse(String(callArgs(fetchImpl, 1)[1].body))).toMatchObject({
+      channel: 'staging',
+      namespace: 'common',
+    });
+  });
+
+  it('pushLocale surfaces non-2xx as SlangHttpError', async () => {
+    const client = createClient({
+      fetchImpl: stubFetch(() =>
+        jsonResponse({ data: null, error: { message: 'locale_not_found' } }, 400),
+      ),
+    });
+    await expect(client.pushLocale('xx', { a: 'b' })).rejects.toMatchObject({ status: 400 });
+  });
 });

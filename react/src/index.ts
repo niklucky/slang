@@ -14,6 +14,8 @@ export {
   unwrapDictionary,
   unwrapResources,
   type ClientOptions,
+  type PushLocaleOptions,
+  type PushResult,
   type SlangClient,
 } from './client.js';
 export {

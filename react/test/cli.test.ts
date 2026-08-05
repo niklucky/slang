@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -121,8 +121,8 @@ describe('slang pull', () => {
   });
 
   it('rejects an unknown command and prints usage for none', async () => {
-    expect(await main(['push', 'en'])).toBe(1);
-    expect(stderr).toContain('Unknown command: push');
+    expect(await main(['sync', 'en'])).toBe(1);
+    expect(stderr).toContain('Unknown command: sync');
 
     expect(await main([])).toBe(1);
     expect(stdout).toContain('Usage:');
@@ -142,5 +142,108 @@ describe('slang pull', () => {
     stubServer({});
     expect(await main(['pull', '--all', '--out', out])).toBe(1);
     expect(stderr).toContain('no locales');
+  });
+});
+
+describe('slang push', () => {
+  async function writeLocaleFile(locale: string, body: unknown): Promise<string> {
+    const file = join(out, `${locale}.json`);
+    await writeFile(file, JSON.stringify(body), 'utf8');
+    return file;
+  }
+
+  function pushCall(fetchImpl: ReturnType<typeof vi.fn>): { url: string; init: RequestInit } {
+    const call = fetchImpl.mock.calls[0] as unknown as [string, RequestInit];
+    return { url: String(call[0]), init: call[1] };
+  }
+
+  it('pushes a flat file, inferring the locale from the filename', async () => {
+    const fetchImpl = stubServer({ data: { keys: 2 }, error: null });
+    const file = await writeLocaleFile('en', { hello: 'Hello', bye: 'Bye' });
+
+    expect(await main(['push', file, '--key', 'k'])).toBe(0);
+
+    const { url, init } = pushCall(fetchImpl);
+    expect(url.endsWith('/api/translations/push')).toBe(true);
+    expect(init.method).toBe('POST');
+    expect(init.headers).toMatchObject({ 'x-api-key': 'k', 'content-type': 'application/json' });
+    expect(JSON.parse(String(init.body))).toEqual({
+      locale: 'en',
+      translations: { hello: 'Hello', bye: 'Bye' },
+    });
+    expect(stdout).toContain('en: 2 keys pushed');
+  });
+
+  it('accepts the wrapped { locale: {...} } shape', async () => {
+    const fetchImpl = stubServer({ data: { keys: 1 }, error: null });
+    const file = await writeLocaleFile('de', { de: { hello: 'Hallo' } });
+
+    expect(await main(['push', file, '--key', 'k'])).toBe(0);
+    expect(JSON.parse(String(pushCall(fetchImpl).init.body))).toEqual({
+      locale: 'de',
+      translations: { hello: 'Hallo' },
+    });
+  });
+
+  it('--locale wins over the filename', async () => {
+    const fetchImpl = stubServer({ data: { keys: 1 }, error: null });
+    const file = await writeLocaleFile('whatever', { a: 'b' });
+
+    expect(await main(['push', file, '--locale', 'fr', '--key', 'k'])).toBe(0);
+    expect(JSON.parse(String(pushCall(fetchImpl).init.body)).locale).toBe('fr');
+  });
+
+  it('forwards --channel and --namespace', async () => {
+    const fetchImpl = stubServer({ data: { keys: 1 }, error: null });
+    const file = await writeLocaleFile('en', { a: 'b' });
+
+    expect(
+      await main(['push', file, '--key', 'k', '--channel', 'staging', '--namespace', 'common']),
+    ).toBe(0);
+    expect(JSON.parse(String(pushCall(fetchImpl).init.body))).toMatchObject({
+      channel: 'staging',
+      namespace: 'common',
+    });
+  });
+
+  it('pushes several files in order', async () => {
+    const fetchImpl = stubServer({ data: { keys: 1 }, error: null });
+    const en = await writeLocaleFile('en', { a: '1' });
+    const ru = await writeLocaleFile('ru', { a: '2' });
+
+    expect(await main(['push', en, ru, '--key', 'k'])).toBe(0);
+    const bodies = fetchImpl.mock.calls.map(
+      (call) => JSON.parse(String((call as unknown as [string, RequestInit])[1].body)).locale,
+    );
+    expect(bodies).toEqual(['en', 'ru']);
+  });
+
+  it('rejects missing files, broken JSON and empty dictionaries', async () => {
+    stubServer({ data: { keys: 0 }, error: null });
+
+    expect(await main(['push', join(out, 'missing.json'), '--key', 'k'])).toBe(1);
+    expect(stderr).toContain('Cannot read');
+
+    const broken = join(out, 'broken.json');
+    await writeFile(broken, '{ nope', 'utf8');
+    expect(await main(['push', broken, '--key', 'k'])).toBe(1);
+    expect(stderr).toContain('not valid JSON');
+
+    const empty = await writeLocaleFile('en', {});
+    expect(await main(['push', empty, '--key', 'k'])).toBe(1);
+    expect(stderr).toContain('nothing to push');
+  });
+
+  it('rejects a push without files', async () => {
+    expect(await main(['push', '--key', 'k'])).toBe(1);
+    expect(stderr).toContain('No files given');
+  });
+
+  it('reports an upstream failure', async () => {
+    stubServer({ data: null, error: { message: 'locale_not_found' } }, 400);
+    const file = await writeLocaleFile('xx', { a: 'b' });
+
+    expect(await main(['push', file, '--key', 'k'])).toBe(1);
+    expect(stderr).toContain('400');
   });
 });
