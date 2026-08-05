@@ -1,6 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { Badge } from '../components/ui/badge.js';
+import { Button } from '../components/ui/button.js';
+import { Input } from '../components/ui/input.js';
 import { trpc } from '../trpc.js';
 
 export function ProjectsPage() {
@@ -26,47 +29,41 @@ export function ProjectsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-zinc-900">Projects</h1>
-      </div>
+      <h1 className="text-lg font-semibold tracking-tight">Projects</h1>
 
-      <form onSubmit={submit} className="space-y-3 rounded-lg border border-zinc-200 bg-white p-4">
-        <h2 className="text-sm font-medium text-zinc-700">New project</h2>
+      <form onSubmit={submit} className="space-y-3 rounded-xl border border-line bg-surface p-4">
+        <h2 className="text-sm font-medium text-ink-2">New project</h2>
         <div className="flex flex-wrap gap-3">
-          <input
+          <Input
             value={name}
             onChange={(event) => setName(event.target.value)}
             placeholder="Name"
             required
-            className="w-48 rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+            className="w-48"
           />
-          <input
+          <Input
             value={url}
             onChange={(event) => setUrl(event.target.value)}
             placeholder="https://…"
             required
-            className="w-64 rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+            className="w-64"
           />
-          <input
+          <Input
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Description (optional)"
-            className="min-w-64 flex-1 rounded border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+            className="min-w-64 flex-1"
           />
-          <button
-            type="submit"
-            disabled={create.isPending}
-            className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={create.isPending}>
             {create.isPending ? 'Creating…' : 'Create'}
-          </button>
+          </Button>
         </div>
-        {create.error && <p className="text-sm text-red-600">{create.error.message}</p>}
+        {create.error && <p className="text-sm text-danger">{create.error.message}</p>}
       </form>
 
-      {projects.isPending && <p className="text-sm text-zinc-500">Loading…</p>}
+      {projects.isPending && <p className="text-sm text-ink-3">Loading…</p>}
       {projects.data?.length === 0 && (
-        <p className="text-sm text-zinc-500">No projects yet — create the first one above.</p>
+        <p className="text-sm text-ink-3">No projects yet — create the first one above.</p>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -74,11 +71,15 @@ export function ProjectsPage() {
           <Link
             key={project.id}
             to={`/projects/${project.id}`}
-            className="rounded-lg border border-zinc-200 bg-white p-4 hover:border-zinc-400"
+            className="rounded-xl border border-line bg-surface p-4 transition-colors hover:border-line-strong"
           >
-            <div className="font-medium text-zinc-900">{project.name}</div>
-            <div className="mt-1 text-sm text-zinc-500">
-              {project.wordCount} keys · {project.localeCount} locales
+            <div className="font-medium text-ink">{project.name}</div>
+            {project.description && (
+              <div className="mt-1 text-sm text-ink-2">{project.description}</div>
+            )}
+            <div className="mt-2 flex items-center gap-2">
+              <Badge>{project.wordCount} keys</Badge>
+              <Badge>{project.localeCount} locales</Badge>
             </div>
           </Link>
         ))}

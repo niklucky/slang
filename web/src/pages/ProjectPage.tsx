@@ -1,6 +1,10 @@
+import { X } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { Badge } from '../components/ui/badge.js';
+import { Button } from '../components/ui/button.js';
+import { Input, Select } from '../components/ui/input.js';
 import { trpc } from '../trpc.js';
 
 function useDebounced<T>(value: T, ms: number): T {
@@ -51,8 +55,8 @@ export function ProjectPage() {
   const [newValues, setNewValues] = useState<Record<string, string>>({});
   const [addLocaleId, setAddLocaleId] = useState<number | ''>('');
 
-  if (details.isPending) return <p className="text-sm text-zinc-500">Loading…</p>;
-  if (!details.data) return <p className="text-sm text-red-600">Project not found.</p>;
+  if (details.isPending) return <p className="text-sm text-ink-3">Loading…</p>;
+  if (!details.data) return <p className="text-sm text-danger">Project not found.</p>;
 
   const { project, locales, channels } = details.data;
   const defaultChannel = channels[0];
@@ -102,29 +106,28 @@ export function ProjectPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-zinc-900">{project.name}</h1>
-        {project.description && <p className="mt-1 text-sm text-zinc-500">{project.description}</p>}
+        <h1 className="text-lg font-semibold tracking-tight">{project.name}</h1>
+        {project.description && <p className="mt-1 text-sm text-ink-2">{project.description}</p>}
         <div className="mt-2 flex items-center gap-2 text-sm">
-          <span className="text-zinc-500">API key</span>
-          <code className="rounded bg-zinc-100 px-2 py-0.5 text-xs">{project.apiKey}</code>
+          <span className="text-ink-3">API key</span>
+          <code className="rounded-md bg-fill px-2 py-0.5 font-mono text-xs text-ink-2">
+            {project.apiKey}
+          </code>
           <button
             type="button"
             onClick={() => void navigator.clipboard.writeText(project.apiKey)}
-            className="text-xs text-zinc-600 underline hover:text-zinc-900"
+            className="text-xs text-ink-2 underline transition-colors hover:text-ink"
           >
             Copy
           </button>
         </div>
       </div>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h2 className="text-sm font-medium text-zinc-700">Locales</h2>
+      <section className="rounded-xl border border-line bg-surface p-4">
+        <h2 className="text-sm font-medium text-ink-2">Locales</h2>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {locales.map((locale) => (
-            <span
-              key={locale.id}
-              className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1 text-sm text-zinc-700"
-            >
+            <Badge key={locale.id} className="gap-1.5 py-1">
               {locale.code}
               <button
                 type="button"
@@ -134,16 +137,17 @@ export function ProjectPage() {
                     removeLocale.mutate({ projectId: id, localeId: locale.id });
                   }
                 }}
-                className="text-zinc-400 hover:text-red-600"
+                className="text-ink-3 transition-colors hover:text-danger"
               >
-                ×
+                <X size={12} />
               </button>
-            </span>
+            </Badge>
           ))}
-          <select
+          <Select
+            size="sm"
             value={addLocaleId}
             onChange={(event) => setAddLocaleId(event.target.value === '' ? '' : Number(event.target.value))}
-            className="rounded border border-zinc-300 px-2 py-1 text-sm"
+            className="w-auto"
           >
             <option value="">Add locale…</option>
             {availableLocales.map((locale) => (
@@ -151,9 +155,9 @@ export function ProjectPage() {
                 {locale.code} — {locale.name}
               </option>
             ))}
-          </select>
-          <button
-            type="button"
+          </Select>
+          <Button
+            size="sm"
             disabled={addLocaleId === ''}
             onClick={() => {
               if (addLocaleId !== '') {
@@ -161,60 +165,58 @@ export function ProjectPage() {
                 setAddLocaleId('');
               }
             }}
-            className="rounded bg-zinc-900 px-3 py-1 text-sm text-white disabled:opacity-40"
           >
             Add
-          </button>
+          </Button>
         </div>
       </section>
 
-      <form onSubmit={submitNewKey} className="rounded-lg border border-zinc-200 bg-white p-4">
-        <h2 className="text-sm font-medium text-zinc-700">Add key</h2>
+      <form onSubmit={submitNewKey} className="rounded-xl border border-line bg-surface p-4">
+        <h2 className="text-sm font-medium text-ink-2">Add key</h2>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <input
+          <Input
+            size="sm"
             value={newKey}
             onChange={(event) => setNewKey(event.target.value)}
             placeholder="key.name"
             required
-            className="w-56 rounded border border-zinc-300 px-3 py-1.5 text-sm focus:border-zinc-500 focus:outline-none"
+            className="w-56"
           />
           {locales.map((locale) => (
-            <input
+            <Input
               key={locale.id}
+              size="sm"
               value={newValues[locale.code] ?? ''}
               onChange={(event) =>
                 setNewValues((previous) => ({ ...previous, [locale.code]: event.target.value }))
               }
               placeholder={locale.code}
-              className="w-40 rounded border border-zinc-300 px-3 py-1.5 text-sm focus:border-zinc-500 focus:outline-none"
+              className="w-40"
             />
           ))}
-          <button
-            type="submit"
-            disabled={upsert.isPending || locales.length === 0}
-            className="rounded bg-zinc-900 px-3 py-1.5 text-sm text-white disabled:opacity-40"
-          >
+          <Button size="sm" type="submit" disabled={upsert.isPending || locales.length === 0}>
             Add key
-          </button>
+          </Button>
         </div>
         {locales.length === 0 && (
-          <p className="mt-2 text-sm text-zinc-500">Attach a locale above before adding keys.</p>
+          <p className="mt-2 text-sm text-ink-3">Attach a locale above before adding keys.</p>
         )}
       </form>
 
-      <section className="rounded-lg border border-zinc-200 bg-white">
-        <div className="border-b border-zinc-200 p-3">
-          <input
+      <section className="rounded-xl border border-line bg-surface">
+        <div className="border-b border-line p-3">
+          <Input
+            size="sm"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search keys and values…"
-            className="w-full max-w-sm rounded border border-zinc-300 px-3 py-1.5 text-sm focus:border-zinc-500 focus:outline-none"
+            className="max-w-sm"
           />
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-200 text-left text-xs uppercase tracking-wide text-zinc-500">
+              <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-ink-3">
                 <th className="px-3 py-2 font-medium">Key</th>
                 {locales.map((locale) => (
                   <th key={locale.id} className="px-3 py-2 font-medium">
@@ -226,8 +228,8 @@ export function ProjectPage() {
             </thead>
             <tbody>
               {words.data?.map((word) => (
-                <tr key={word.id} className="border-b border-zinc-100 align-top hover:bg-zinc-50">
-                  <td className="px-3 py-2 font-mono text-xs text-zinc-700">{word.key}</td>
+                <tr key={word.id} className="border-b border-line align-top last:border-0 hover:bg-fill/60">
+                  <td className="px-3 py-2 font-mono text-xs text-ink-2">{word.key}</td>
                   {locales.map((locale) => {
                     const translation = word.translations.find((t) => t.localeId === locale.id);
                     const isEditing =
@@ -235,7 +237,8 @@ export function ProjectPage() {
                     return (
                       <td key={locale.id} className="px-3 py-2">
                         {isEditing ? (
-                          <input
+                          <Input
+                            size="sm"
                             autoFocus
                             value={draft}
                             onChange={(event) => setDraft(event.target.value)}
@@ -250,7 +253,6 @@ export function ProjectPage() {
                               }
                               if (event.key === 'Escape') setEditing(null);
                             }}
-                            className="w-full rounded border border-zinc-400 px-2 py-1 text-sm focus:outline-none"
                           />
                         ) : (
                           <button
@@ -259,9 +261,9 @@ export function ProjectPage() {
                               setEditing({ wordId: word.id, localeId: locale.id });
                               setDraft(translation?.value ?? '');
                             }}
-                            className="block w-full cursor-text rounded px-2 py-1 text-left text-sm hover:bg-zinc-100"
+                            className="block w-full cursor-text rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-fill"
                           >
-                            {translation?.value || <span className="text-zinc-300">—</span>}
+                            {translation?.value || <span className="text-ink-3">—</span>}
                           </button>
                         )}
                       </td>
@@ -275,7 +277,7 @@ export function ProjectPage() {
                           removeWord.mutate({ projectId: id, wordId: word.id });
                         }
                       }}
-                      className="text-xs text-zinc-400 hover:text-red-600"
+                      className="text-xs text-ink-3 transition-colors hover:text-danger"
                     >
                       Delete
                     </button>
@@ -284,9 +286,7 @@ export function ProjectPage() {
               ))}
             </tbody>
           </table>
-          {words.data?.length === 0 && (
-            <p className="p-4 text-sm text-zinc-500">No keys yet.</p>
-          )}
+          {words.data?.length === 0 && <p className="p-4 text-sm text-ink-3">No keys yet.</p>}
         </div>
       </section>
     </div>

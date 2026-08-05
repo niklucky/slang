@@ -1,12 +1,12 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:17-alpine
     environment:
       POSTGRES_USER: slang
       POSTGRES_PASSWORD: slang
       POSTGRES_DB: slang
     ports:
-      - '5432:5432'
+      - '5802:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
 

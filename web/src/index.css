@@ -1,1 +1,104 @@
+@import '@fontsource-variable/inter';
 @import 'tailwindcss';
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  color-scheme: light;
+
+  --slang-bg: #f4f4f1;
+  --slang-surface: #fcfcfa;
+  --slang-fill: #ecece8;
+  --slang-selected: #e3e3df;
+  --slang-line: #e5e5e1;
+  --slang-line-strong: #d4d4cf;
+
+  --slang-ink: #1a1a18;
+  --slang-ink-2: #6e6e69;
+  --slang-ink-3: #9b9b94;
+
+  --slang-accent: #c13a76;
+  --slang-accent-soft: #f7dae7;
+  --slang-success: #5c8033;
+  --slang-success-soft: #e5f0d9;
+  --slang-danger: #b4373e;
+  --slang-danger-soft: #f6e0e0;
+  --slang-info: #3370a9;
+  --slang-info-soft: #deebf6;
+  --slang-warning: #9c6b21;
+  --slang-warning-soft: #f4e8d3;
+
+  --slang-primary: #191918;
+  --slang-primary-hover: #30302e;
+  --slang-primary-ink: #fdfdfb;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --slang-bg: #141413;
+  --slang-surface: #1c1c1a;
+  --slang-fill: #262624;
+  --slang-selected: #2e2e2b;
+  --slang-line: #2c2c2a;
+  --slang-line-strong: #3d3d3a;
+
+  --slang-ink: #f0f0eb;
+  --slang-ink-2: #a6a69f;
+  --slang-ink-3: #7c7c75;
+
+  --slang-accent: #e57fae;
+  --slang-accent-soft: #3b2130;
+  --slang-success: #a0c67e;
+  --slang-success-soft: #27311b;
+  --slang-danger: #e19191;
+  --slang-danger-soft: #3a2323;
+  --slang-info: #86b4dc;
+  --slang-info-soft: #1f2c38;
+  --slang-warning: #d2a05c;
+  --slang-warning-soft: #332716;
+
+  --slang-primary: #f0f0eb;
+  --slang-primary-hover: #dcdcd6;
+  --slang-primary-ink: #191918;
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-bg: var(--slang-bg);
+  --color-surface: var(--slang-surface);
+  --color-fill: var(--slang-fill);
+  --color-selected: var(--slang-selected);
+  --color-line: var(--slang-line);
+  --color-line-strong: var(--slang-line-strong);
+
+  --color-ink: var(--slang-ink);
+  --color-ink-2: var(--slang-ink-2);
+  --color-ink-3: var(--slang-ink-3);
+
+  --color-accent: var(--slang-accent);
+  --color-accent-soft: var(--slang-accent-soft);
+  --color-success: var(--slang-success);
+  --color-success-soft: var(--slang-success-soft);
+  --color-danger: var(--slang-danger);
+  --color-danger-soft: var(--slang-danger-soft);
+  --color-info: var(--slang-info);
+  --color-info-soft: var(--slang-info-soft);
+  --color-warning: var(--slang-warning);
+  --color-warning-soft: var(--slang-warning-soft);
+
+  --color-primary: var(--slang-primary);
+  --color-primary-hover: var(--slang-primary-hover);
+  --color-primary-ink: var(--slang-primary-ink);
+}
+
+@layer base {
+  body {
+    @apply bg-bg font-sans text-sm text-ink antialiased;
+  }
+
+  ::selection {
+    @apply bg-accent-soft text-ink;
+  }
+}
