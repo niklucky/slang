@@ -1,6 +1,6 @@
 # @warpunit/slang-react
 
-React and React Native client for the [Slang](https://slang.hgdev.me) translation service.
+React and React Native client for the [Slang](https://slang.warpunit.com) translation service.
 
 **No runtime dependencies.** React is a peer. Works in the browser, in React Native and in
 Node (the CLI), because it imports nothing platform-specific.
@@ -105,7 +105,7 @@ union survives the call.
 | `locale` | — | Locale to start with. A locale previously chosen with `setLocale` wins over it. |
 | `fallbackLocale` | — | Consulted when a key is missing. Also fetched, so it works unbundled. |
 | `resources` | — | Bundled translations. Read once, at mount. |
-| `apiUrl` | `https://slang.hgdev.me` | Point at your own proxy to keep the key server-side. |
+| `apiUrl` | `https://slang.warpunit.com` | Point at your own proxy to keep the key server-side. |
 | `apiKey` | — | Sent as `x-api-key`. Omit when a proxy adds it. |
 | `checkForUpdate` | `true` | Poll `/state` and refresh in the background. `false` means zero network calls. |
 | `storage` | `localStorage`, else none | `AsyncStorage` on RN; `null` to disable caching. |

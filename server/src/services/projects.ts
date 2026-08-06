@@ -17,8 +17,8 @@ import { generateApiKey } from '../lib/ids.js';
 
 export interface CreateProjectInput {
   name: string;
-  url: string;
-  description?: string;
+  url: string | null;
+  description?: string | null;
 }
 
 export async function createProject(
@@ -169,6 +169,18 @@ export async function updateProject(
   const [project] = await db
     .update(projects)
     .set({ ...input, updatedAt: new Date() })
+    .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
+    .returning();
+  return project ?? null;
+}
+
+export async function regenerateApiKey(
+  db: Database,
+  projectId: number,
+): Promise<Project | null> {
+  const [project] = await db
+    .update(projects)
+    .set({ apiKey: generateApiKey(), updatedAt: new Date() })
     .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
     .returning();
   return project ?? null;

@@ -1,4 +1,9 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import type {
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react';
 
 import { cx } from '../../lib/cx.js';
 
@@ -32,6 +37,12 @@ export function Select({ size = 'md', className, ...rest }: SelectProps) {
       {...rest}
     />
   );
+}
+
+export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement>;
+
+export function Textarea({ className, ...rest }: TextareaProps) {
+  return <textarea className={cx(control, 'min-h-20 px-3 py-2', className)} {...rest} />;
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {

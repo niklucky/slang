@@ -1,69 +1,29 @@
-import { useState, type FormEvent } from 'react';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { ProjectFormModal } from '../components/ProjectFormModal.js';
 import { Badge } from '../components/ui/badge.js';
 import { Button } from '../components/ui/button.js';
-import { Input } from '../components/ui/input.js';
 import { trpc } from '../trpc.js';
 
 export function ProjectsPage() {
-  const utils = trpc.useUtils();
   const projects = trpc.projects.list.useQuery();
-  const create = trpc.projects.create.useMutation({
-    onSuccess: () => {
-      void utils.projects.list.invalidate();
-      setName('');
-      setUrl('');
-      setDescription('');
-    },
-  });
-
-  const [name, setName] = useState('');
-  const [url, setUrl] = useState('');
-  const [description, setDescription] = useState('');
-
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    create.mutate({ name, url, ...(description ? { description } : {}) });
-  }
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold tracking-tight">Projects</h1>
-
-      <form onSubmit={submit} className="space-y-3 rounded-xl border border-line bg-surface p-4">
-        <h2 className="text-sm font-medium text-ink-2">New project</h2>
-        <div className="flex flex-wrap gap-3">
-          <Input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="Name"
-            required
-            className="w-48"
-          />
-          <Input
-            value={url}
-            onChange={(event) => setUrl(event.target.value)}
-            placeholder="https://…"
-            required
-            className="w-64"
-          />
-          <Input
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="Description (optional)"
-            className="min-w-64 flex-1"
-          />
-          <Button type="submit" disabled={create.isPending}>
-            {create.isPending ? 'Creating…' : 'Create'}
-          </Button>
-        </div>
-        {create.error && <p className="text-sm text-danger">{create.error.message}</p>}
-      </form>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-lg font-semibold tracking-tight">Projects</h1>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus size={16} />
+          New project
+        </Button>
+      </div>
 
       {projects.isPending && <p className="text-sm text-ink-3">Loading…</p>}
       {projects.data?.length === 0 && (
-        <p className="text-sm text-ink-3">No projects yet — create the first one above.</p>
+        <p className="text-sm text-ink-3">No projects yet — create the first one.</p>
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -84,6 +44,8 @@ export function ProjectsPage() {
           </Link>
         ))}
       </div>
+
+      <ProjectFormModal mode="create" open={createOpen} onClose={() => setCreateOpen(false)} />
     </div>
   );
 }

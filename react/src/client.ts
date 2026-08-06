@@ -1,6 +1,6 @@
 import type { Dictionary, Resources } from './types.js';
 
-export const DEFAULT_API_URL = 'https://slang.hgdev.me';
+export const DEFAULT_API_URL = 'https://slang.warpunit.com';
 export const DEFAULT_TIMEOUT_MS = 3000;
 
 export interface ClientOptions {

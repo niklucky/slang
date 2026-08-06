@@ -5,6 +5,7 @@ import {
   channels,
   locales,
   namespaces,
+  projectsToLocales,
   translations,
   words,
   wordsToNamespaces,
@@ -224,7 +225,9 @@ export interface PushResult {
 
 /**
  * Batch upsert used by the CLI push. Runs as one transaction; empty values
- * are skipped, mirroring the old write path.
+ * are skipped, mirroring the old write path. Missing locales are created and
+ * attached to the project so a push never fails on a locale the project has
+ * not enabled yet.
  */
 export async function pushTranslations(
   db: Database,
@@ -232,12 +235,11 @@ export async function pushTranslations(
   input: PushInput,
 ): Promise<PushResult> {
   return db.transaction(async (tx) => {
-    const [locale] = await tx
-      .select()
-      .from(locales)
-      .where(eq(locales.code, input.locale))
-      .limit(1);
-    if (!locale) throw new ExternalApiError(400, 'locale_not_found');
+    const locale = await findOrCreateLocale(tx, input.locale);
+    await tx
+      .insert(projectsToLocales)
+      .values({ projectId, localeId: locale.id })
+      .onConflictDoNothing();
 
     const channelName = input.channel ?? DEFAULT_CHANNEL_NAME;
     const [channel] = await tx
@@ -276,6 +278,32 @@ export async function pushTranslations(
     }
     return { keys };
   });
+}
+
+/**
+ * Resolves a locale by code, adding it to the global catalog when missing.
+ * Codes outside the seeded catalog (e.g. `en-PT`) carry no display name, so
+ * the code itself stands in until someone renames it in the UI.
+ */
+async function findOrCreateLocale(tx: Tx, code: string): Promise<{ id: number }> {
+  const [existing] = await tx
+    .select({ id: locales.id })
+    .from(locales)
+    .where(eq(locales.code, code))
+    .limit(1);
+  if (existing) return existing;
+  const region = code.split('-')[1] ?? code;
+  const inserted = await tx
+    .insert(locales)
+    .values({ code, countryCode: region.toLowerCase(), name: code, title: code })
+    .onConflictDoNothing()
+    .returning({ id: locales.id });
+  // A concurrent push may have inserted the same code first.
+  const created =
+    inserted[0] ??
+    (await tx.select({ id: locales.id }).from(locales).where(eq(locales.code, code)).limit(1))[0];
+  if (!created) throw new ExternalApiError(500, 'locale_insert_failed');
+  return created;
 }
 
 async function findOrCreateNamespace(tx: Tx, projectId: number, name: string): Promise<number> {

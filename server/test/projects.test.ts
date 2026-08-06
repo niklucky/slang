@@ -56,6 +56,50 @@ describe('projects', () => {
     expect(details.wordCount).toBe(0);
   });
 
+  it('create accepts a null url; update can set and clear it', async () => {
+    const { accessToken } = await login('alice');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'No URL', url: null },
+      token: accessToken,
+    });
+    expect(project.url).toBeNull();
+
+    const withUrl = await trpc<Project>(app, 'projects.update', {
+      input: { projectId: project.id, url: 'https://now-has-url.dev' },
+      token: accessToken,
+    });
+    expect(withUrl.url).toBe('https://now-has-url.dev');
+
+    const cleared = await trpc<Project>(app, 'projects.update', {
+      input: { projectId: project.id, url: null },
+      token: accessToken,
+    });
+    expect(cleared.url).toBeNull();
+  });
+
+  it('regenerateApiKey rotates the key; non-members cannot regenerate', async () => {
+    const alice = await login('alice');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Demo', url: 'https://demo.dev' },
+      token: alice.accessToken,
+    });
+
+    const regenerated = await trpc<Project>(app, 'projects.regenerateApiKey', {
+      input: { projectId: project.id },
+      token: alice.accessToken,
+    });
+    expect(regenerated.apiKey).toMatch(/^[0-9a-f]{64}$/);
+    expect(regenerated.apiKey).not.toBe(project.apiKey);
+
+    const bob = await login('bob');
+    await expect(
+      trpc(app, 'projects.regenerateApiKey', {
+        input: { projectId: project.id },
+        token: bob.accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
   it('list only shows projects the caller belongs to', async () => {
     const alice = await login('alice');
     const bob = await login('bob');

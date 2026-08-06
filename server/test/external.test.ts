@@ -1,7 +1,8 @@
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
-import type { Project } from '../src/db/schema.js';
+import { locales, projectsToLocales, type Project } from '../src/db/schema.js';
 import { openTestDb, resetDb, seedProject, seedUser } from './helpers.js';
 
 const handle = openTestDb();
@@ -141,12 +142,8 @@ describe('GET /api/translations/state', () => {
 });
 
 describe('POST /api/translations/push', () => {
-  it('rejects unknown locales and channels', async () => {
+  it('rejects unknown channels', async () => {
     const project = await makeProject();
-
-    const badLocale = await push(project, { locale: 'xx', translations: { a: 'b' } });
-    expect(badLocale.status).toBe(400);
-    expect(await badLocale.json()).toEqual({ data: null, error: { message: 'locale_not_found' } });
 
     const badChannel = await push(project, {
       locale: 'en',
@@ -155,6 +152,53 @@ describe('POST /api/translations/push', () => {
     });
     expect(badChannel.status).toBe(400);
     expect(await badChannel.json()).toEqual({ data: null, error: { message: 'channel_not_found' } });
+  });
+
+  it('attaches a catalog locale to the project on first push', async () => {
+    const project = await makeProject();
+    const response = await push(project, { locale: 'de', translations: { hello: 'Hallo!' } });
+    expect(response.status).toBe(200);
+
+    const [locale] = await handle.db
+      .select()
+      .from(locales)
+      .where(eq(locales.code, 'de'))
+      .limit(1);
+    const links = await handle.db
+      .select()
+      .from(projectsToLocales)
+      .where(eq(projectsToLocales.projectId, project.id));
+    expect(links).toEqual([{ projectId: project.id, localeId: locale!.id }]);
+
+    // A second push must not duplicate the link.
+    await push(project, { locale: 'de', translations: { hello: 'Hallo nochmal!' } });
+    const linksAgain = await handle.db
+      .select()
+      .from(projectsToLocales)
+      .where(eq(projectsToLocales.projectId, project.id));
+    expect(linksAgain).toHaveLength(1);
+  });
+
+  it('creates a locale missing from the catalog and attaches it', async () => {
+    const project = await makeProject();
+    const response = await push(project, { locale: 'xx', translations: { a: 'b' } });
+    expect(response.status).toBe(200);
+
+    const [locale] = await handle.db
+      .select()
+      .from(locales)
+      .where(eq(locales.code, 'xx'))
+      .limit(1);
+    expect(locale).toMatchObject({ code: 'xx', countryCode: 'xx', name: 'xx', title: 'xx' });
+
+    const links = await handle.db
+      .select()
+      .from(projectsToLocales)
+      .where(eq(projectsToLocales.projectId, project.id));
+    expect(links).toEqual([{ projectId: project.id, localeId: locale!.id }]);
+
+    const fetched = await get('/api/translations?locale=xx&format=i18next', project.apiKey);
+    expect(await fetched.json()).toEqual({ xx: { a: 'b' } });
   });
 
   it('rejects malformed bodies', async () => {

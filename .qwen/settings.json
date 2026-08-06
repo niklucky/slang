@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/nikita/code/slang-server/**)",
+      "Agent(Explore)",
+      "send_message"
+    ]
+  },
+  "$version": 4
+}

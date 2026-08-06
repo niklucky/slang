@@ -5,6 +5,7 @@ import {
   createProject,
   findProjectDetails,
   findProjectsForUser,
+  regenerateApiKey,
   softDeleteProject,
   updateProject,
 } from '../../services/projects.js';
@@ -13,8 +14,8 @@ import { protectedProcedure, router } from '../init.js';
 
 const projectFields = {
   name: z.string().trim().min(1),
-  url: z.string().trim().min(1),
-  description: z.string().trim().max(2000).optional(),
+  url: z.string().trim().min(1).nullable(),
+  description: z.string().trim().max(2000).nullish(),
 };
 
 export const projectsRouter = router({
@@ -41,6 +42,16 @@ export const projectsRouter = router({
       const project = await requireProject(ctx.db, projectId, ctx.user.id);
       requireOwner(project, ctx.user.id);
       const updated = await updateProject(ctx.db, projectId, fields);
+      if (!updated) throw new TRPCError({ code: 'NOT_FOUND', message: 'project_not_found' });
+      return updated;
+    }),
+
+  regenerateApiKey: protectedProcedure
+    .input(z.object({ projectId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const project = await requireProject(ctx.db, input.projectId, ctx.user.id);
+      requireOwner(project, ctx.user.id);
+      const updated = await regenerateApiKey(ctx.db, input.projectId);
       if (!updated) throw new TRPCError({ code: 'NOT_FOUND', message: 'project_not_found' });
       return updated;
     }),

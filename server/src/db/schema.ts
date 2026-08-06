@@ -33,7 +33,7 @@ export const projects = pgTable('projects', {
     .notNull()
     .references(() => users.id),
   name: text('name').notNull(),
-  url: text('url').notNull(),
+  url: text('url'),
   description: text('description'),
   apiKey: text('api_key').notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

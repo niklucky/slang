@@ -1,10 +1,10 @@
-import { X } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { Badge } from '../components/ui/badge.js';
+import { ProjectFormModal } from '../components/ProjectFormModal.js';
 import { Button } from '../components/ui/button.js';
-import { Input, Select } from '../components/ui/input.js';
+import { Input } from '../components/ui/input.js';
 import { trpc } from '../trpc.js';
 
 function useDebounced<T>(value: T, ms: number): T {
@@ -27,7 +27,6 @@ export function ProjectPage() {
   const utils = trpc.useUtils();
 
   const details = trpc.projects.get.useQuery({ projectId: id });
-  const catalog = trpc.locales.catalog.useQuery();
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search, 300);
@@ -39,30 +38,18 @@ export function ProjectPage() {
   const invalidateWords = () => utils.words.list.invalidate({ projectId: id });
   const upsert = trpc.words.upsert.useMutation({ onSuccess: invalidateWords });
   const removeWord = trpc.words.remove.useMutation({ onSuccess: invalidateWords });
-  const addLocale = trpc.locales.add.useMutation({
-    onSuccess: () => utils.projects.get.invalidate({ projectId: id }),
-  });
-  const removeLocale = trpc.locales.remove.useMutation({
-    onSuccess: () => {
-      utils.projects.get.invalidate({ projectId: id });
-      void invalidateWords();
-    },
-  });
 
   const [editing, setEditing] = useState<CellRef | null>(null);
   const [draft, setDraft] = useState('');
   const [newKey, setNewKey] = useState('');
   const [newValues, setNewValues] = useState<Record<string, string>>({});
-  const [addLocaleId, setAddLocaleId] = useState<number | ''>('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   if (details.isPending) return <p className="text-sm text-ink-3">Loading…</p>;
   if (!details.data) return <p className="text-sm text-danger">Project not found.</p>;
 
   const { project, locales, channels } = details.data;
   const defaultChannel = channels[0];
-  const availableLocales = (catalog.data ?? []).filter(
-    (locale) => !locales.some((attached) => attached.id === locale.id),
-  );
 
   function commitCell(wordId: number, key: string, localeId: number, value: string) {
     if (!defaultChannel) return;
@@ -105,71 +92,16 @@ export function ProjectPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">{project.name}</h1>
-        {project.description && <p className="mt-1 text-sm text-ink-2">{project.description}</p>}
-        <div className="mt-2 flex items-center gap-2 text-sm">
-          <span className="text-ink-3">API key</span>
-          <code className="rounded-md bg-fill px-2 py-0.5 font-mono text-xs text-ink-2">
-            {project.apiKey}
-          </code>
-          <button
-            type="button"
-            onClick={() => void navigator.clipboard.writeText(project.apiKey)}
-            className="text-xs text-ink-2 underline transition-colors hover:text-ink"
-          >
-            Copy
-          </button>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold tracking-tight">{project.name}</h1>
+          {project.description && <p className="mt-1 text-sm text-ink-2">{project.description}</p>}
         </div>
+        <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
+          <Settings size={14} />
+          Settings
+        </Button>
       </div>
-
-      <section className="rounded-xl border border-line bg-surface p-4">
-        <h2 className="text-sm font-medium text-ink-2">Locales</h2>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {locales.map((locale) => (
-            <Badge key={locale.id} className="gap-1.5 py-1">
-              {locale.code}
-              <button
-                type="button"
-                aria-label={`Remove ${locale.code}`}
-                onClick={() => {
-                  if (window.confirm(`Remove locale ${locale.code}? Its translations get deleted.`)) {
-                    removeLocale.mutate({ projectId: id, localeId: locale.id });
-                  }
-                }}
-                className="text-ink-3 transition-colors hover:text-danger"
-              >
-                <X size={12} />
-              </button>
-            </Badge>
-          ))}
-          <Select
-            size="sm"
-            value={addLocaleId}
-            onChange={(event) => setAddLocaleId(event.target.value === '' ? '' : Number(event.target.value))}
-            className="w-auto"
-          >
-            <option value="">Add locale…</option>
-            {availableLocales.map((locale) => (
-              <option key={locale.id} value={locale.id}>
-                {locale.code} — {locale.name}
-              </option>
-            ))}
-          </Select>
-          <Button
-            size="sm"
-            disabled={addLocaleId === ''}
-            onClick={() => {
-              if (addLocaleId !== '') {
-                addLocale.mutate({ projectId: id, localeId: addLocaleId });
-                setAddLocaleId('');
-              }
-            }}
-          >
-            Add
-          </Button>
-        </div>
-      </section>
 
       <form onSubmit={submitNewKey} className="rounded-xl border border-line bg-surface p-4">
         <h2 className="text-sm font-medium text-ink-2">Add key</h2>
@@ -199,7 +131,7 @@ export function ProjectPage() {
           </Button>
         </div>
         {locales.length === 0 && (
-          <p className="mt-2 text-sm text-ink-3">Attach a locale above before adding keys.</p>
+          <p className="mt-2 text-sm text-ink-3">Add a locale in Settings before adding keys.</p>
         )}
       </form>
 
@@ -289,6 +221,13 @@ export function ProjectPage() {
           {words.data?.length === 0 && <p className="p-4 text-sm text-ink-3">No keys yet.</p>}
         </div>
       </section>
+
+      <ProjectFormModal
+        mode="edit"
+        projectId={id}
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
     </div>
   );
 }
