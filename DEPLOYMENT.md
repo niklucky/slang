@@ -27,7 +27,12 @@ Workflows:
 
 ## Required GitHub secrets
 
-Configure these under **Settings → Secrets and variables → Actions**:
+All deploy secrets live in the **`production` GitHub environment**, not at
+repository level. Create it under **Settings → Environments → New environment**
+(named `production`), then add the secrets there. The deploy job in
+`release.yml` references `environment: production`, which is what unlocks them;
+you can also attach protection rules (required reviewers, wait timers) to gate
+deployments.
 
 | Secret             | Description                                          |
 | ------------------ | ---------------------------------------------------- |
