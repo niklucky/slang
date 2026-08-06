@@ -6,10 +6,15 @@
   "scripts": {
     "dev": "concurrently \"cd server && pnpm dev\" \"cd web && pnpm dev\"",
     "build": "pnpm -r build",
+    "lint": "eslint .",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {
-    "concurrently": "^10.0.4"
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^10.0.4",
+    "eslint": "^10.8.0",
+    "globals": "^17.9.0",
+    "typescript-eslint": "^8.66.0"
   }
 }

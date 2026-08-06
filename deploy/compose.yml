@@ -1,0 +1,39 @@
+# Production stack for the VPS. CI copies this to /opt/slang/compose.yml and
+# writes /opt/slang/.env from the SLANG_ENV GitHub secret on every release
+# (see DEPLOYMENT.md).
+name: slang
+
+services:
+  app:
+    image: ghcr.io/niklucky/slang:${SLANG_VERSION:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # nginx reverse-proxies to 127.0.0.1:5800; no need to expose it further.
+      - '127.0.0.1:5800:5800'
+    environment:
+      NODE_ENV: production
+      PORT: 5800
+      DATABASE_URL: postgres://${POSTGRES_USER:-slang}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-slang}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-slang}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-slang}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:
