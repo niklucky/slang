@@ -1,10 +1,12 @@
-import { Settings } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { Plus, Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { AddKeyModal } from '../components/AddKeyModal.js';
 import { ProjectFormModal } from '../components/ProjectFormModal.js';
 import { Button } from '../components/ui/button.js';
-import { Input } from '../components/ui/input.js';
+import { Input, Textarea } from '../components/ui/input.js';
+import { MultiSelect } from '../components/ui/multi-select.js';
 import { trpc } from '../trpc.js';
 
 function useDebounced<T>(value: T, ms: number): T {
@@ -41,15 +43,17 @@ export function ProjectPage() {
 
   const [editing, setEditing] = useState<CellRef | null>(null);
   const [draft, setDraft] = useState('');
-  const [newKey, setNewKey] = useState('');
-  const [newValues, setNewValues] = useState<Record<string, string>>({});
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [addKeyOpen, setAddKeyOpen] = useState(false);
+  // Locales removed from this set are hidden from the table; new locales default to visible.
+  const [excludedLocaleIds, setExcludedLocaleIds] = useState<number[]>([]);
 
   if (details.isPending) return <p className="text-sm text-ink-3">Loading…</p>;
   if (!details.data) return <p className="text-sm text-danger">Project not found.</p>;
 
   const { project, locales, channels } = details.data;
   const defaultChannel = channels[0];
+  const visibleLocales = locales.filter((locale) => !excludedLocaleIds.includes(locale.id));
 
   function commitCell(wordId: number, key: string, localeId: number, value: string) {
     if (!defaultChannel) return;
@@ -68,28 +72,6 @@ export function ProjectPage() {
     });
   }
 
-  function submitNewKey(event: FormEvent) {
-    event.preventDefault();
-    if (!defaultChannel) return;
-    upsert.mutate(
-      {
-        projectId: id,
-        key: newKey,
-        translations: locales.map((locale) => ({
-          localeId: locale.id,
-          channelId: defaultChannel.id,
-          value: newValues[locale.code] ?? '',
-        })),
-      },
-      {
-        onSuccess: () => {
-          setNewKey('');
-          setNewValues({});
-        },
-      },
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -97,46 +79,20 @@ export function ProjectPage() {
           <h1 className="text-lg font-semibold tracking-tight">{project.name}</h1>
           {project.description && <p className="mt-1 text-sm text-ink-2">{project.description}</p>}
         </div>
-        <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
-          <Settings size={14} />
-          Settings
-        </Button>
-      </div>
-
-      <form onSubmit={submitNewKey} className="rounded-xl border border-line bg-surface p-4">
-        <h2 className="text-sm font-medium text-ink-2">Add key</h2>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Input
-            size="sm"
-            value={newKey}
-            onChange={(event) => setNewKey(event.target.value)}
-            placeholder="key.name"
-            required
-            className="w-56"
-          />
-          {locales.map((locale) => (
-            <Input
-              key={locale.id}
-              size="sm"
-              value={newValues[locale.code] ?? ''}
-              onChange={(event) =>
-                setNewValues((previous) => ({ ...previous, [locale.code]: event.target.value }))
-              }
-              placeholder={locale.code}
-              className="w-40"
-            />
-          ))}
-          <Button size="sm" type="submit" disabled={upsert.isPending || locales.length === 0}>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
+            <Settings size={14} />
+            Settings
+          </Button>
+          <Button size="sm" onClick={() => setAddKeyOpen(true)} disabled={locales.length === 0}>
+            <Plus size={14} />
             Add key
           </Button>
         </div>
-        {locales.length === 0 && (
-          <p className="mt-2 text-sm text-ink-3">Add a locale in Settings before adding keys.</p>
-        )}
-      </form>
+      </div>
 
       <section className="rounded-xl border border-line bg-surface">
-        <div className="border-b border-line p-3">
+        <div className="flex flex-wrap items-center gap-2 border-b border-line p-3">
           <Input
             size="sm"
             value={search}
@@ -144,32 +100,57 @@ export function ProjectPage() {
             placeholder="Search keys and values…"
             className="max-w-sm"
           />
+          <MultiSelect
+            size="sm"
+            className="w-48"
+            allLabel="All locales"
+            options={locales.map((locale) => ({ value: String(locale.id), label: locale.code }))}
+            selected={visibleLocales.map((locale) => String(locale.id))}
+            onChange={(next) => {
+              const selectedIds = new Set(next.map(Number));
+              setExcludedLocaleIds(
+                locales
+                  .filter((locale) => !selectedIds.has(locale.id))
+                  .map((locale) => locale.id),
+              );
+            }}
+          />
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full border-separate border-spacing-0 text-sm">
             <thead>
-              <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-ink-3">
-                <th className="px-3 py-2 font-medium">Key</th>
-                {locales.map((locale) => (
-                  <th key={locale.id} className="px-3 py-2 font-medium">
+              <tr className="text-left text-xs uppercase tracking-wide text-ink-3">
+                <th className="sticky left-0 z-20 min-w-48 border-b border-r border-line bg-surface px-3 py-2 font-medium">
+                  Key
+                </th>
+                {visibleLocales.map((locale) => (
+                  <th
+                    key={locale.id}
+                    className="min-w-40 border-b border-line bg-surface px-3 py-2 font-medium"
+                  >
                     {locale.code}
                   </th>
                 ))}
-                <th className="px-3 py-2" />
+                <th className="sticky right-0 z-20 border-b border-l border-line bg-surface px-3 py-2" />
               </tr>
             </thead>
             <tbody>
               {words.data?.map((word) => (
-                <tr key={word.id} className="border-b border-line align-top last:border-0 hover:bg-fill/60">
-                  <td className="px-3 py-2 font-mono text-xs text-ink-2">{word.key}</td>
-                  {locales.map((locale) => {
+                <tr
+                  key={word.id}
+                  className="group align-top hover:bg-fill/60 [&:last-child_td]:border-b-0"
+                >
+                  <td className="sticky left-0 z-10 border-b border-r border-line bg-surface px-3 py-2 font-mono text-xs text-ink-2 group-hover:bg-fill">
+                    {word.key}
+                  </td>
+                  {visibleLocales.map((locale) => {
                     const translation = word.translations.find((t) => t.localeId === locale.id);
                     const isEditing =
                       editing?.wordId === word.id && editing.localeId === locale.id;
                     return (
-                      <td key={locale.id} className="px-3 py-2">
+                      <td key={locale.id} className="border-b border-line px-3 py-2">
                         {isEditing ? (
-                          <Input
+                          <Textarea
                             size="sm"
                             autoFocus
                             value={draft}
@@ -179,7 +160,8 @@ export function ProjectPage() {
                               setEditing(null);
                             }}
                             onKeyDown={(event) => {
-                              if (event.key === 'Enter') {
+                              if (event.key === 'Enter' && !event.shiftKey) {
+                                event.preventDefault();
                                 commitCell(word.id, word.key, locale.id, draft);
                                 setEditing(null);
                               }
@@ -201,7 +183,7 @@ export function ProjectPage() {
                       </td>
                     );
                   })}
-                  <td className="px-3 py-2 text-right">
+                  <td className="sticky right-0 z-10 border-b border-l border-line bg-surface px-3 py-2 text-right group-hover:bg-fill">
                     <button
                       type="button"
                       onClick={() => {
@@ -221,6 +203,14 @@ export function ProjectPage() {
           {words.data?.length === 0 && <p className="p-4 text-sm text-ink-3">No keys yet.</p>}
         </div>
       </section>
+
+      <AddKeyModal
+        projectId={id}
+        locales={locales}
+        channelId={defaultChannel?.id}
+        open={addKeyOpen}
+        onClose={() => setAddKeyOpen(false)}
+      />
 
       <ProjectFormModal
         mode="edit"

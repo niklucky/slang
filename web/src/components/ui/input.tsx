@@ -39,10 +39,17 @@ export function Select({ size = 'md', className, ...rest }: SelectProps) {
   );
 }
 
-export type TextareaProps = TextareaHTMLAttributes<HTMLTextAreaElement>;
+export interface TextareaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'size'> {
+  size?: 'sm' | 'md';
+}
 
-export function Textarea({ className, ...rest }: TextareaProps) {
-  return <textarea className={cx(control, 'min-h-20 px-3 py-2', className)} {...rest} />;
+export function Textarea({ size = 'md', className, ...rest }: TextareaProps) {
+  return (
+    <textarea
+      className={cx(control, size === 'sm' ? 'min-h-16 px-2 py-1.5' : 'min-h-20 px-3 py-2', className)}
+      {...rest}
+    />
+  );
 }
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
