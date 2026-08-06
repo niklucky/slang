@@ -15,6 +15,27 @@
       "when": 1785967854363,
       "tag": "0001_married_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786040018675,
+      "tag": "0002_dark_maximus",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1786044089341,
+      "tag": "0003_fluffy_thor",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786045001813,
+      "tag": "0004_tan_raza",
+      "breakpoints": true
     }
   ]
 }

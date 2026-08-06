@@ -16,14 +16,14 @@ export function LoginPage() {
     },
   });
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   if (status.data?.setupRequired) return <Navigate to="/setup" replace />;
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    login.mutate({ username, password });
+    login.mutate({ email, password });
   }
 
   return (
@@ -33,11 +33,12 @@ export function LoginPage() {
           <h1 className="text-lg font-semibold tracking-tight">Sign in</h1>
           <p className="mt-1 text-xs text-ink-3">Manage projects, locales and translations.</p>
         </div>
-        <Field label="Username">
+        <Field label="Email">
           <Input
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            autoComplete="username"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
             required
           />
         </Field>
@@ -52,7 +53,7 @@ export function LoginPage() {
         </Field>
         {login.error && (
           <p className="text-sm text-danger">
-            {login.error.message === 'bad_credentials' ? 'Wrong username or password.' : login.error.message}
+            {login.error.message === 'bad_credentials' ? 'Wrong email or password.' : login.error.message}
           </p>
         )}
         <Button type="submit" disabled={login.isPending} className="w-full">

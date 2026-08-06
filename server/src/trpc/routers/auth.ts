@@ -5,15 +5,16 @@ import { z } from 'zod';
 import { users, type User } from '../../db/schema.js';
 import { signToken } from '../../lib/jwt.js';
 import { hashPassword, verifyPassword } from '../../lib/password.js';
+import { registerWithInvitation } from '../../services/invitations.js';
 import { protectedProcedure, publicProcedure, router } from '../init.js';
 
 function toPublicUser(user: User) {
-  return { id: user.id, username: user.username, name: user.name };
+  return { id: user.id, email: user.email, name: user.name };
 }
 
 const credentialsInput = z.object({
   name: z.string().trim().min(1).optional(),
-  username: z.string().trim().min(2),
+  email: z.email().transform((value) => value.toLowerCase()),
   password: z.string().min(6),
 });
 
@@ -35,8 +36,8 @@ export const authRouter = router({
       const [user] = await ctx.db
         .insert(users)
         .values({
-          username: input.username,
-          name: input.name ?? input.username,
+          email: input.email,
+          name: input.name ?? input.email,
           password: await hashPassword(input.password),
         })
         .returning();
@@ -45,13 +46,27 @@ export const authRouter = router({
       return { user: toPublicUser(user), accessToken };
     }),
 
+  /** Redeems an invitation: creates the account under the invited email and joins the project. */
+  register: publicProcedure
+    .input(
+      credentialsInput
+        .pick({ name: true, password: true })
+        .required({ name: true })
+        .extend({ key: z.string().min(1) }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await registerWithInvitation(ctx.db, input);
+      const accessToken = await signToken(user.id);
+      return { user: toPublicUser(user), accessToken };
+    }),
+
   login: publicProcedure
-    .input(credentialsInput.pick({ username: true, password: true }))
+    .input(credentialsInput.pick({ email: true, password: true }))
     .mutation(async ({ ctx, input }) => {
       const [user] = await ctx.db
         .select()
         .from(users)
-        .where(eq(users.username, input.username))
+        .where(eq(users.email, input.email))
         .limit(1);
       if (!user || !(await verifyPassword(input.password, user.password))) {
         throw new TRPCError({ code: 'UNAUTHORIZED', message: 'bad_credentials' });

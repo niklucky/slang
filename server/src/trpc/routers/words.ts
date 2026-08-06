@@ -1,10 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
 import { listWords, softDeleteWord, upsertWord } from '../../services/words.js';
-import { requireProject } from '../guards.js';
+import { requirePermission, requireProject, requireProjectMembership } from '../guards.js';
 import { protectedProcedure, router } from '../init.js';
 
 export const wordsRouter = router({
@@ -37,14 +37,40 @@ export const wordsRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await requireProject(ctx.db, input.projectId, ctx.user.id);
+      const { permissions } = await requireProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.user.id,
+      );
+      // Creating a new key and editing an existing one are separate permissions.
+      const [existing] = await ctx.db
+        .select({ id: words.id })
+        .from(words)
+        .where(
+          and(
+            eq(words.projectId, input.projectId),
+            eq(words.key, input.key),
+            isNull(words.deletedAt),
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        requirePermission(permissions, 'canTranslate', 'translate_forbidden');
+      } else {
+        requirePermission(permissions, 'canCreateKeys', 'create_keys_forbidden');
+      }
       return upsertWord(ctx.db, input);
     }),
 
   remove: protectedProcedure
     .input(z.object({ projectId: z.number().int(), wordId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
-      await requireProject(ctx.db, input.projectId, ctx.user.id);
+      const { permissions } = await requireProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.user.id,
+      );
+      requirePermission(permissions, 'canDeleteKeys', 'delete_keys_forbidden');
       const [word] = await ctx.db
         .select({ id: words.id, projectId: words.projectId })
         .from(words)

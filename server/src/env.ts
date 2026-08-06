@@ -6,6 +6,11 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(5801),
   /** Directory of the built web UI to serve. Skips static hosting when absent. */
   WEB_DIST: z.string().optional(),
+  /** Resend API key. Emails are skipped (with a warning) when absent. */
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+  /** Base URL used in emailed links. */
+  PUBLIC_URL: z.string().optional(),
 });
 
 export const env = envSchema.parse(process.env);

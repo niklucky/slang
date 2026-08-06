@@ -6,7 +6,7 @@ import { verifyToken } from '../lib/jwt.js';
 
 export interface SessionUser {
   id: number;
-  username: string;
+  email: string;
   name: string;
 }
 
@@ -31,7 +31,7 @@ export async function createContext(
     const userId = await verifyToken(token);
     if (userId !== null) {
       const [row] = await db
-        .select({ id: users.id, username: users.username, name: users.name })
+        .select({ id: users.id, email: users.email, name: users.name })
         .from(users)
         .where(eq(users.id, userId))
         .limit(1);

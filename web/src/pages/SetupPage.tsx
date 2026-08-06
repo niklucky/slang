@@ -17,14 +17,14 @@ export function SetupPage() {
   });
 
   const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   if (status.data && !status.data.setupRequired) return <Navigate to="/login" replace />;
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    setup.mutate({ name, username, password });
+    setup.mutate({ name, email, password });
   }
 
   return (
@@ -37,13 +37,13 @@ export function SetupPage() {
         <Field label="Name">
           <Input value={name} onChange={(event) => setName(event.target.value)} required />
         </Field>
-        <Field label="Username">
+        <Field label="Email">
           <Input
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-            autoComplete="username"
+            type="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
             required
-            minLength={2}
           />
         </Field>
         <Field label="Password">

@@ -17,6 +17,7 @@ const TABLES = [
   'words',
   'namespaces',
   'channels',
+  'invitations',
   'projects_to_locales',
   'users_to_projects',
   'projects',
@@ -27,11 +28,12 @@ export async function resetDb(handle: DbHandle): Promise<void> {
   await handle.db.execute(sql.raw(`TRUNCATE TABLE ${TABLES.join(', ')} RESTART IDENTITY CASCADE`));
 }
 
-export async function seedUser(handle: DbHandle, username = 'alice'): Promise<User> {
+export async function seedUser(handle: DbHandle, email = 'alice@example.com'): Promise<User> {
   const { users } = await import('../src/db/schema.js');
+  const name = email.split('@')[0] ?? email;
   const [user] = await handle.db
     .insert(users)
-    .values({ username, name: username, password: await hashPassword('password123') })
+    .values({ email, name, password: await hashPassword('password123') })
     .returning();
   if (!user) throw new Error('seed_user_failed');
   return user;

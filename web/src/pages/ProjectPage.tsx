@@ -1,8 +1,9 @@
-import { Plus, Settings } from 'lucide-react';
+import { Plus, Settings, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { AddKeyModal } from '../components/AddKeyModal.js';
+import { MembersModal } from '../components/MembersModal.js';
 import { ProjectFormModal } from '../components/ProjectFormModal.js';
 import { Button } from '../components/ui/button.js';
 import { Input, Textarea } from '../components/ui/input.js';
@@ -44,6 +45,7 @@ export function ProjectPage() {
   const [editing, setEditing] = useState<CellRef | null>(null);
   const [draft, setDraft] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
   const [addKeyOpen, setAddKeyOpen] = useState(false);
   // Locales removed from this set are hidden from the table; new locales default to visible.
   const [excludedLocaleIds, setExcludedLocaleIds] = useState<number[]>([]);
@@ -80,6 +82,10 @@ export function ProjectPage() {
           {project.description && <p className="mt-1 text-sm text-ink-2">{project.description}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setMembersOpen(true)}>
+            <Users size={14} />
+            Members
+          </Button>
           <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
             <Settings size={14} />
             Settings
@@ -218,6 +224,8 @@ export function ProjectPage() {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+
+      <MembersModal projectId={id} open={membersOpen} onClose={() => setMembersOpen(false)} />
     </div>
   );
 }

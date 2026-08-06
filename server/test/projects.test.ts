@@ -11,7 +11,7 @@ beforeEach(() => resetDb(handle));
 afterAll(() => handle.close());
 
 interface AuthResult {
-  user: { id: number; username: string };
+  user: { id: number; email: string };
   accessToken: string;
 }
 
@@ -29,17 +29,17 @@ interface WordRow {
   translations: Array<{ value: string; localeCode: string; channelId: number }>;
 }
 
-async function login(username: string): Promise<AuthResult> {
-  const user = await seedUser(handle, username);
+async function login(email: string): Promise<AuthResult> {
+  const user = await seedUser(handle, email);
   const result = await trpc<AuthResult>(app, 'auth.login', {
-    input: { username, password: 'password123' },
+    input: { email, password: 'password123' },
   });
-  return { user: { id: user.id, username }, accessToken: result.accessToken };
+  return { user: { id: user.id, email }, accessToken: result.accessToken };
 }
 
 describe('projects', () => {
   it('create returns a project with a 64-char api key; get shows a default channel', async () => {
-    const { accessToken } = await login('alice');
+    const { accessToken } = await login('alice@example.com');
     const project = await trpc<Project>(app, 'projects.create', {
       input: { name: 'Demo', url: 'https://demo.dev' },
       token: accessToken,
@@ -57,7 +57,7 @@ describe('projects', () => {
   });
 
   it('create accepts a null url; update can set and clear it', async () => {
-    const { accessToken } = await login('alice');
+    const { accessToken } = await login('alice@example.com');
     const project = await trpc<Project>(app, 'projects.create', {
       input: { name: 'No URL', url: null },
       token: accessToken,
@@ -78,7 +78,7 @@ describe('projects', () => {
   });
 
   it('regenerateApiKey rotates the key; non-members cannot regenerate', async () => {
-    const alice = await login('alice');
+    const alice = await login('alice@example.com');
     const project = await trpc<Project>(app, 'projects.create', {
       input: { name: 'Demo', url: 'https://demo.dev' },
       token: alice.accessToken,
@@ -91,7 +91,7 @@ describe('projects', () => {
     expect(regenerated.apiKey).toMatch(/^[0-9a-f]{64}$/);
     expect(regenerated.apiKey).not.toBe(project.apiKey);
 
-    const bob = await login('bob');
+    const bob = await login('bob@example.com');
     await expect(
       trpc(app, 'projects.regenerateApiKey', {
         input: { projectId: project.id },
@@ -101,8 +101,8 @@ describe('projects', () => {
   });
 
   it('list only shows projects the caller belongs to', async () => {
-    const alice = await login('alice');
-    const bob = await login('bob');
+    const alice = await login('alice@example.com');
+    const bob = await login('bob@example.com');
     await trpc(app, 'projects.create', {
       input: { name: 'Alice project', url: 'https://a.dev' },
       token: alice.accessToken,
@@ -130,7 +130,7 @@ describe('projects', () => {
   });
 
   it('update and delete are owner-only; delete removes it from list', async () => {
-    const alice = await login('alice');
+    const alice = await login('alice@example.com');
     const project = await trpc<Project>(app, 'projects.create', {
       input: { name: 'Demo', url: 'https://demo.dev' },
       token: alice.accessToken,
@@ -154,7 +154,7 @@ describe('projects', () => {
   });
 
   it('removing a locale soft-deletes only that locale and only in this project', async () => {
-    const { accessToken } = await login('alice');
+    const { accessToken } = await login('alice@example.com');
     const project = await trpc<Project>(app, 'projects.create', {
       input: { name: 'Demo', url: 'https://demo.dev' },
       token: accessToken,
@@ -197,8 +197,8 @@ describe('projects', () => {
 });
 
 describe('words', () => {
-  async function createProjectWithLocale(username: string) {
-    const session = await login(username);
+  async function createProjectWithLocale(email: string) {
+    const session = await login(email);
     const project = await trpc<Project>(app, 'projects.create', {
       input: { name: 'Demo', url: 'https://demo.dev' },
       token: session.accessToken,
@@ -222,7 +222,7 @@ describe('words', () => {
   }
 
   it('upsert creates the key and translations; list returns them', async () => {
-    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice');
+    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
 
     await trpc(app, 'words.upsert', {
       input: {
@@ -254,7 +254,7 @@ describe('words', () => {
   });
 
   it('remove soft-deletes the word', async () => {
-    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice');
+    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
     await trpc(app, 'words.upsert', {
       input: {
         projectId: project.id,
@@ -282,8 +282,8 @@ describe('words', () => {
   });
 
   it('cannot touch words of a project the caller is not a member of', async () => {
-    const alice = await createProjectWithLocale('alice');
-    const bob = await login('bob');
+    const alice = await createProjectWithLocale('alice@example.com');
+    const bob = await login('bob@example.com');
     await expect(
       trpc(app, 'words.list', {
         kind: 'query',

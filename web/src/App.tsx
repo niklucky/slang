@@ -5,6 +5,7 @@ import { RequireAuth } from './components/RequireAuth.js';
 import { LoginPage } from './pages/LoginPage.js';
 import { ProjectPage } from './pages/ProjectPage.js';
 import { ProjectsPage } from './pages/ProjectsPage.js';
+import { RegisterPage } from './pages/RegisterPage.js';
 import { SetupPage } from './pages/SetupPage.js';
 
 export function App() {
@@ -12,6 +13,7 @@ export function App() {
     <Routes>
       <Route path="/setup" element={<SetupPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route
         element={
           <RequireAuth>

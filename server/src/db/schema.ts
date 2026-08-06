@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   integer,
   pgTable,
   primaryKey,
@@ -11,7 +12,7 @@ import {
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  username: text('username').notNull().unique(),
+  email: text('email').notNull().unique(),
   name: text('name').notNull(),
   password: text('password').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -54,9 +55,35 @@ export const usersToProjects = pgTable(
     assignedById: integer('assigned_by_id').notNull(),
     assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
     roleId: integer('role_id').notNull().default(1),
+    canCreateKeys: boolean('can_create_keys').notNull().default(true),
+    canTranslate: boolean('can_translate').notNull().default(true),
+    canDeleteKeys: boolean('can_delete_keys').notNull().default(true),
   },
   (t) => [primaryKey({ columns: [t.projectId, t.userId] })],
 );
+
+/**
+ * Project invitations, addressed to an email. Existing accounts with that
+ * email accept via the in-app banner; new people register through the
+ * emailed link.
+ */
+export const invitations = pgTable('invitations', {
+  id: serial('id').primaryKey(),
+  projectId: integer('project_id')
+    .notNull()
+    .references(() => projects.id),
+  invitedById: integer('invited_by_id')
+    .notNull()
+    .references(() => users.id),
+  email: text('email').notNull(),
+  key: text('key').notNull().unique(),
+  status: text('status', { enum: ['pending', 'accepted', 'declined'] })
+    .notNull()
+    .default('pending'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const projectsToLocales = pgTable(
   'projects_to_locales',
@@ -178,6 +205,8 @@ export type Channel = typeof channels.$inferSelect;
 export type Namespace = typeof namespaces.$inferSelect;
 export type Word = typeof words.$inferSelect;
 export type Translation = typeof translations.$inferSelect;
+export type Invitation = typeof invitations.$inferSelect;
+export type InvitationStatus = Invitation['status'];
 
 export const Role = {
   OWNER: 1,

@@ -10,20 +10,20 @@ beforeEach(() => resetDb(handle));
 afterAll(() => handle.close());
 
 interface AuthResult {
-  user: { id: number; username: string; name: string };
+  user: { id: number; email: string; name: string };
   accessToken: string;
 }
 
 async function setup(): Promise<AuthResult> {
   return trpc<AuthResult>(app, 'auth.setup', {
-    input: { name: 'Alice', username: 'alice', password: 'password123' },
+    input: { name: 'Alice', email: 'alice@example.com', password: 'password123' },
   });
 }
 
 describe('auth.setup', () => {
   it('creates the first user and returns a token', async () => {
     const result = await setup();
-    expect(result.user.username).toBe('alice');
+    expect(result.user.email).toBe('alice@example.com');
     expect(typeof result.accessToken).toBe('string');
     expect(result.user).not.toHaveProperty('password');
   });
@@ -32,7 +32,7 @@ describe('auth.setup', () => {
     await setup();
     await expect(
       trpc(app, 'auth.setup', {
-        input: { name: 'Bob', username: 'bob', password: 'password123' },
+        input: { name: 'Bob', email: 'bob@example.com', password: 'password123' },
       }),
     ).rejects.toMatchObject({ code: 'FORBIDDEN', message: expect.stringContaining('account_set_up') });
   });
@@ -42,24 +42,32 @@ describe('auth.login', () => {
   it('rejects a wrong password', async () => {
     await setup();
     await expect(
-      trpc(app, 'auth.login', { input: { username: 'alice', password: 'wrong-password' } }),
+      trpc(app, 'auth.login', { input: { email: 'alice@example.com', password: 'wrong-password' } }),
     ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
   });
 
-  it('rejects an unknown user', async () => {
+  it('rejects an unknown email', async () => {
     await setup();
     await expect(
-      trpc(app, 'auth.login', { input: { username: 'nobody', password: 'password123' } }),
+      trpc(app, 'auth.login', { input: { email: 'nobody@example.com', password: 'password123' } }),
     ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+  });
+
+  it('matches emails case-insensitively', async () => {
+    await setup();
+    const login = await trpc<AuthResult>(app, 'auth.login', {
+      input: { email: 'ALICE@example.com', password: 'password123' },
+    });
+    expect(login.user.email).toBe('alice@example.com');
   });
 
   it('returns a token usable on auth.me', async () => {
     await setup();
     const login = await trpc<AuthResult>(app, 'auth.login', {
-      input: { username: 'alice', password: 'password123' },
+      input: { email: 'alice@example.com', password: 'password123' },
     });
-    const me = await trpc<{ username: string }>(app, 'auth.me', { token: login.accessToken });
-    expect(me.username).toBe('alice');
+    const me = await trpc<{ email: string }>(app, 'auth.me', { token: login.accessToken });
+    expect(me.email).toBe('alice@example.com');
   });
 
   it('accepts a bare token in Authorization (old-server parity)', async () => {
