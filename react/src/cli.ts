@@ -3,7 +3,8 @@
  *
  * Depends on nothing but Node itself: `parseArgs`, global `fetch`, `node:fs`.
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import type { Dirent } from 'node:fs';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { basename, resolve as resolvePath } from 'node:path';
 import { parseArgs } from 'node:util';
 
@@ -16,9 +17,11 @@ Usage:
   slang pull <locale...> [options]
   slang pull --all [options]
   slang push <file...> [options]
+  slang push --in <dir> [options]
 
 Options:
   --out <dir>      Directory to write <locale>.json into       (pull; default ./src/locales)
+  --in <dir>       Directory to read every <locale>.json from  (push; default ./src/locales)
   --locale <code>  Locale code for every pushed file           (push; default: <code>.json filename)
   --channel <name> Channel/environment to push to              (push)
   --namespace <ns> Namespace to attach the pushed keys to      (push)
@@ -41,6 +44,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
       allowPositionals: true,
       options: {
         out: { type: 'string', default: './src/locales' },
+        in: { type: 'string' },
         locale: { type: 'string' },
         channel: { type: 'string' },
         namespace: { type: 'string' },
@@ -140,6 +144,7 @@ async function pull(
 }
 
 interface PushValues {
+  in?: string;
   locale?: string;
   channel?: string;
   namespace?: string;
@@ -147,11 +152,35 @@ interface PushValues {
 
 async function push(
   client: ReturnType<typeof createClient>,
-  files: string[],
+  positionalFiles: string[],
   values: PushValues,
 ): Promise<number> {
+  // Explicit files are pushed as-is. `--in <dir>` adds every <locale>.json it
+  // holds; with no explicit files it defaults to the directory `pull` writes to.
+  const inDir = values.in ?? (positionalFiles.length === 0 ? './src/locales' : undefined);
+
+  const files = [...positionalFiles];
+  if (inDir !== undefined) {
+    const dirPath = resolvePath(process.cwd(), inDir);
+    let entries: Dirent[];
+    try {
+      entries = await readdir(dirPath, { withFileTypes: true });
+    } catch (error) {
+      process.stderr.write(`Cannot read ${dirPath}: ${(error as Error).message}\n`);
+      return 1;
+    }
+    for (const name of entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+      .map((entry) => entry.name)
+      .sort()) {
+      files.push(resolvePath(dirPath, name));
+    }
+  }
+
   if (files.length === 0) {
-    process.stderr.write(`No files given. Pass one or more <locale>.json files.\n\n${USAGE}`);
+    process.stderr.write(
+      `No files given. Pass one or more <locale>.json files, or a directory via --in.\n\n${USAGE}`,
+    );
     return 1;
   }
 
@@ -180,13 +209,11 @@ async function push(
       return 1;
     }
 
-    const result = await client.pushLocale(locale, dictionary, {
+    await client.pushLocale(locale, dictionary, {
       ...(values.channel ? { channel: values.channel } : {}),
       ...(values.namespace ? { namespace: values.namespace } : {}),
     });
-    process.stdout.write(
-      `${locale}: ${result.keys} keys pushed (${Object.keys(dictionary).length} in ${file})\n`,
-    );
+    process.stdout.write(`Locale ${locale} pushed to server\n`);
   }
   return 0;
 }

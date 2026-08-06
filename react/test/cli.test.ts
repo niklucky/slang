@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -171,7 +171,7 @@ describe('slang push', () => {
       locale: 'en',
       translations: { hello: 'Hello', bye: 'Bye' },
     });
-    expect(stdout).toContain('en: 2 keys pushed');
+    expect(stdout).toContain('Locale en pushed to server');
   });
 
   it('accepts the wrapped { locale: {...} } shape', async () => {
@@ -234,8 +234,10 @@ describe('slang push', () => {
     expect(stderr).toContain('nothing to push');
   });
 
-  it('rejects a push without files', async () => {
-    expect(await main(['push', '--key', 'k'])).toBe(1);
+  it('rejects a push with nothing to send', async () => {
+    const emptyDir = join(out, 'empty');
+    await mkdir(emptyDir);
+    expect(await main(['push', '--in', emptyDir, '--key', 'k'])).toBe(1);
     expect(stderr).toContain('No files given');
   });
 
@@ -245,5 +247,72 @@ describe('slang push', () => {
 
     expect(await main(['push', file, '--key', 'k'])).toBe(1);
     expect(stderr).toContain('400');
+  });
+});
+
+describe('slang push --in', () => {
+  function pushBodies(fetchImpl: ReturnType<typeof vi.fn>): Record<string, unknown>[] {
+    return fetchImpl.mock.calls.map((call) =>
+      JSON.parse(String((call as unknown as [string, RequestInit])[1].body)) as Record<
+        string,
+        unknown
+      >,
+    );
+  }
+
+  it('pushes every .json file in the directory, sorted, logging each locale', async () => {
+    const dir = join(out, 'locales');
+    await mkdir(dir);
+    // Written out of order to prove the push is sorted by filename.
+    await writeFile(join(dir, 'ru.json'), JSON.stringify({ a: '2' }), 'utf8');
+    await writeFile(join(dir, 'en.json'), JSON.stringify({ a: '1' }), 'utf8');
+    await writeFile(join(dir, 'notes.txt'), 'not a locale file', 'utf8');
+
+    const fetchImpl = stubServer({ data: { keys: 1 }, error: null });
+    expect(await main(['push', '--in', dir, '--key', 'k'])).toBe(0);
+
+    expect(pushBodies(fetchImpl).map((body) => body['locale'])).toEqual(['en', 'ru']);
+    expect(stdout).toContain('Locale en pushed to server');
+    expect(stdout).toContain('Locale ru pushed to server');
+    expect(stdout).not.toContain('notes');
+  });
+
+  it('forwards --channel and --namespace for every file', async () => {
+    const dir = join(out, 'locales');
+    await mkdir(dir);
+    await writeFile(join(dir, 'en.json'), JSON.stringify({ a: '1' }), 'utf8');
+    await writeFile(join(dir, 'ru.json'), JSON.stringify({ a: '2' }), 'utf8');
+
+    const fetchImpl = stubServer({ data: { keys: 1 }, error: null });
+    expect(
+      await main([
+        'push',
+        '--in',
+        dir,
+        '--key',
+        'k',
+        '--channel',
+        'staging',
+        '--namespace',
+        'app',
+      ]),
+    ).toBe(0);
+    for (const body of pushBodies(fetchImpl)) {
+      expect(body).toMatchObject({ channel: 'staging', namespace: 'app' });
+    }
+  });
+
+  it('fails when the directory does not exist', async () => {
+    expect(await main(['push', '--in', join(out, 'missing'), '--key', 'k'])).toBe(1);
+    expect(stderr).toContain('Cannot read');
+  });
+
+  it('fails when the directory holds no .json files', async () => {
+    const dir = join(out, 'empty');
+    await mkdir(dir);
+    await writeFile(join(dir, 'readme.md'), '# no locales here', 'utf8');
+
+    expect(await main(['push', '--in', dir, '--key', 'k'])).toBe(1);
+    expect(stderr).toContain('No files given');
   });
 });

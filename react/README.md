@@ -129,10 +129,15 @@ GET  {apiUrl}/api/translations/state?locale=<locale>
 ```bash
 slang pull en ru --out ./src/locales     # one file per locale
 slang pull --all --out ./src/locales     # every locale the project has
+
+slang push en.json ru.json               # push specific <locale>.json files
+slang push --in ./src/locales            # push every <locale>.json in a directory
 ```
 
 Reads `SLANG_API_URL` and `SLANG_API_KEY` from the environment; `--url` and `--key` override.
-Writes flat, unwrapped, key-sorted JSON so the diff stays readable when one string changes.
+Pull writes flat, unwrapped, key-sorted JSON so the diff stays readable when one string changes.
+`push --in` defaults to the same `./src/locales` that `pull --out` writes, and logs
+`Locale <code> pushed to server` for each locale it sends.
 
 ## How refresh works
 
