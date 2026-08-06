@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "clean": "rm -rf dist"
   },
   "dependencies": {
