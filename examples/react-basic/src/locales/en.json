@@ -1,0 +1,9 @@
+{
+  "app_title": "Slang React example",
+  "intro": "This one-page app exercises the @warpunit/slang-react client.",
+  "welcome": "Welcome, {{name}}!",
+  "locale_label": "Active locale",
+  "ready_yes": "translations ready",
+  "refresh": "Refresh from server",
+  "fallback_demo": "This string only exists in English, so the Russian UI falls back to it."
+}

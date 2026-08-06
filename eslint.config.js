@@ -20,7 +20,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['web/**', 'react/**'],
+    files: ['web/**', 'react/**', 'examples/**'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },
     },

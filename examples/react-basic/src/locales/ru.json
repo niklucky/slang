@@ -1,0 +1,8 @@
+{
+  "app_title": "Пример Slang для React",
+  "intro": "Это одностраничное приложение проверяет клиент @warpunit/slang-react.",
+  "welcome": "Добро пожаловать, {{name}}!",
+  "locale_label": "Активная локаль",
+  "ready_yes": "переводы готовы",
+  "refresh": "Обновить с сервера"
+}

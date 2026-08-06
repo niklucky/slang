@@ -2,5 +2,6 @@ packages:
   - "react"
   - "server"
   - "web"
+  - "examples/*"
 allowBuilds:
   esbuild: true
