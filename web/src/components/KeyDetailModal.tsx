@@ -6,7 +6,7 @@ import { HistoryModal } from './HistoryModal.js';
 import type { CatalogLocale } from './ProjectFormModal.js';
 import { Button } from './ui/button.js';
 import { IconButton } from './ui/icon-button.js';
-import { Textarea } from './ui/input.js';
+import { Field, Input, Textarea } from './ui/input.js';
 import { Modal } from './ui/modal.js';
 
 export interface KeyDetailWord {
@@ -39,12 +39,15 @@ export function KeyDetailModal({
 }: KeyDetailModalProps) {
   const utils = trpc.useUtils();
 
+  const [key, setKey] = useState(word.key);
   const [values, setValues] = useState<Record<number, string>>({});
   const [history, setHistory] = useState<HistoryState | null>(null);
   const upsert = trpc.words.upsert.useMutation();
+  const updateKey = trpc.words.updateKey.useMutation();
 
   useEffect(() => {
     if (!open) return;
+    setKey(word.key);
     const next: Record<number, string> = {};
     for (const translation of word.translations) {
       next[translation.localeId] = translation.value;
@@ -52,12 +55,20 @@ export function KeyDetailModal({
     setValues(next);
   }, [open, word]);
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    const nextKey = key.trim();
+    if (nextKey && nextKey !== word.key) {
+      try {
+        await updateKey.mutateAsync({ projectId, wordId: word.id, key: nextKey });
+      } catch {
+        return; // updateKey.error is rendered below
+      }
+    }
     upsert.mutate(
       {
         projectId,
-        key: word.key,
+        key: nextKey || word.key,
         translations: locales.map((locale) => ({
           localeId: locale.id,
           channelId: channelId ?? null,
@@ -67,7 +78,7 @@ export function KeyDetailModal({
       {
         onSuccess: () => {
           void utils.words.list.invalidate({ projectId });
-          void utils.words.history.invalidate({ projectId, wordId: word.id });
+          void utils.words.history.invalidate();
           onClose();
         },
       },
@@ -85,6 +96,14 @@ export function KeyDetailModal({
       >
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            <Field label="Key">
+              <Input
+                value={key}
+                onChange={(event) => setKey(event.target.value)}
+                placeholder="key.name"
+                required
+              />
+            </Field>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-medium text-ink-2">Translations</span>
               <IconButton label="Key history" size="sm" onClick={() => setHistory({})}>
@@ -118,14 +137,18 @@ export function KeyDetailModal({
             ))}
           </div>
 
-          {upsert.error && <p className="mt-3 text-sm text-danger">{upsert.error.message}</p>}
+          {(upsert.error || updateKey.error) && (
+            <p className="mt-3 text-sm text-danger">
+              {(upsert.error ?? updateKey.error)?.message}
+            </p>
+          )}
 
           <div className="-mx-5 -mb-4 mt-5 flex justify-end gap-2 rounded-b-xl border-t border-line px-5 py-4">
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={upsert.isPending}>
-              {upsert.isPending ? 'Saving…' : 'Save'}
+            <Button type="submit" disabled={upsert.isPending || updateKey.isPending}>
+              {upsert.isPending || updateKey.isPending ? 'Saving…' : 'Save'}
             </Button>
           </div>
         </form>

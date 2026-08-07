@@ -1,3 +1,4 @@
+import { TRPCError } from '@trpc/server';
 import { and, desc, eq, ilike, inArray, isNull, type ExtractTablesWithRelations, type SQL } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
@@ -12,7 +13,9 @@ import {
   users,
   words,
   wordsToNamespaces,
+  wordVersions,
   type Word,
+  type WordVersionAction,
 } from '../db/schema.js';
 
 export type Tx = PgTransaction<
@@ -154,9 +157,11 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
       .values({ projectId: input.projectId, key: input.key })
       .returning();
     word = inserted[0];
-    await tx
-      .insert(wordVersions)
-      .values({ wordId: word.id, action: 'created', changedById: input.changedById ?? null });
+    if (word) {
+      await tx
+        .insert(wordVersions)
+        .values({ wordId: word.id, action: 'created', changedById: input.changedById ?? null });
+    }
   } else if (word.deletedAt !== null) {
     const revived = await tx
       .update(words)
@@ -164,9 +169,11 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
       .where(eq(words.id, word.id))
       .returning();
     word = revived[0];
-    await tx
-      .insert(wordVersions)
-      .values({ wordId: word.id, action: 'restored', changedById: input.changedById ?? null });
+    if (word) {
+      await tx
+        .insert(wordVersions)
+        .values({ wordId: word.id, action: 'restored', changedById: input.changedById ?? null });
+    }
   }
   if (!word) throw new Error('word_insert_failed');
 
@@ -228,7 +235,60 @@ export async function upsertWord(db: Database, input: UpsertWordInput): Promise<
   return db.transaction((tx) => upsertWordCore(tx, input));
 }
 
+/**
+ * Rename a key. The key is part of the search index, so it is rebuilt after
+ * the update. Conflicts with another live key in the project raise CONFLICT.
+ */
+export async function renameWord(
+  db: Database,
+  options: { projectId: number; wordId: number; key: string; changedById: number | null },
+): Promise<Word> {
+  return db.transaction(async (tx) => {
+    const [word] = await tx
+      .select()
+      .from(words)
+      .where(and(eq(words.id, options.wordId), isNull(words.deletedAt)))
+      .limit(1);
+    if (!word || word.projectId !== options.projectId) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
+    }
+    if (word.key === options.key) return word;
+
+    const [conflict] = await tx
+      .select({ id: words.id })
+      .from(words)
+      .where(
+        and(
+          eq(words.projectId, options.projectId),
+          eq(words.key, options.key),
+          isNull(words.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (conflict) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'key_already_exists' });
+    }
+
+    const [updated] = await tx
+      .update(words)
+      .set({ key: options.key, updatedAt: new Date() })
+      .where(eq(words.id, word.id))
+      .returning();
+    if (!updated) throw new Error('word_update_failed');
+    await tx.insert(wordVersions).values({
+      wordId: word.id,
+      action: 'renamed',
+      oldKey: word.key,
+      newKey: options.key,
+      changedById: options.changedById,
+    });
+    await rebuildSearchIndex(tx, word.id);
+    return updated;
+  });
+}
+
 export interface TranslationVersionEntry {
+  type: 'translation';
   id: number;
   wordId: number;
   localeId: number;
@@ -241,11 +301,27 @@ export interface TranslationVersionEntry {
   createdAt: Date;
 }
 
-/** Version rows for a word, newest first, optionally filtered to one locale. */
+export interface WordVersionEntry {
+  type: 'word';
+  id: number;
+  wordId: number;
+  action: WordVersionAction;
+  oldKey: string | null;
+  newKey: string | null;
+  changedBy: { id: number; name: string; email: string } | null;
+  createdAt: Date;
+}
+
+export type HistoryEntry = TranslationVersionEntry | WordVersionEntry;
+
+/**
+ * History for a word, newest first. With a localeId filter only translation
+ * versions are returned; without it word lifecycle events are merged in.
+ */
 export async function listTranslationVersions(
   db: Database,
   options: { wordId: number; localeId?: number },
-): Promise<TranslationVersionEntry[]> {
+): Promise<HistoryEntry[]> {
   const conditions: (SQL | undefined)[] = [eq(translationVersions.wordId, options.wordId)];
   if (options.localeId !== undefined) {
     conditions.push(eq(translationVersions.localeId, options.localeId));
@@ -270,7 +346,8 @@ export async function listTranslationVersions(
     .leftJoin(users, eq(translationVersions.changedById, users.id))
     .where(and(...conditions))
     .orderBy(desc(translationVersions.createdAt), desc(translationVersions.id));
-  return rows.map((row) => ({
+  const entries: HistoryEntry[] = rows.map((row) => ({
+    type: 'translation',
     id: row.id,
     wordId: row.wordId,
     localeId: row.localeId,
@@ -285,6 +362,41 @@ export async function listTranslationVersions(
         : { id: row.changedById, name: row.changedByName!, email: row.changedByEmail! },
     createdAt: row.createdAt,
   }));
+
+  if (options.localeId === undefined) {
+    const wordRows = await db
+      .select({
+        id: wordVersions.id,
+        wordId: wordVersions.wordId,
+        action: wordVersions.action,
+        oldKey: wordVersions.oldKey,
+        newKey: wordVersions.newKey,
+        changedById: users.id,
+        changedByName: users.name,
+        changedByEmail: users.email,
+        createdAt: wordVersions.createdAt,
+      })
+      .from(wordVersions)
+      .leftJoin(users, eq(wordVersions.changedById, users.id))
+      .where(eq(wordVersions.wordId, options.wordId));
+    for (const row of wordRows) {
+      entries.push({
+        type: 'word',
+        id: row.id,
+        wordId: row.wordId,
+        action: row.action,
+        oldKey: row.oldKey,
+        newKey: row.newKey,
+        changedBy:
+          row.changedById === null
+            ? null
+            : { id: row.changedById, name: row.changedByName!, email: row.changedByEmail! },
+        createdAt: row.createdAt,
+      });
+    }
+    entries.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || b.id - a.id);
+  }
+  return entries;
 }
 
 export async function rebuildSearchIndex(tx: Tx, wordId: number): Promise<void> {
@@ -303,7 +415,11 @@ export async function rebuildSearchIndex(tx: Tx, wordId: number): Promise<void> 
     .where(eq(words.id, wordId));
 }
 
-export async function softDeleteWord(db: Database, wordId: number): Promise<boolean> {
+export async function softDeleteWord(
+  db: Database,
+  wordId: number,
+  changedById: number | null,
+): Promise<boolean> {
   return db.transaction(async (tx) => {
     const now = new Date();
     const deleted = await tx
@@ -316,6 +432,7 @@ export async function softDeleteWord(db: Database, wordId: number): Promise<bool
       .update(translations)
       .set({ deletedAt: now, updatedAt: now })
       .where(and(eq(translations.wordId, wordId), isNull(translations.deletedAt)));
+    await tx.insert(wordVersions).values({ wordId, action: 'deleted', changedById });
     return true;
   });
 }

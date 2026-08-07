@@ -3,7 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
-import { listTranslationVersions, listWords, softDeleteWord, upsertWord } from '../../services/words.js';
+import { listTranslationVersions, listWords, renameWord, softDeleteWord, upsertWord } from '../../services/words.js';
 import { requirePermission, requireProject, requireProjectMembership } from '../guards.js';
 import { protectedProcedure, router } from '../init.js';
 
@@ -62,6 +62,26 @@ export const wordsRouter = router({
       return upsertWord(ctx.db, { ...input, changedById: ctx.user.id });
     }),
 
+  /** Renames a key. Recorded as a 'renamed' word version. */
+  updateKey: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.number().int(),
+        wordId: z.number().int(),
+        key: z.string().trim().min(1),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { permissions } = await requireProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.user.id,
+      );
+      // Renaming reshapes the key itself, like creating one.
+      requirePermission(permissions, 'canCreateKeys', 'rename_keys_forbidden');
+      return renameWord(ctx.db, { ...input, changedById: ctx.user.id });
+    }),
+
   history: protectedProcedure
     .input(
       z.object({
@@ -100,7 +120,7 @@ export const wordsRouter = router({
       if (!word || word.projectId !== input.projectId) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
       }
-      const deleted = await softDeleteWord(ctx.db, input.wordId);
+      const deleted = await softDeleteWord(ctx.db, input.wordId, ctx.user.id);
       if (!deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
       return { ok: true };
     }),

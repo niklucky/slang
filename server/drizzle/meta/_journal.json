@@ -50,6 +50,20 @@
       "when": 1786113776819,
       "tag": "0006_cultured_luckman",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786116996179,
+      "tag": "0007_tiny_blacklash",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786118825032,
+      "tag": "0008_gigantic_owl",
+      "breakpoints": true
     }
   ]
 }

@@ -225,7 +225,10 @@ export const wordVersions = pgTable('word_versions', {
   wordId: integer('word_id')
     .notNull()
     .references(() => words.id),
-  action: text('action', { enum: ['created', 'deleted', 'restored'] }).notNull(),
+  action: text('action', { enum: ['created', 'deleted', 'restored', 'renamed'] }).notNull(),
+  /** Set for 'renamed' rows; null otherwise. */
+  oldKey: text('old_key'),
+  newKey: text('new_key'),
   changedById: integer('changed_by_id').references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });

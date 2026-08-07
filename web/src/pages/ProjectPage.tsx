@@ -46,9 +46,12 @@ export function ProjectPage() {
   };
   const upsert = trpc.words.upsert.useMutation({ onSuccess: invalidateWords });
   const removeWord = trpc.words.remove.useMutation({ onSuccess: invalidateWords });
+  const updateKey = trpc.words.updateKey.useMutation({ onSuccess: invalidateWords });
 
   const [editing, setEditing] = useState<CellRef | null>(null);
   const [draft, setDraft] = useState('');
+  const [editingKeyId, setEditingKeyId] = useState<number | null>(null);
+  const [keyDraft, setKeyDraft] = useState('');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
   const [addKeyOpen, setAddKeyOpen] = useState(false);
@@ -85,6 +88,14 @@ export function ProjectPage() {
       key,
       translations: [...untouched, { localeId, channelId: defaultChannel?.id ?? null, value }],
     });
+  }
+
+  function commitKeyEdit(wordId: number, currentKey: string) {
+    const nextKey = keyDraft.trim();
+    if (nextKey && nextKey !== currentKey) {
+      updateKey.mutate({ projectId: id, wordId, key: nextKey });
+    }
+    setEditingKeyId(null);
   }
 
   return (
@@ -170,7 +181,35 @@ export function ProjectPage() {
                 >
                   <td className="sticky left-0 z-10 border-b border-r border-line bg-surface px-3 py-2 font-mono text-xs text-ink-2 group-hover:bg-fill">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="min-w-0 break-all">{word.key}</span>
+                      {editingKeyId === word.id ? (
+                        <Input
+                          size="sm"
+                          autoFocus
+                          className="font-mono text-xs"
+                          value={keyDraft}
+                          onChange={(event) => setKeyDraft(event.target.value)}
+                          onBlur={() => commitKeyEdit(word.id, word.key)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              commitKeyEdit(word.id, word.key);
+                            }
+                            if (event.key === 'Escape') setEditingKeyId(null);
+                          }}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingKeyId(word.id);
+                            setKeyDraft(word.key);
+                          }}
+                          className="min-w-0 cursor-text break-all rounded-md px-1 py-0.5 text-left transition-colors hover:bg-fill"
+                          title="Click to rename"
+                        >
+                          {word.key}
+                        </button>
+                      )}
                       <IconButton
                         label={`Details for ${word.key}`}
                         size="sm"
@@ -244,9 +283,9 @@ export function ProjectPage() {
             </p>
           )}
         </div>
-        {(upsert.error || removeWord.error) && (
+        {(upsert.error || removeWord.error || updateKey.error) && (
           <p className="border-t border-line p-3 text-sm text-danger">
-            {(upsert.error ?? removeWord.error)?.message}
+            {(upsert.error ?? removeWord.error ?? updateKey.error)?.message}
           </p>
         )}
       </section>

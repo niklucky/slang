@@ -20,6 +20,11 @@ function formatValue(value: string | null): string {
   return value || '(empty)';
 }
 
+const actionLabels: Record<string, string> = {
+  created: 'Key created',
+  deleted: 'Key deleted',
+  restored: 'Key restored',
+};
 export function HistoryModal({
   projectId,
   wordId,
@@ -50,40 +55,66 @@ export function HistoryModal({
       )}
       {history.data && history.data.length > 0 && (
         <ul className="divide-y divide-line">
-          {history.data.map((version) => (
-            <li key={version.id} className="flex items-start justify-between gap-3 py-3">
-              <div className="min-w-0">
+          {history.data.map((version) =>
+            version.type === 'word' ? (
+              <li key={`word-${version.id}`} className="py-3">
                 <p className="text-xs text-ink-3">
                   {new Date(version.createdAt).toLocaleString()} ·{' '}
                   {version.changedBy
                     ? `${version.changedBy.name} (${version.changedBy.email})`
                     : 'API'}
-                  {' · '}
-                  {version.localeCode}
                 </p>
-                <p className="mt-1 break-words text-sm text-ink">
-                  <span className={version.oldValue === null ? 'text-ink-3' : ''}>
-                    {formatValue(version.oldValue)}
-                  </span>
-                  <span className="mx-1.5 text-ink-3">→</span>
-                  <span className={version.newValue === null ? 'text-ink-3' : ''}>
-                    {formatValue(version.newValue)}
-                  </span>
+                <p className="mt-1 text-sm text-ink">
+                  {version.action === 'renamed' ? (
+                    <>
+                      Key renamed:{' '}
+                      <span className="font-mono text-xs">{version.oldKey ?? '?'}</span>
+                      <span className="mx-1.5 text-ink-3">→</span>
+                      <span className="font-mono text-xs">{version.newKey ?? '?'}</span>
+                    </>
+                  ) : (
+                    (actionLabels[version.action] ?? version.action)
+                  )}
                 </p>
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                className="shrink-0"
-                onClick={() => {
-                  onUse(version.localeId, version.newValue ?? '');
-                  onClose();
-                }}
+              </li>
+            ) : (
+              <li
+                key={`translation-${version.id}`}
+                className="flex items-start justify-between gap-3 py-3"
               >
-                Use this version
-              </Button>
-            </li>
-          ))}
+                <div className="min-w-0">
+                  <p className="text-xs text-ink-3">
+                    {new Date(version.createdAt).toLocaleString()} ·{' '}
+                    {version.changedBy
+                      ? `${version.changedBy.name} (${version.changedBy.email})`
+                      : 'API'}
+                    {' · '}
+                    {version.localeCode}
+                  </p>
+                  <p className="mt-1 break-words text-sm text-ink">
+                    <span className={version.oldValue === null ? 'text-ink-3' : ''}>
+                      {formatValue(version.oldValue)}
+                    </span>
+                    <span className="mx-1.5 text-ink-3">→</span>
+                    <span className={version.newValue === null ? 'text-ink-3' : ''}>
+                      {formatValue(version.newValue)}
+                    </span>
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    onUse(version.localeId, version.newValue ?? '');
+                    onClose();
+                  }}
+                >
+                  Use this version
+                </Button>
+              </li>
+            ),
+          )}
         </ul>
       )}
     </Modal>
