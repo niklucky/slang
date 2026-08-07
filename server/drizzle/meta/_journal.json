@@ -36,6 +36,13 @@
       "when": 1786045001813,
       "tag": "0004_tan_raza",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786110089443,
+      "tag": "0005_channel-optional",
+      "breakpoints": true
     }
   ]
 }

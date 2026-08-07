@@ -30,7 +30,7 @@ export interface WordWithTranslations {
     value: string;
     localeId: number;
     localeCode: string;
-    channelId: number;
+    channelId: number | null;
   }>;
 }
 
@@ -83,7 +83,7 @@ export async function listWords(
         value: row.value ?? '',
         localeId: row.localeId,
         localeCode: '', // filled below
-        channelId: row.channelId ?? 0,
+        channelId: row.channelId,
       });
     }
   }
@@ -130,7 +130,7 @@ async function attachLocaleCodes(db: Database, list: WordWithTranslations[]): Pr
 export interface UpsertWordInput {
   projectId: number;
   key: string;
-  translations: Array<{ localeId: number; channelId: number; value: string }>;
+  translations: Array<{ localeId: number; channelId?: number | null; value: string }>;
 }
 
 /**
@@ -170,7 +170,9 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
         and(
           eq(translations.wordId, word.id),
           eq(translations.localeId, entry.localeId),
-          eq(translations.channelId, entry.channelId),
+          entry.channelId == null
+            ? isNull(translations.channelId)
+            : eq(translations.channelId, entry.channelId),
         ),
       )
       .limit(1);
@@ -184,7 +186,7 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
       await tx.insert(translations).values({
         wordId: word.id,
         localeId: entry.localeId,
-        channelId: entry.channelId,
+        channelId: entry.channelId ?? null,
         value: entry.value,
       });
     }

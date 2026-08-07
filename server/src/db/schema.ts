@@ -99,8 +99,8 @@ export const projectsToLocales = pgTable(
 );
 
 /**
- * Environments. Every project gets a `default` channel on creation, so
- * `translations.channelId` can stay non-null.
+ * Environments. Projects created through the app get a `default` channel, but
+ * `translations.channelId` stays nullable so saves work for projects without one.
  */
 export const channels = pgTable(
   'channels',
@@ -183,9 +183,7 @@ export const translations = pgTable(
     localeId: integer('locale_id')
       .notNull()
       .references(() => locales.id),
-    channelId: integer('channel_id')
-      .notNull()
-      .references(() => channels.id),
+    channelId: integer('channel_id').references(() => channels.id),
     value: text('value').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

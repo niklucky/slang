@@ -29,14 +29,13 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!channelId) return;
     upsert.mutate(
       {
         projectId,
         key,
         translations: locales.map((locale) => ({
           localeId: locale.id,
-          channelId,
+          channelId: channelId ?? null,
           value: values[locale.code] ?? '',
         })),
       },
@@ -94,7 +93,7 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
           </Button>
           <Button
             type="submit"
-            disabled={upsert.isPending || locales.length === 0 || !channelId}
+            disabled={upsert.isPending || locales.length === 0}
           >
             {upsert.isPending ? 'Adding…' : 'Add key'}
           </Button>

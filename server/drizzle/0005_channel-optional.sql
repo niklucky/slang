@@ -1,0 +1,1 @@
+ALTER TABLE "translations" ALTER COLUMN "channel_id" DROP NOT NULL;

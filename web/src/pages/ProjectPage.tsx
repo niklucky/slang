@@ -66,7 +66,6 @@ export function ProjectPage() {
     : (words.data ?? []);
 
   function commitCell(wordId: number, key: string, localeId: number, value: string) {
-    if (!defaultChannel) return;
     const word = words.data?.find((entry) => entry.id === wordId);
     const untouched = (word?.translations ?? [])
       .filter((translation) => translation.localeId !== localeId)
@@ -78,7 +77,7 @@ export function ProjectPage() {
     upsert.mutate({
       projectId: id,
       key,
-      translations: [...untouched, { localeId, channelId: defaultChannel.id, value }],
+      translations: [...untouched, { localeId, channelId: defaultChannel?.id ?? null, value }],
     });
   }
 
@@ -229,6 +228,11 @@ export function ProjectPage() {
             </p>
           )}
         </div>
+        {(upsert.error || removeWord.error) && (
+          <p className="border-t border-line p-3 text-sm text-danger">
+            {(upsert.error ?? removeWord.error)?.message}
+          </p>
+        )}
       </section>
 
       <AddKeyModal
