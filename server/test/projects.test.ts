@@ -194,6 +194,62 @@ describe('projects', () => {
     });
     expect(await dict.json()).toEqual({ en: { hello: 'en' } });
   });
+
+  it('list reports untranslatedCount for keys missing a locale translation', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Demo', url: 'https://demo.dev' },
+      token: accessToken,
+    });
+    const details = await trpc<ProjectDetails>(app, 'projects.get', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    const channelId = details.channels[0]!.id;
+
+    const catalog = await trpc<Array<{ id: number; code: string }>>(app, 'locales.catalog', {
+      kind: 'query',
+      token: accessToken,
+    });
+    const en = catalog.find((locale) => locale.code === 'en')!;
+    const de = catalog.find((locale) => locale.code === 'de')!;
+    for (const locale of [en, de]) {
+      await trpc(app, 'locales.add', {
+        input: { projectId: project.id, localeId: locale.id },
+        token: accessToken,
+      });
+    }
+
+    // Fully translated key.
+    await trpc(app, 'words.upsert', {
+      input: {
+        projectId: project.id,
+        key: 'full',
+        translations: [
+          { localeId: en.id, channelId, value: 'Full' },
+          { localeId: de.id, channelId, value: 'Voll' },
+        ],
+      },
+      token: accessToken,
+    });
+    // Key missing the German translation.
+    await trpc(app, 'words.upsert', {
+      input: {
+        projectId: project.id,
+        key: 'partial',
+        translations: [{ localeId: en.id, channelId, value: 'Partial' }],
+      },
+      token: accessToken,
+    });
+
+    const projects = await trpc<Array<Project & { untranslatedCount: number }>>(
+      app,
+      'projects.list',
+      { kind: 'query', token: accessToken },
+    );
+    expect(projects[0]!.untranslatedCount).toBe(1);
+  });
 });
 
 describe('words', () => {

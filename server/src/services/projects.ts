@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNull, or } from 'drizzle-orm';
+import { and, count, eq, exists, inArray, isNull, notExists, or } from 'drizzle-orm';
 
 import type { Database } from '../db/client.js';
 import {
@@ -9,6 +9,7 @@ import {
   projects,
   projectsToLocales,
   Role,
+  translations,
   usersToProjects,
   words,
   type Project,
@@ -52,6 +53,7 @@ export async function createProject(
 export interface ProjectSummary extends Project {
   wordCount: number;
   localeCount: number;
+  untranslatedCount: number;
 }
 
 export async function findProjectsForUser(db: Database, userId: number): Promise<ProjectSummary[]> {
@@ -70,7 +72,7 @@ export async function findProjectsForUser(db: Database, userId: number): Promise
   if (rows.length === 0) return [];
 
   const ids = rows.map((row) => row.project.id);
-  const [wordCounts, localeCounts] = await Promise.all([
+  const [wordCounts, localeCounts, untranslatedCounts] = await Promise.all([
     db
       .select({ projectId: words.projectId, value: count() })
       .from(words)
@@ -81,15 +83,52 @@ export async function findProjectsForUser(db: Database, userId: number): Promise
       .from(projectsToLocales)
       .where(inArray(projectsToLocales.projectId, ids))
       .groupBy(projectsToLocales.projectId),
+    // Words missing a translation for at least one of the project's locales.
+    db
+      .select({ projectId: words.projectId, value: count() })
+      .from(words)
+      .where(
+        and(
+          isNull(words.deletedAt),
+          inArray(words.projectId, ids),
+          exists(
+            db
+              .select()
+              .from(projectsToLocales)
+              .where(
+                and(
+                  eq(projectsToLocales.projectId, words.projectId),
+                  notExists(
+                    db
+                      .select()
+                      .from(translations)
+                      .where(
+                        and(
+                          eq(translations.wordId, words.id),
+                          eq(translations.localeId, projectsToLocales.localeId),
+                          isNull(translations.deletedAt),
+                        ),
+                      ),
+                  ),
+                ),
+              ),
+          ),
+        ),
+      )
+      .groupBy(words.projectId),
   ]);
 
   const wordsByProject = new Map(wordCounts.map((row) => [row.projectId, row.value]));
   const localesByProject = new Map(localeCounts.map((row) => [row.projectId, row.value]));
+  const untranslatedByProject = new Map(
+    untranslatedCounts.map((row) => [row.projectId, row.value]),
+  );
 
   return rows.map(({ project }) => ({
     ...project,
     wordCount: wordsByProject.get(project.id) ?? 0,
     localeCount: localesByProject.get(project.id) ?? 0,
+    untranslatedCount: untranslatedByProject.get(project.id) ?? 0,
   }));
 }
 

@@ -1,4 +1,4 @@
-import { Plus, Settings, Users } from 'lucide-react';
+import { ListFilter, Plus, Settings, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -49,6 +49,7 @@ export function ProjectPage() {
   const [addKeyOpen, setAddKeyOpen] = useState(false);
   // Locales removed from this set are hidden from the table; new locales default to visible.
   const [excludedLocaleIds, setExcludedLocaleIds] = useState<number[]>([]);
+  const [missingOnly, setMissingOnly] = useState(false);
 
   if (details.isPending) return <p className="text-sm text-ink-3">Loading…</p>;
   if (!details.data) return <p className="text-sm text-danger">Project not found.</p>;
@@ -56,6 +57,13 @@ export function ProjectPage() {
   const { project, locales, channels } = details.data;
   const defaultChannel = channels[0];
   const visibleLocales = locales.filter((locale) => !excludedLocaleIds.includes(locale.id));
+  const visibleWords = missingOnly
+    ? (words.data ?? []).filter((word) =>
+        visibleLocales.some(
+          (locale) => !word.translations.some((t) => t.localeId === locale.id && t.value),
+        ),
+      )
+    : (words.data ?? []);
 
   function commitCell(wordId: number, key: string, localeId: number, value: string) {
     if (!defaultChannel) return;
@@ -121,6 +129,15 @@ export function ProjectPage() {
               );
             }}
           />
+          <Button
+            variant={missingOnly ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setMissingOnly((prev) => !prev)}
+            title="Show only keys missing a translation in the selected locales"
+          >
+            <ListFilter size={14} />
+            Missing only
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-separate border-spacing-0 text-sm">
@@ -141,7 +158,7 @@ export function ProjectPage() {
               </tr>
             </thead>
             <tbody>
-              {words.data?.map((word) => (
+              {visibleWords.map((word) => (
                 <tr
                   key={word.id}
                   className="group align-top hover:bg-fill/60 [&:last-child_td]:border-b-0"
@@ -206,7 +223,11 @@ export function ProjectPage() {
               ))}
             </tbody>
           </table>
-          {words.data?.length === 0 && <p className="p-4 text-sm text-ink-3">No keys yet.</p>}
+          {visibleWords.length === 0 && !words.isPending && (
+            <p className="p-4 text-sm text-ink-3">
+              {missingOnly ? 'No missing translations for the selected locales.' : 'No keys yet.'}
+            </p>
+          )}
         </div>
       </section>
 
