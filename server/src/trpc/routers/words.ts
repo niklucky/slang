@@ -3,7 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
-import { listWords, softDeleteWord, upsertWord } from '../../services/words.js';
+import { listTranslationVersions, listWords, softDeleteWord, upsertWord } from '../../services/words.js';
 import { requirePermission, requireProject, requireProjectMembership } from '../guards.js';
 import { protectedProcedure, router } from '../init.js';
 
@@ -59,7 +59,28 @@ export const wordsRouter = router({
       } else {
         requirePermission(permissions, 'canCreateKeys', 'create_keys_forbidden');
       }
-      return upsertWord(ctx.db, input);
+      return upsertWord(ctx.db, { ...input, changedById: ctx.user.id });
+    }),
+
+  history: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.number().int(),
+        wordId: z.number().int(),
+        localeId: z.number().int().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      await requireProjectMembership(ctx.db, input.projectId, ctx.user.id);
+      const [word] = await ctx.db
+        .select({ id: words.id, projectId: words.projectId })
+        .from(words)
+        .where(eq(words.id, input.wordId))
+        .limit(1);
+      if (!word || word.projectId !== input.projectId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
+      }
+      return listTranslationVersions(ctx.db, input);
     }),
 
   remove: protectedProcedure

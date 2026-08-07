@@ -1,11 +1,13 @@
-import { ListFilter, Plus, Settings, Users } from 'lucide-react';
+import { ListFilter, MoreHorizontal, Plus, Settings, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { AddKeyModal } from '../components/AddKeyModal.js';
+import { KeyDetailModal, type KeyDetailWord } from '../components/KeyDetailModal.js';
 import { MembersModal } from '../components/MembersModal.js';
 import { ProjectFormModal } from '../components/ProjectFormModal.js';
 import { Button } from '../components/ui/button.js';
+import { IconButton } from '../components/ui/icon-button.js';
 import { Input, Textarea } from '../components/ui/input.js';
 import { MultiSelect } from '../components/ui/multi-select.js';
 import { trpc } from '../trpc.js';
@@ -38,7 +40,10 @@ export function ProjectPage() {
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
   });
 
-  const invalidateWords = () => utils.words.list.invalidate({ projectId: id });
+  const invalidateWords = () => {
+    void utils.words.list.invalidate({ projectId: id });
+    void utils.words.history.invalidate();
+  };
   const upsert = trpc.words.upsert.useMutation({ onSuccess: invalidateWords });
   const removeWord = trpc.words.remove.useMutation({ onSuccess: invalidateWords });
 
@@ -47,6 +52,7 @@ export function ProjectPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
   const [addKeyOpen, setAddKeyOpen] = useState(false);
+  const [detailWord, setDetailWord] = useState<KeyDetailWord | null>(null);
   // Locales removed from this set are hidden from the table; new locales default to visible.
   const [excludedLocaleIds, setExcludedLocaleIds] = useState<number[]>([]);
   const [missingOnly, setMissingOnly] = useState(false);
@@ -163,7 +169,17 @@ export function ProjectPage() {
                   className="group align-top hover:bg-fill/60 [&:last-child_td]:border-b-0"
                 >
                   <td className="sticky left-0 z-10 border-b border-r border-line bg-surface px-3 py-2 font-mono text-xs text-ink-2 group-hover:bg-fill">
-                    {word.key}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 break-all">{word.key}</span>
+                      <IconButton
+                        label={`Details for ${word.key}`}
+                        size="sm"
+                        className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                        onClick={() => setDetailWord(word)}
+                      >
+                        <MoreHorizontal size={14} />
+                      </IconButton>
+                    </div>
                   </td>
                   {visibleLocales.map((locale) => {
                     const translation = word.translations.find((t) => t.localeId === locale.id);
@@ -251,6 +267,17 @@ export function ProjectPage() {
       />
 
       <MembersModal projectId={id} open={membersOpen} onClose={() => setMembersOpen(false)} />
+
+      {detailWord && (
+        <KeyDetailModal
+          projectId={id}
+          word={detailWord}
+          locales={locales}
+          channelId={defaultChannel?.id}
+          open={detailWord !== null}
+          onClose={() => setDetailWord(null)}
+        />
+      )}
     </div>
   );
 }

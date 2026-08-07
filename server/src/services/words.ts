@@ -7,7 +7,9 @@ import * as schema from '../db/schema.js';
 import {
   locales,
   namespaces,
+  translationVersions,
   translations,
+  users,
   words,
   wordsToNamespaces,
   type Word,
@@ -131,6 +133,8 @@ export interface UpsertWordInput {
   projectId: number;
   key: string;
   translations: Array<{ localeId: number; channelId?: number | null; value: string }>;
+  /** User behind the change, recorded in translation_versions; null for API pushes. */
+  changedById?: number | null;
 }
 
 /**
@@ -150,6 +154,9 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
       .values({ projectId: input.projectId, key: input.key })
       .returning();
     word = inserted[0];
+    await tx
+      .insert(wordVersions)
+      .values({ wordId: word.id, action: 'created', changedById: input.changedById ?? null });
   } else if (word.deletedAt !== null) {
     const revived = await tx
       .update(words)
@@ -157,6 +164,9 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
       .where(eq(words.id, word.id))
       .returning();
     word = revived[0];
+    await tx
+      .insert(wordVersions)
+      .values({ wordId: word.id, action: 'restored', changedById: input.changedById ?? null });
   }
   if (!word) throw new Error('word_insert_failed');
 
@@ -182,12 +192,30 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
         .update(translations)
         .set({ value: entry.value, deletedAt: null, updatedAt: new Date() })
         .where(eq(translations.id, existingTranslation.id));
+      if (existingTranslation.value !== entry.value) {
+        await tx.insert(translationVersions).values({
+          wordId: word.id,
+          localeId: entry.localeId,
+          channelId: entry.channelId ?? null,
+          oldValue: existingTranslation.value,
+          newValue: entry.value,
+          changedById: input.changedById ?? null,
+        });
+      }
     } else {
       await tx.insert(translations).values({
         wordId: word.id,
         localeId: entry.localeId,
         channelId: entry.channelId ?? null,
         value: entry.value,
+      });
+      await tx.insert(translationVersions).values({
+        wordId: word.id,
+        localeId: entry.localeId,
+        channelId: entry.channelId ?? null,
+        oldValue: null,
+        newValue: entry.value,
+        changedById: input.changedById ?? null,
       });
     }
   }
@@ -198,6 +226,65 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
 
 export async function upsertWord(db: Database, input: UpsertWordInput): Promise<Word> {
   return db.transaction((tx) => upsertWordCore(tx, input));
+}
+
+export interface TranslationVersionEntry {
+  id: number;
+  wordId: number;
+  localeId: number;
+  localeCode: string;
+  localeName: string;
+  channelId: number | null;
+  oldValue: string | null;
+  newValue: string | null;
+  changedBy: { id: number; name: string; email: string } | null;
+  createdAt: Date;
+}
+
+/** Version rows for a word, newest first, optionally filtered to one locale. */
+export async function listTranslationVersions(
+  db: Database,
+  options: { wordId: number; localeId?: number },
+): Promise<TranslationVersionEntry[]> {
+  const conditions: (SQL | undefined)[] = [eq(translationVersions.wordId, options.wordId)];
+  if (options.localeId !== undefined) {
+    conditions.push(eq(translationVersions.localeId, options.localeId));
+  }
+  const rows = await db
+    .select({
+      id: translationVersions.id,
+      wordId: translationVersions.wordId,
+      localeId: translationVersions.localeId,
+      localeCode: locales.code,
+      localeName: locales.name,
+      channelId: translationVersions.channelId,
+      oldValue: translationVersions.oldValue,
+      newValue: translationVersions.newValue,
+      changedById: users.id,
+      changedByName: users.name,
+      changedByEmail: users.email,
+      createdAt: translationVersions.createdAt,
+    })
+    .from(translationVersions)
+    .innerJoin(locales, eq(translationVersions.localeId, locales.id))
+    .leftJoin(users, eq(translationVersions.changedById, users.id))
+    .where(and(...conditions))
+    .orderBy(desc(translationVersions.createdAt), desc(translationVersions.id));
+  return rows.map((row) => ({
+    id: row.id,
+    wordId: row.wordId,
+    localeId: row.localeId,
+    localeCode: row.localeCode,
+    localeName: row.localeName,
+    channelId: row.channelId,
+    oldValue: row.oldValue,
+    newValue: row.newValue,
+    changedBy:
+      row.changedById === null
+        ? null
+        : { id: row.changedById, name: row.changedByName!, email: row.changedByEmail! },
+    createdAt: row.createdAt,
+  }));
 }
 
 export async function rebuildSearchIndex(tx: Tx, wordId: number): Promise<void> {

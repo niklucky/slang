@@ -42,6 +42,7 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
       {
         onSuccess: () => {
           void utils.words.list.invalidate({ projectId });
+          void utils.words.history.invalidate();
           onClose();
         },
       },

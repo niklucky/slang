@@ -196,6 +196,40 @@ export const translations = pgTable(
   ],
 );
 
+/**
+ * One row per translation change. A "key version" is the set of rows for a
+ * word; `oldValue` null means created, `newValue` null means deleted/cleared.
+ * `changedById` is null for API-key pushes, which have no user.
+ */
+export const translationVersions = pgTable('translation_versions', {
+  id: serial('id').primaryKey(),
+  wordId: integer('word_id')
+    .notNull()
+    .references(() => words.id),
+  localeId: integer('locale_id')
+    .notNull()
+    .references(() => locales.id),
+  channelId: integer('channel_id').references(() => channels.id),
+  oldValue: text('old_value'),
+  newValue: text('new_value'),
+  changedById: integer('changed_by_id').references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Key-level lifecycle events: one row per create/delete/restore of a word.
+ * `changedById` is null for API-key pushes, which have no user.
+ */
+export const wordVersions = pgTable('word_versions', {
+  id: serial('id').primaryKey(),
+  wordId: integer('word_id')
+    .notNull()
+    .references(() => words.id),
+  action: text('action', { enum: ['created', 'deleted', 'restored'] }).notNull(),
+  changedById: integer('changed_by_id').references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Locale = typeof locales.$inferSelect;
@@ -203,6 +237,9 @@ export type Channel = typeof channels.$inferSelect;
 export type Namespace = typeof namespaces.$inferSelect;
 export type Word = typeof words.$inferSelect;
 export type Translation = typeof translations.$inferSelect;
+export type TranslationVersion = typeof translationVersions.$inferSelect;
+export type WordVersion = typeof wordVersions.$inferSelect;
+export type WordVersionAction = WordVersion['action'];
 export type Invitation = typeof invitations.$inferSelect;
 export type InvitationStatus = Invitation['status'];
 

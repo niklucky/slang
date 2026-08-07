@@ -43,6 +43,13 @@
       "when": 1786110089443,
       "tag": "0005_channel-optional",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786113776819,
+      "tag": "0006_cultured_luckman",
+      "breakpoints": true
     }
   ]
 }
