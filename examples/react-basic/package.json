@@ -12,7 +12,7 @@
     "dev": "pnpm --filter @warpunit/slang-react build && vite",
     "build": "pnpm --filter @warpunit/slang-react build && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "pnpm --filter @warpunit/slang-react build && tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {
