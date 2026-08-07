@@ -1,6 +1,6 @@
-import { and, desc, eq, inArray, isNull, type SQL } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 
-import type { Database } from '../db/client.js';
+import type { Database } from "../db/client.js";
 import {
   channels,
   locales,
@@ -9,8 +9,8 @@ import {
   translations,
   words,
   wordsToNamespaces,
-} from '../db/schema.js';
-import { upsertWordCore, type Tx } from './words.js';
+} from "../db/schema.js";
+import { upsertWordCore, type Tx } from "./words.js";
 
 /**
  * Translations requested without an explicit `channel` resolve to the
@@ -18,7 +18,7 @@ import { upsertWordCore, type Tx } from './words.js';
  * server's write paths only ever produced channel-less translations, so this
  * matches what live clients observe.
  */
-const DEFAULT_CHANNEL_NAME = 'default';
+const DEFAULT_CHANNEL_NAME = "default";
 
 export type ExternalApiStatus = 400 | 401 | 404 | 500;
 
@@ -53,14 +53,15 @@ export async function fetchTranslations(
   db: Database,
   options: FetchTranslationsOptions,
 ): Promise<FetchedTranslation[]> {
-  const channelName = options.channel ?? DEFAULT_CHANNEL_NAME;
-  const baseWhere = and(
+  const baseWhere = [
     eq(words.projectId, options.projectId),
     isNull(words.deletedAt),
     isNull(translations.deletedAt),
-    eq(channels.name, channelName),
     options.locale ? eq(locales.code, options.locale) : undefined,
-  );
+  ];
+  if (options.channel) {
+    baseWhere.push(eq(channels.name, options.channel));
+  }
 
   let rows: Array<{
     id: number;
@@ -91,7 +92,13 @@ export async function fetchTranslations(
       .leftJoin(channels, eq(translations.channelId, channels.id))
       .innerJoin(wordsToNamespaces, eq(words.id, wordsToNamespaces.wordId))
       .innerJoin(namespaces, eq(wordsToNamespaces.namespaceId, namespaces.id))
-      .where(and(baseWhere, eq(namespaces.name, options.namespace), isNull(namespaces.deletedAt)));
+      .where(
+        and(
+          and(...baseWhere),
+          eq(namespaces.name, options.namespace),
+          isNull(namespaces.deletedAt),
+        ),
+      );
   } else {
     rows = await db
       .select({
@@ -108,7 +115,7 @@ export async function fetchTranslations(
       .innerJoin(words, eq(translations.wordId, words.id))
       .innerJoin(locales, eq(translations.localeId, locales.id))
       .leftJoin(channels, eq(translations.channelId, channels.id))
-      .where(baseWhere);
+      .where(and(...baseWhere));
   }
 
   return rows;
@@ -125,7 +132,12 @@ export async function fetchNamespacesForWords(
     .select({ wordId: wordsToNamespaces.wordId, name: namespaces.name })
     .from(wordsToNamespaces)
     .innerJoin(namespaces, eq(wordsToNamespaces.namespaceId, namespaces.id))
-    .where(and(inArray(wordsToNamespaces.wordId, wordIds), isNull(namespaces.deletedAt)));
+    .where(
+      and(
+        inArray(wordsToNamespaces.wordId, wordIds),
+        isNull(namespaces.deletedAt),
+      ),
+    );
   for (const row of rows) {
     const bucket = result.get(row.wordId) ?? [];
     bucket.push(row.name);
@@ -144,10 +156,15 @@ export function prepareRaw(
     value: row.value,
     word: {
       key: row.key,
-      namespaces: (namespacesByWord.get(row.wordId) ?? []).map((name) => ({ name })),
+      namespaces: (namespacesByWord.get(row.wordId) ?? []).map((name) => ({
+        name,
+      })),
     },
     locale: { id: row.localeId, code: row.localeCode },
-    channel: row.channelId === null ? null : { id: row.channelId, name: row.channelName },
+    channel:
+      row.channelId === null
+        ? null
+        : { id: row.channelId, name: row.channelName },
   }));
 }
 
@@ -166,7 +183,8 @@ export function prepareI18Next(
     const wordNamespaces = namespacesByWord.get(row.wordId) ?? [];
     if (wordNamespaces.length > 0 && !namespaceFilter) {
       for (const name of wordNamespaces) {
-        const nsBucket = (localeBucket[name] as Record<string, string> | undefined) ?? {};
+        const nsBucket =
+          (localeBucket[name] as Record<string, string> | undefined) ?? {};
         nsBucket[row.key] = row.value;
         localeBucket[name] = nsBucket;
       }
@@ -201,14 +219,20 @@ export async function fetchTranslationsState(
     query = query
       .innerJoin(wordsToNamespaces, eq(words.id, wordsToNamespaces.wordId))
       .innerJoin(namespaces, eq(wordsToNamespaces.namespaceId, namespaces.id));
-    conditions.push(eq(namespaces.name, options.namespace), isNull(namespaces.deletedAt));
+    conditions.push(
+      eq(namespaces.name, options.namespace),
+      isNull(namespaces.deletedAt),
+    );
   }
   if (options.locale) {
     // locales is left-joined above; filter only when asked.
     conditions.push(eq(locales.code, options.locale));
   }
 
-  const rows = await query.where(and(...conditions)).orderBy(desc(translations.updatedAt)).limit(1);
+  const rows = await query
+    .where(and(...conditions))
+    .orderBy(desc(translations.updatedAt))
+    .limit(1);
   return rows[0]?.updatedAt ?? null;
 }
 
@@ -253,7 +277,7 @@ export async function pushTranslations(
         ),
       )
       .limit(1);
-    if (!channel) throw new ExternalApiError(400, 'channel_not_found');
+    if (!channel) throw new ExternalApiError(400, "channel_not_found");
 
     let namespaceId: number | undefined;
     if (input.namespace) {
@@ -285,33 +309,55 @@ export async function pushTranslations(
  * Codes outside the seeded catalog (e.g. `en-PT`) carry no display name, so
  * the code itself stands in until someone renames it in the UI.
  */
-async function findOrCreateLocale(tx: Tx, code: string): Promise<{ id: number }> {
+async function findOrCreateLocale(
+  tx: Tx,
+  code: string,
+): Promise<{ id: number }> {
   const [existing] = await tx
     .select({ id: locales.id })
     .from(locales)
     .where(eq(locales.code, code))
     .limit(1);
   if (existing) return existing;
-  const region = code.split('-')[1] ?? code;
+  const region = code.split("-")[1] ?? code;
   const inserted = await tx
     .insert(locales)
-    .values({ code, countryCode: region.toLowerCase(), name: code, title: code })
+    .values({
+      code,
+      countryCode: region.toLowerCase(),
+      name: code,
+      title: code,
+    })
     .onConflictDoNothing()
     .returning({ id: locales.id });
   // A concurrent push may have inserted the same code first.
   const created =
     inserted[0] ??
-    (await tx.select({ id: locales.id }).from(locales).where(eq(locales.code, code)).limit(1))[0];
-  if (!created) throw new ExternalApiError(500, 'locale_insert_failed');
+    (
+      await tx
+        .select({ id: locales.id })
+        .from(locales)
+        .where(eq(locales.code, code))
+        .limit(1)
+    )[0];
+  if (!created) throw new ExternalApiError(500, "locale_insert_failed");
   return created;
 }
 
-async function findOrCreateNamespace(tx: Tx, projectId: number, name: string): Promise<number> {
+async function findOrCreateNamespace(
+  tx: Tx,
+  projectId: number,
+  name: string,
+): Promise<number> {
   const [existing] = await tx
     .select({ id: namespaces.id })
     .from(namespaces)
     .where(
-      and(eq(namespaces.projectId, projectId), eq(namespaces.name, name), isNull(namespaces.deletedAt)),
+      and(
+        eq(namespaces.projectId, projectId),
+        eq(namespaces.name, name),
+        isNull(namespaces.deletedAt),
+      ),
     )
     .limit(1);
   if (existing) return existing.id;
@@ -319,6 +365,6 @@ async function findOrCreateNamespace(tx: Tx, projectId: number, name: string): P
     .insert(namespaces)
     .values({ projectId, name })
     .returning({ id: namespaces.id });
-  if (!created) throw new ExternalApiError(500, 'namespace_insert_failed');
+  if (!created) throw new ExternalApiError(500, "namespace_insert_failed");
   return created.id;
 }
