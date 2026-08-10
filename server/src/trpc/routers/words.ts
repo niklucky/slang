@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNotNull, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
@@ -139,7 +139,7 @@ export const wordsRouter = router({
       const [word] = await ctx.db
         .select({ id: words.id, projectId: words.projectId })
         .from(words)
-        .where(eq(words.id, input.wordId))
+        .where(and(eq(words.id, input.wordId), isNotNull(words.deletedAt)))
         .limit(1);
       if (!word || word.projectId !== input.projectId) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });

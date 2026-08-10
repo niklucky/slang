@@ -377,6 +377,47 @@ describe('words', () => {
     expect(deleted).toHaveLength(1);
     expect(deleted[0]!.key).toBe('greeting');
     expect(deleted[0]!.deletedAt).not.toBeNull();
+    // Soft-deleted words carry soft-deleted translations; they must still load.
+    expect(deleted[0]!.translations).toEqual([
+      expect.objectContaining({ value: 'greeting', localeCode: 'en' }),
+    ]);
+  });
+
+  it('removePermanently rejects a live word and leaves it unchanged', async () => {
+    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    await trpc(app, 'words.upsert', {
+      input: {
+        projectId: project.id,
+        key: 'greeting',
+        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+      },
+      token: accessToken,
+    });
+    const list = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    const wordId = list[0]!.id;
+
+    await expect(
+      trpc(app, 'words.removePermanently', {
+        input: { projectId: project.id, wordId },
+        token: accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+    const after = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    expect(after).toHaveLength(1);
+    expect(after[0]!.translations).toEqual([
+      expect.objectContaining({ value: 'Hello', localeCode: 'en' }),
+    ]);
+    expect(await handle.db.select().from(words)).toHaveLength(1);
+    expect(await handle.db.select().from(translations)).toHaveLength(1);
   });
 
   it('removePermanently deletes the word and its translations from the db', async () => {

@@ -54,7 +54,7 @@ export async function listWords(
 
   const joinConditions: (SQL | undefined)[] = [
     eq(translations.wordId, words.id),
-    isNull(translations.deletedAt),
+    options.deleted ? isNotNull(translations.deletedAt) : isNull(translations.deletedAt),
   ];
   if (options.localeId !== undefined) {
     joinConditions.push(eq(translations.localeId, options.localeId));
@@ -468,6 +468,13 @@ export async function restoreWord(
  */
 export async function deleteWordPermanently(db: Database, wordId: number): Promise<boolean> {
   return db.transaction(async (tx) => {
+    // Only soft-deleted words may leave the lifecycle; lock the row to check.
+    const [word] = await tx
+      .select({ id: words.id, deletedAt: words.deletedAt })
+      .from(words)
+      .where(eq(words.id, wordId))
+      .for('update');
+    if (!word || word.deletedAt === null) return false;
     await tx.delete(translationVersions).where(eq(translationVersions.wordId, wordId));
     await tx.delete(wordVersions).where(eq(wordVersions.wordId, wordId));
     await tx.delete(wordsToNamespaces).where(eq(wordsToNamespaces.wordId, wordId));
