@@ -3,7 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
-import { listTranslationVersions, listWords, renameWord, softDeleteWord, upsertWord } from '../../services/words.js';
+import { deleteWordPermanently, listTranslationVersions, listWords, renameWord, softDeleteWord, upsertWord } from '../../services/words.js';
 import { requirePermission, requireProject, requireProjectMembership } from '../guards.js';
 import { protectedProcedure, router } from '../init.js';
 
@@ -14,6 +14,7 @@ export const wordsRouter = router({
         projectId: z.number().int(),
         search: z.string().trim().optional(),
         localeId: z.number().int().optional(),
+        deleted: z.boolean().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -121,6 +122,29 @@ export const wordsRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
       }
       const deleted = await softDeleteWord(ctx.db, input.wordId, ctx.user.id);
+      if (!deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
+      return { ok: true };
+    }),
+
+  /** Irreversibly removes the word, its translations and history from the db. */
+  removePermanently: protectedProcedure
+    .input(z.object({ projectId: z.number().int(), wordId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const { permissions } = await requireProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.user.id,
+      );
+      requirePermission(permissions, 'canDeleteKeys', 'delete_keys_forbidden');
+      const [word] = await ctx.db
+        .select({ id: words.id, projectId: words.projectId })
+        .from(words)
+        .where(eq(words.id, input.wordId))
+        .limit(1);
+      if (!word || word.projectId !== input.projectId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
+      }
+      const deleted = await deleteWordPermanently(ctx.db, input.wordId);
       if (!deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
       return { ok: true };
     }),

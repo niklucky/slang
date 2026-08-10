@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
-import type { Project } from '../src/db/schema.js';
+import { translations, words, type Project } from '../src/db/schema.js';
 import { openTestDb, resetDb, seedUser, trpc } from './helpers.js';
 
 const handle = openTestDb();
@@ -26,6 +26,7 @@ interface ProjectDetails {
 interface WordRow {
   id: number;
   key: string;
+  deletedAt: string | null;
   translations: Array<{ value: string; localeCode: string; channelId: number }>;
 }
 
@@ -335,6 +336,83 @@ describe('words', () => {
       token: accessToken,
     });
     expect(after).toHaveLength(0);
+  });
+
+  it('list with deleted: true returns only soft-deleted words', async () => {
+    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    for (const key of ['greeting', 'farewell']) {
+      await trpc(app, 'words.upsert', {
+        input: {
+          projectId: project.id,
+          key,
+          translations: [{ localeId: en.id, channelId, value: key }],
+        },
+        token: accessToken,
+      });
+    }
+    const list = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    const target = list.find((word) => word.key === 'greeting')!;
+    await trpc(app, 'words.remove', {
+      input: { projectId: project.id, wordId: target.id },
+      token: accessToken,
+    });
+
+    const live = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    expect(live.map((word) => word.key)).toEqual(['farewell']);
+    expect(live[0]!.deletedAt).toBeNull();
+
+    const deleted = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id, deleted: true },
+      token: accessToken,
+    });
+    expect(deleted).toHaveLength(1);
+    expect(deleted[0]!.key).toBe('greeting');
+    expect(deleted[0]!.deletedAt).not.toBeNull();
+  });
+
+  it('removePermanently deletes the word and its translations from the db', async () => {
+    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    await trpc(app, 'words.upsert', {
+      input: {
+        projectId: project.id,
+        key: 'greeting',
+        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+      },
+      token: accessToken,
+    });
+    const list = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    const wordId = list[0]!.id;
+    await trpc(app, 'words.remove', {
+      input: { projectId: project.id, wordId },
+      token: accessToken,
+    });
+
+    await trpc(app, 'words.removePermanently', {
+      input: { projectId: project.id, wordId },
+      token: accessToken,
+    });
+
+    const deletedList = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id, deleted: true },
+      token: accessToken,
+    });
+    expect(deletedList).toHaveLength(0);
+    expect(await handle.db.select().from(words)).toHaveLength(0);
+    expect(await handle.db.select().from(translations)).toHaveLength(0);
   });
 
   it('cannot touch words of a project the caller is not a member of', async () => {
