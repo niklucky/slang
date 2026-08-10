@@ -439,6 +439,29 @@ export async function softDeleteWord(
   });
 }
 
+/** Reverse of softDeleteWord: brings back the word and its translations. */
+export async function restoreWord(
+  db: Database,
+  wordId: number,
+  changedById: number | null,
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const restored = await tx
+      .update(words)
+      .set({ deletedAt: null, updatedAt: now })
+      .where(and(eq(words.id, wordId), isNotNull(words.deletedAt)))
+      .returning({ id: words.id });
+    if (restored.length === 0) return false;
+    await tx
+      .update(translations)
+      .set({ deletedAt: null, updatedAt: now })
+      .where(and(eq(translations.wordId, wordId), isNotNull(translations.deletedAt)));
+    await tx.insert(wordVersions).values({ wordId, action: 'restored', changedById });
+    return true;
+  });
+}
+
 /**
  * Hard-delete a word and every row that references it (translations,
  * namespace links, and version history). Irreversible.

@@ -415,6 +415,52 @@ describe('words', () => {
     expect(await handle.db.select().from(translations)).toHaveLength(0);
   });
 
+  it('restore brings back a soft-deleted word with its translations', async () => {
+    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    await trpc(app, 'words.upsert', {
+      input: {
+        projectId: project.id,
+        key: 'greeting',
+        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+      },
+      token: accessToken,
+    });
+    const list = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    const wordId = list[0]!.id;
+    await trpc(app, 'words.remove', {
+      input: { projectId: project.id, wordId },
+      token: accessToken,
+    });
+
+    await trpc(app, 'words.restore', {
+      input: { projectId: project.id, wordId },
+      token: accessToken,
+    });
+
+    const restored = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    expect(restored).toHaveLength(1);
+    expect(restored[0]!.key).toBe('greeting');
+    expect(restored[0]!.deletedAt).toBeNull();
+    expect(restored[0]!.translations).toEqual([
+      expect.objectContaining({ value: 'Hello', localeCode: 'en' }),
+    ]);
+
+    const deletedList = await trpc<WordRow[]>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id, deleted: true },
+      token: accessToken,
+    });
+    expect(deletedList).toHaveLength(0);
+  });
+
   it('cannot touch words of a project the caller is not a member of', async () => {
     const alice = await createProjectWithLocale('alice@example.com');
     const bob = await login('bob@example.com');

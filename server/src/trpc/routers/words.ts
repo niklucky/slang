@@ -3,7 +3,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
-import { deleteWordPermanently, listTranslationVersions, listWords, renameWord, softDeleteWord, upsertWord } from '../../services/words.js';
+import { deleteWordPermanently, listTranslationVersions, listWords, renameWord, restoreWord, softDeleteWord, upsertWord } from '../../services/words.js';
 import { requirePermission, requireProject, requireProjectMembership } from '../guards.js';
 import { protectedProcedure, router } from '../init.js';
 
@@ -146,6 +146,29 @@ export const wordsRouter = router({
       }
       const deleted = await deleteWordPermanently(ctx.db, input.wordId);
       if (!deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
+      return { ok: true };
+    }),
+
+  /** Brings back a soft-deleted word and its translations. */
+  restore: protectedProcedure
+    .input(z.object({ projectId: z.number().int(), wordId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const { permissions } = await requireProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.user.id,
+      );
+      requirePermission(permissions, 'canDeleteKeys', 'delete_keys_forbidden');
+      const [word] = await ctx.db
+        .select({ id: words.id, projectId: words.projectId })
+        .from(words)
+        .where(eq(words.id, input.wordId))
+        .limit(1);
+      if (!word || word.projectId !== input.projectId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
+      }
+      const restored = await restoreWord(ctx.db, input.wordId, ctx.user.id);
+      if (!restored) throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
       return { ok: true };
     }),
 });

@@ -49,6 +49,7 @@ export function ProjectPage() {
   const upsert = trpc.words.upsert.useMutation({ onSuccess: invalidateWords });
   const removeWord = trpc.words.remove.useMutation({ onSuccess: invalidateWords });
   const removePermanently = trpc.words.removePermanently.useMutation({ onSuccess: invalidateWords });
+  const restore = trpc.words.restore.useMutation({ onSuccess: invalidateWords });
   const updateKey = trpc.words.updateKey.useMutation({ onSuccess: invalidateWords });
 
   const [editing, setEditing] = useState<CellRef | null>(null);
@@ -296,21 +297,30 @@ export function ProjectPage() {
                     }`}
                   >
                     {isDeleted ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Permanently delete key "${word.key}"? This cannot be undone.`,
-                            )
-                          ) {
-                            removePermanently.mutate({ projectId: id, wordId: word.id });
-                          }
-                        }}
-                        className="text-xs font-medium text-danger transition-colors hover:underline"
-                      >
-                        Delete permanently
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => restore.mutate({ projectId: id, wordId: word.id })}
+                          className="text-xs font-medium text-success transition-colors hover:underline"
+                        >
+                          Restore
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Permanently delete key "${word.key}"? This cannot be undone.`,
+                              )
+                            ) {
+                              removePermanently.mutate({ projectId: id, wordId: word.id });
+                            }
+                          }}
+                          className="text-xs font-medium text-danger transition-colors hover:underline"
+                        >
+                          Delete permanently
+                        </button>
+                      </div>
                     ) : (
                       <button
                         type="button"
@@ -336,9 +346,9 @@ export function ProjectPage() {
             </p>
           )}
         </div>
-        {(upsert.error || removeWord.error || removePermanently.error || updateKey.error) && (
+        {(upsert.error || removeWord.error || removePermanently.error || restore.error || updateKey.error) && (
           <p className="border-t border-line p-3 text-sm text-danger">
-            {(upsert.error ?? removeWord.error ?? removePermanently.error ?? updateKey.error)?.message}
+            {(upsert.error ?? removeWord.error ?? removePermanently.error ?? restore.error ?? updateKey.error)?.message}
           </p>
         )}
       </section>
