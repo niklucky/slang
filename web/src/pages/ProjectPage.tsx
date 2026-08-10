@@ -1,4 +1,4 @@
-import { ListFilter, MoreHorizontal, Plus, Settings, Users } from 'lucide-react';
+import { ListFilter, MoreHorizontal, Plus, Settings, Trash2, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -35,9 +35,11 @@ export function ProjectPage() {
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounced(search, 300);
+  const [showDeleted, setShowDeleted] = useState(false);
   const words = trpc.words.list.useQuery({
     projectId: id,
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
+    ...(showDeleted ? { deleted: true } : {}),
   });
 
   const invalidateWords = () => {
@@ -46,6 +48,8 @@ export function ProjectPage() {
   };
   const upsert = trpc.words.upsert.useMutation({ onSuccess: invalidateWords });
   const removeWord = trpc.words.remove.useMutation({ onSuccess: invalidateWords });
+  const removePermanently = trpc.words.removePermanently.useMutation({ onSuccess: invalidateWords });
+  const restore = trpc.words.restore.useMutation({ onSuccess: invalidateWords });
   const updateKey = trpc.words.updateKey.useMutation({ onSuccess: invalidateWords });
 
   const [editing, setEditing] = useState<CellRef | null>(null);
@@ -154,6 +158,15 @@ export function ProjectPage() {
             <ListFilter size={14} />
             Missing only
           </Button>
+          <Button
+            variant={showDeleted ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setShowDeleted((prev) => !prev)}
+            title="Show deleted keys instead of live ones"
+          >
+            <Trash2 size={14} />
+            Deleted
+          </Button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-separate border-spacing-0 text-sm">
@@ -174,12 +187,22 @@ export function ProjectPage() {
               </tr>
             </thead>
             <tbody>
-              {visibleWords.map((word) => (
+              {visibleWords.map((word) => {
+                const isDeleted = word.deletedAt !== null;
+                return (
                 <tr
                   key={word.id}
-                  className="group align-top hover:bg-fill/60 [&:last-child_td]:border-b-0"
+                  className={`group align-top [&:last-child_td]:border-b-0 ${
+                    isDeleted ? 'bg-danger-soft/60 text-danger' : 'hover:bg-fill/60'
+                  }`}
                 >
-                  <td className="sticky left-0 z-10 border-b border-r border-line bg-surface px-3 py-2 font-mono text-xs text-ink-2 group-hover:bg-fill">
+                  <td
+                    className={`sticky left-0 z-10 border-b border-r border-line px-3 py-2 font-mono text-xs ${
+                      isDeleted
+                        ? 'bg-danger-soft text-danger'
+                        : 'bg-surface text-ink-2 group-hover:bg-fill'
+                    }`}
+                  >
                     <div className="flex items-center justify-between gap-2">
                       {editingKeyId === word.id ? (
                         <Input
@@ -197,6 +220,10 @@ export function ProjectPage() {
                             if (event.key === 'Escape') setEditingKeyId(null);
                           }}
                         />
+                      ) : isDeleted ? (
+                        <span className="min-w-0 break-all px-1 py-0.5 line-through">
+                          {word.key}
+                        </span>
                       ) : (
                         <button
                           type="button"
@@ -245,6 +272,10 @@ export function ProjectPage() {
                               if (event.key === 'Escape') setEditing(null);
                             }}
                           />
+                        ) : isDeleted ? (
+                          <span className="block w-full px-2 py-1 text-left text-sm">
+                            {translation?.value || <span className="text-ink-3">—</span>}
+                          </span>
                         ) : (
                           <button
                             type="button"
@@ -260,21 +291,53 @@ export function ProjectPage() {
                       </td>
                     );
                   })}
-                  <td className="sticky right-0 z-10 border-b border-l border-line bg-surface px-3 py-2 text-right group-hover:bg-fill">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (window.confirm(`Delete key "${word.key}"?`)) {
-                          removeWord.mutate({ projectId: id, wordId: word.id });
-                        }
-                      }}
-                      className="text-xs text-ink-3 transition-colors hover:text-danger"
-                    >
-                      Delete
-                    </button>
+                  <td
+                    className={`sticky right-0 z-10 border-b border-l border-line px-3 py-2 text-right ${
+                      isDeleted ? 'bg-danger-soft' : 'bg-surface group-hover:bg-fill'
+                    }`}
+                  >
+                    {isDeleted ? (
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => restore.mutate({ projectId: id, wordId: word.id })}
+                          className="text-xs font-medium text-success transition-colors hover:underline"
+                        >
+                          Restore
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Permanently delete key "${word.key}"? This cannot be undone.`,
+                              )
+                            ) {
+                              removePermanently.mutate({ projectId: id, wordId: word.id });
+                            }
+                          }}
+                          className="text-xs font-medium text-danger transition-colors hover:underline"
+                        >
+                          Delete permanently
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`Delete key "${word.key}"?`)) {
+                            removeWord.mutate({ projectId: id, wordId: word.id });
+                          }
+                        }}
+                        className="text-xs text-ink-3 transition-colors hover:text-danger"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           {visibleWords.length === 0 && !words.isPending && (
@@ -283,9 +346,9 @@ export function ProjectPage() {
             </p>
           )}
         </div>
-        {(upsert.error || removeWord.error || updateKey.error) && (
+        {(upsert.error || removeWord.error || removePermanently.error || restore.error || updateKey.error) && (
           <p className="border-t border-line p-3 text-sm text-danger">
-            {(upsert.error ?? removeWord.error ?? updateKey.error)?.message}
+            {(upsert.error ?? removeWord.error ?? removePermanently.error ?? restore.error ?? updateKey.error)?.message}
           </p>
         )}
       </section>

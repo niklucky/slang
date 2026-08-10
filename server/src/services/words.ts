@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, ilike, inArray, isNull, type ExtractTablesWithRelations, type SQL } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, isNotNull, isNull, type ExtractTablesWithRelations, type SQL } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
 
@@ -29,6 +29,7 @@ export interface WordWithTranslations {
   key: string;
   createdAt: Date;
   updatedAt: Date;
+  deletedAt: Date | null;
   namespaces: Array<{ id: number; name: string }>;
   translations: Array<{
     id: number;
@@ -41,11 +42,11 @@ export interface WordWithTranslations {
 
 export async function listWords(
   db: Database,
-  options: { projectId: number; search?: string; localeId?: number },
+  options: { projectId: number; search?: string; localeId?: number; deleted?: boolean },
 ): Promise<WordWithTranslations[]> {
   const conditions: (SQL | undefined)[] = [
     eq(words.projectId, options.projectId),
-    isNull(words.deletedAt),
+    options.deleted ? isNotNull(words.deletedAt) : isNull(words.deletedAt),
   ];
   if (options.search) {
     conditions.push(ilike(words.searchIndex, `%${options.search}%`));
@@ -53,7 +54,7 @@ export async function listWords(
 
   const joinConditions: (SQL | undefined)[] = [
     eq(translations.wordId, words.id),
-    isNull(translations.deletedAt),
+    options.deleted ? isNotNull(translations.deletedAt) : isNull(translations.deletedAt),
   ];
   if (options.localeId !== undefined) {
     joinConditions.push(eq(translations.localeId, options.localeId));
@@ -65,6 +66,7 @@ export async function listWords(
       key: words.key,
       createdAt: words.createdAt,
       updatedAt: words.updatedAt,
+      deletedAt: words.deletedAt,
       translationId: translations.id,
       value: translations.value,
       localeId: translations.localeId,
@@ -79,7 +81,7 @@ export async function listWords(
   for (const row of rows) {
     let entry = byId.get(row.wordId);
     if (!entry) {
-      entry = { id: row.wordId, key: row.key, createdAt: row.createdAt, updatedAt: row.updatedAt, namespaces: [], translations: [] };
+      entry = { id: row.wordId, key: row.key, createdAt: row.createdAt, updatedAt: row.updatedAt, deletedAt: row.deletedAt, namespaces: [], translations: [] };
       byId.set(row.wordId, entry);
     }
     if (row.translationId !== null && row.localeId !== null) {
@@ -434,5 +436,50 @@ export async function softDeleteWord(
       .where(and(eq(translations.wordId, wordId), isNull(translations.deletedAt)));
     await tx.insert(wordVersions).values({ wordId, action: 'deleted', changedById });
     return true;
+  });
+}
+
+/** Reverse of softDeleteWord: brings back the word and its translations. */
+export async function restoreWord(
+  db: Database,
+  wordId: number,
+  changedById: number | null,
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const restored = await tx
+      .update(words)
+      .set({ deletedAt: null, updatedAt: now })
+      .where(and(eq(words.id, wordId), isNotNull(words.deletedAt)))
+      .returning({ id: words.id });
+    if (restored.length === 0) return false;
+    await tx
+      .update(translations)
+      .set({ deletedAt: null, updatedAt: now })
+      .where(and(eq(translations.wordId, wordId), isNotNull(translations.deletedAt)));
+    await tx.insert(wordVersions).values({ wordId, action: 'restored', changedById });
+    return true;
+  });
+}
+
+/**
+ * Hard-delete a word and every row that references it (translations,
+ * namespace links, and version history). Irreversible.
+ */
+export async function deleteWordPermanently(db: Database, wordId: number): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    // Only soft-deleted words may leave the lifecycle; lock the row to check.
+    const [word] = await tx
+      .select({ id: words.id, deletedAt: words.deletedAt })
+      .from(words)
+      .where(eq(words.id, wordId))
+      .for('update');
+    if (!word || word.deletedAt === null) return false;
+    await tx.delete(translationVersions).where(eq(translationVersions.wordId, wordId));
+    await tx.delete(wordVersions).where(eq(wordVersions.wordId, wordId));
+    await tx.delete(wordsToNamespaces).where(eq(wordsToNamespaces.wordId, wordId));
+    await tx.delete(translations).where(eq(translations.wordId, wordId));
+    const deleted = await tx.delete(words).where(eq(words.id, wordId)).returning({ id: words.id });
+    return deleted.length > 0;
   });
 }
