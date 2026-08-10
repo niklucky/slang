@@ -5,6 +5,7 @@ import type { CatalogLocale } from './ProjectFormModal.js';
 import { Button } from './ui/button.js';
 import { Field, Input, Textarea } from './ui/input.js';
 import { Modal } from './ui/modal.js';
+import { LocaleFlag } from './ui/locale-flag.js';
 
 export interface AddKeyModalProps {
   projectId: number;
@@ -70,7 +71,19 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
           </Field>
           <div className="space-y-4">
             {locales.map((locale) => (
-              <Field key={locale.id} label={`${locale.code} — ${locale.name}`}>
+              <Field
+                key={locale.id}
+                label={
+                  <span className="inline-flex items-center gap-1.5">
+                    <LocaleFlag
+                      code={locale.code}
+                      name={locale.name}
+                      countryCode={locale.countryCode}
+                    />
+                    {locale.name}
+                  </span>
+                }
+              >
                 <Textarea
                   value={values[locale.code] ?? ''}
                   onChange={(event) =>

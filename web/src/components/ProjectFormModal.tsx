@@ -5,6 +5,7 @@ import { Badge } from './ui/badge.js';
 import { Button } from './ui/button.js';
 import { Field, Input, Select, Textarea } from './ui/input.js';
 import { Modal } from './ui/modal.js';
+import { LocaleFlag } from './ui/locale-flag.js';
 
 export interface CatalogLocale {
   id: number;
@@ -193,7 +194,11 @@ function ProjectForm({ mode, projectId, initialProject, attached, catalog, onClo
             <div className="flex flex-wrap items-center gap-2">
               {stagedLocales.map((locale) => (
                 <Badge key={locale.id} className="py-1">
-                  {locale.code}
+                  <LocaleFlag
+                    code={locale.code}
+                    name={locale.name}
+                    countryCode={locale.countryCode}
+                  />
                 </Badge>
               ))}
               {stagedLocales.length === 0 && (
