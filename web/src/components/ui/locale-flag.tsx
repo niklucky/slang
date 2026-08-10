@@ -12,7 +12,9 @@ export interface LocaleFlagProps {
 export function LocaleFlag({ code, name, countryCode, placement = 'top' }: LocaleFlagProps) {
   return (
     <span className="group/locale-flag relative inline-flex items-center" tabIndex={0}>
-      <span aria-hidden>{localeFlag(countryCode)}</span>
+      <span aria-hidden className="text-2xl leading-none">
+        {localeFlag(countryCode)}
+      </span>
       <span className="sr-only">{`${code} — ${name}`}</span>
       <span
         role="tooltip"
