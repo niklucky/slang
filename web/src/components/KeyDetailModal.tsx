@@ -1,14 +1,14 @@
-import { History } from 'lucide-react';
-import { useEffect, useState, type FormEvent } from 'react';
+import { History } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
 
-import { trpc } from '../trpc.js';
-import { HistoryModal } from './HistoryModal.js';
-import type { CatalogLocale } from './ProjectFormModal.js';
-import { Button } from './ui/button.js';
-import { IconButton } from './ui/icon-button.js';
-import { Field, Input, Textarea } from './ui/input.js';
-import { Modal } from './ui/modal.js';
-import { LocaleFlag } from './ui/locale-flag.js';
+import { trpc } from "../trpc.js";
+import { HistoryModal } from "./HistoryModal.js";
+import type { CatalogLocale } from "./ProjectFormModal.js";
+import { Button } from "./ui/button.js";
+import { IconButton } from "./ui/icon-button.js";
+import { Field, Input, Textarea } from "./ui/input.js";
+import { LocaleFlag } from "./ui/locale-flag.js";
+import { Modal } from "./ui/modal.js";
 
 export interface KeyDetailWord {
   id: number;
@@ -61,7 +61,11 @@ export function KeyDetailModal({
     const nextKey = key.trim();
     if (nextKey && nextKey !== word.key) {
       try {
-        await updateKey.mutateAsync({ projectId, wordId: word.id, key: nextKey });
+        await updateKey.mutateAsync({
+          projectId,
+          wordId: word.id,
+          key: nextKey,
+        });
       } catch {
         return; // updateKey.error is rendered below
       }
@@ -73,7 +77,7 @@ export function KeyDetailModal({
         translations: locales.map((locale) => ({
           localeId: locale.id,
           channelId: channelId ?? null,
-          value: values[locale.id] ?? '',
+          value: values[locale.id] ?? "",
         })),
       },
       {
@@ -93,7 +97,7 @@ export function KeyDetailModal({
         onClose={onClose}
         title={word.key}
         description="Edit the translation for each locale, then save."
-        size="lg"
+        size="2xl"
       >
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
@@ -106,41 +110,55 @@ export function KeyDetailModal({
               />
             </Field>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-ink-2">Translations</span>
-              <IconButton label="Key history" size="sm" onClick={() => setHistory({})}>
+              <span className="text-xs font-medium text-ink-2">
+                Translations
+              </span>
+              <IconButton
+                label="Key history"
+                size="sm"
+                onClick={() => setHistory({})}
+              >
                 <History size={14} />
               </IconButton>
             </div>
-            {locales.map((locale) => (
-              <div key={locale.id}>
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-2">
-                    <LocaleFlag
-                      code={locale.code}
-                      name={locale.name}
-                      countryCode={locale.countryCode}
-                    />
-                    {locale.name}
-                  </span>
-                  <IconButton
-                    label={`History for ${locale.code}`}
-                    size="sm"
-                    onClick={() =>
-                      setHistory({ localeId: locale.id, localeLabel: `${locale.code} — ${locale.name}` })
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+              {locales.map((locale) => (
+                <div key={locale.id}>
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-2">
+                      <LocaleFlag
+                        code={locale.code}
+                        name={locale.name}
+                        countryCode={locale.countryCode}
+                      />
+                      {locale.name}
+                    </span>
+                    <IconButton
+                      label={`History for ${locale.code}`}
+                      size="sm"
+                      onClick={() =>
+                        setHistory({
+                          localeId: locale.id,
+                          localeLabel: `${locale.code} — ${locale.name}`,
+                        })
+                      }
+                    >
+                      <History size={14} />
+                    </IconButton>
+                  </div>
+                  <Textarea
+                    value={values[locale.id] ?? ""}
+                    onChange={(event) =>
+                      setValues((previous) => ({
+                        ...previous,
+                        [locale.id]: event.target.value,
+                      }))
                     }
-                  >
-                    <History size={14} />
-                  </IconButton>
+                    placeholder={locale.code}
+                  />
                 </div>
-                <Textarea
-                  value={values[locale.id] ?? ''}
-                  onChange={(event) =>
-                    setValues((previous) => ({ ...previous, [locale.id]: event.target.value }))
-                  }
-                  placeholder={locale.code}
-                />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {(upsert.error || updateKey.error) && (
@@ -153,8 +171,11 @@ export function KeyDetailModal({
             <Button variant="secondary" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={upsert.isPending || updateKey.isPending}>
-              {upsert.isPending || updateKey.isPending ? 'Saving…' : 'Save'}
+            <Button
+              type="submit"
+              disabled={upsert.isPending || updateKey.isPending}
+            >
+              {upsert.isPending || updateKey.isPending ? "Saving…" : "Save"}
             </Button>
           </div>
         </form>
@@ -168,7 +189,9 @@ export function KeyDetailModal({
         localeLabel={history?.localeLabel}
         open={history !== null}
         onClose={() => setHistory(null)}
-        onUse={(localeId, value) => setValues((previous) => ({ ...previous, [localeId]: value }))}
+        onUse={(localeId, value) =>
+          setValues((previous) => ({ ...previous, [localeId]: value }))
+        }
       />
     </>
   );

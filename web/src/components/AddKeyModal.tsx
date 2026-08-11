@@ -1,11 +1,11 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from "react";
 
-import { trpc } from '../trpc.js';
-import type { CatalogLocale } from './ProjectFormModal.js';
-import { Button } from './ui/button.js';
-import { Field, Input, Textarea } from './ui/input.js';
-import { Modal } from './ui/modal.js';
-import { LocaleFlag } from './ui/locale-flag.js';
+import { trpc } from "../trpc.js";
+import type { CatalogLocale } from "./ProjectFormModal.js";
+import { Button } from "./ui/button.js";
+import { Field, Input, Textarea } from "./ui/input.js";
+import { LocaleFlag } from "./ui/locale-flag.js";
+import { Modal } from "./ui/modal.js";
 
 export interface AddKeyModalProps {
   projectId: number;
@@ -15,16 +15,22 @@ export interface AddKeyModalProps {
   onClose: () => void;
 }
 
-export function AddKeyModal({ projectId, locales, channelId, open, onClose }: AddKeyModalProps) {
+export function AddKeyModal({
+  projectId,
+  locales,
+  channelId,
+  open,
+  onClose,
+}: AddKeyModalProps) {
   const utils = trpc.useUtils();
 
-  const [key, setKey] = useState('');
+  const [key, setKey] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
   const upsert = trpc.words.upsert.useMutation();
 
   useEffect(() => {
     if (!open) return;
-    setKey('');
+    setKey("");
     setValues({});
   }, [open]);
 
@@ -37,7 +43,7 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
         translations: locales.map((locale) => ({
           localeId: locale.id,
           channelId: channelId ?? null,
-          value: values[locale.code] ?? '',
+          value: values[locale.code] ?? "",
         })),
       },
       {
@@ -56,7 +62,7 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
       onClose={onClose}
       title="Add key"
       description="Creates the key with an (empty) translation for every locale."
-      size="lg"
+      size="2xl"
     >
       <form onSubmit={handleSubmit}>
         <div className="space-y-4">
@@ -69,7 +75,7 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
               autoFocus
             />
           </Field>
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
             {locales.map((locale) => (
               <Field
                 key={locale.id}
@@ -85,9 +91,12 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
                 }
               >
                 <Textarea
-                  value={values[locale.code] ?? ''}
+                  value={values[locale.code] ?? ""}
                   onChange={(event) =>
-                    setValues((previous) => ({ ...previous, [locale.code]: event.target.value }))
+                    setValues((previous) => ({
+                      ...previous,
+                      [locale.code]: event.target.value,
+                    }))
                   }
                   placeholder={locale.code}
                 />
@@ -95,11 +104,15 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
             ))}
           </div>
           {locales.length === 0 && (
-            <p className="text-sm text-ink-3">Add a locale in Settings before adding keys.</p>
+            <p className="text-sm text-ink-3">
+              Add a locale in Settings before adding keys.
+            </p>
           )}
         </div>
 
-        {upsert.error && <p className="mt-3 text-sm text-danger">{upsert.error.message}</p>}
+        {upsert.error && (
+          <p className="mt-3 text-sm text-danger">{upsert.error.message}</p>
+        )}
 
         <div className="-mx-5 -mb-4 mt-5 flex justify-end gap-2 rounded-b-xl border-t border-line px-5 py-4">
           <Button variant="secondary" onClick={onClose}>
@@ -109,7 +122,7 @@ export function AddKeyModal({ projectId, locales, channelId, open, onClose }: Ad
             type="submit"
             disabled={upsert.isPending || locales.length === 0}
           >
-            {upsert.isPending ? 'Adding…' : 'Add key'}
+            {upsert.isPending ? "Adding…" : "Add key"}
           </Button>
         </div>
       </form>
