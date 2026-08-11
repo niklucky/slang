@@ -483,3 +483,75 @@ export async function deleteWordPermanently(db: Database, wordId: number): Promi
     return deleted.length > 0;
   });
 }
+
+/** Batch variant of softDeleteWord: one transaction, all ids transition or none. */
+export async function softDeleteWords(
+  db: Database,
+  wordIds: number[],
+  changedById: number | null,
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const deleted = await tx
+      .update(words)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(and(inArray(words.id, wordIds), isNull(words.deletedAt)))
+      .returning({ id: words.id });
+    if (deleted.length !== wordIds.length) return false;
+    await tx
+      .update(translations)
+      .set({ deletedAt: now, updatedAt: now })
+      .where(and(inArray(translations.wordId, wordIds), isNull(translations.deletedAt)));
+    await tx
+      .insert(wordVersions)
+      .values(wordIds.map((wordId) => ({ wordId, action: 'deleted' as const, changedById })));
+    return true;
+  });
+}
+
+/** Batch variant of restoreWord: one transaction, all ids transition or none. */
+export async function restoreWords(
+  db: Database,
+  wordIds: number[],
+  changedById: number | null,
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const now = new Date();
+    const restored = await tx
+      .update(words)
+      .set({ deletedAt: null, updatedAt: now })
+      .where(and(inArray(words.id, wordIds), isNotNull(words.deletedAt)))
+      .returning({ id: words.id });
+    if (restored.length !== wordIds.length) return false;
+    await tx
+      .update(translations)
+      .set({ deletedAt: null, updatedAt: now })
+      .where(and(inArray(translations.wordId, wordIds), isNotNull(translations.deletedAt)));
+    await tx
+      .insert(wordVersions)
+      .values(wordIds.map((wordId) => ({ wordId, action: 'restored' as const, changedById })));
+    return true;
+  });
+}
+
+/** Batch variant of deleteWordPermanently: one transaction, all ids removed or none. */
+export async function deleteWordsPermanently(db: Database, wordIds: number[]): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    // Only soft-deleted words may leave the lifecycle; lock the rows to check.
+    const rows = await tx
+      .select({ id: words.id })
+      .from(words)
+      .where(and(inArray(words.id, wordIds), isNotNull(words.deletedAt)))
+      .for('update');
+    if (rows.length !== wordIds.length) return false;
+    await tx.delete(translationVersions).where(inArray(translationVersions.wordId, wordIds));
+    await tx.delete(wordVersions).where(inArray(wordVersions.wordId, wordIds));
+    await tx.delete(wordsToNamespaces).where(inArray(wordsToNamespaces.wordId, wordIds));
+    await tx.delete(translations).where(inArray(translations.wordId, wordIds));
+    const deleted = await tx
+      .delete(words)
+      .where(inArray(words.id, wordIds))
+      .returning({ id: words.id });
+    return deleted.length === wordIds.length;
+  });
+}

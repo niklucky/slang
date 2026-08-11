@@ -8,6 +8,8 @@ export interface MultiSelectOption {
   label: ReactNode;
   /** Extra text shown next to the label in the dropdown only (e.g. when the label is an icon). */
   hint?: ReactNode;
+  /** Compact representation used in the closed button; falls back to `label`. */
+  triggerLabel?: ReactNode;
 }
 
 export interface MultiSelectProps {
@@ -79,7 +81,7 @@ export function MultiSelect({
               ? selectedLabels.map((option, index) => (
                   <span key={option.value}>
                     {index > 0 && ', '}
-                    {option.label}
+                    {option.triggerLabel ?? option.label}
                   </span>
                 ))
               : 'None'}
