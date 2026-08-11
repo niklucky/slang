@@ -223,6 +223,7 @@ export function ProjectPage() {
               label: (
                 <LocaleFlag code={locale.code} name={locale.name} countryCode={locale.countryCode} />
               ),
+              triggerLabel: locale.code,
               hint: `${locale.code} — ${locale.name}`,
             }))}
             selected={visibleLocales.map((locale) => String(locale.id))}
@@ -235,59 +236,69 @@ export function ProjectPage() {
               );
             }}
           />
-          <Button
-            variant={missingOnly ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setMissingOnly((prev) => !prev)}
+          <label
+            className="flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-line-strong bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
             title="Show only keys missing a translation in the selected locales"
           >
-            <ListFilter size={14} />
+            <input
+              type="checkbox"
+              className="size-3.5 accent-accent"
+              checked={missingOnly}
+              onChange={() => setMissingOnly((prev) => !prev)}
+            />
+            <ListFilter size={14} className="text-ink-3" />
             Missing only
-          </Button>
-          <Button
-            variant={showDeleted ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setShowDeleted((prev) => !prev)}
+          </label>
+          <label
+            className="flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-line-strong bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
             title="Show deleted keys instead of live ones"
           >
-            <Trash2 size={14} />
+            <input
+              type="checkbox"
+              className="size-3.5 accent-accent"
+              checked={showDeleted}
+              onChange={() => setShowDeleted((prev) => !prev)}
+            />
+            <Trash2 size={14} className="text-ink-3" />
             Deleted
-          </Button>
-          {showDeleted ? (
-            <>
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={selectedCount === 0}
-                onClick={() => setConfirmAction('restore')}
-              >
-                Restore{selectedCount > 0 ? ` (${selectedCount})` : ''}
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                disabled={selectedCount === 0}
-                onClick={() => setConfirmAction('deletePermanently')}
-              >
-                Delete permanently{selectedCount > 0 ? ` (${selectedCount})` : ''}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="secondary" size="sm" disabled title="Coming soon">
-                <Wand2 size={14} />
-                Auto translate
-              </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                disabled={selectedCount === 0}
-                onClick={() => setConfirmAction('delete')}
-              >
-                Delete{selectedCount > 0 ? ` (${selectedCount})` : ''}
-              </Button>
-            </>
-          )}
+          </label>
+          <div className="ml-auto flex items-center gap-2">
+            {showDeleted ? (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={selectedCount === 0}
+                  onClick={() => setConfirmAction('restore')}
+                >
+                  Restore{selectedCount > 0 ? ` (${selectedCount})` : ''}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  disabled={selectedCount === 0}
+                  onClick={() => setConfirmAction('deletePermanently')}
+                >
+                  Delete permanently{selectedCount > 0 ? ` (${selectedCount})` : ''}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="secondary" size="sm" disabled title="Coming soon">
+                  <Wand2 size={14} />
+                  Auto translate
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  disabled={selectedCount === 0}
+                  onClick={() => setConfirmAction('delete')}
+                >
+                  Delete{selectedCount > 0 ? ` (${selectedCount})` : ''}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-separate border-spacing-0 text-sm">
@@ -311,12 +322,15 @@ export function ProjectPage() {
                     key={locale.id}
                     className="min-w-40 border-b border-line bg-surface px-3 py-2 font-medium"
                   >
-                    <LocaleFlag
-                      code={locale.code}
-                      name={locale.name}
-                      countryCode={locale.countryCode}
-                      placement="bottom"
-                    />
+                    <span className="flex items-center gap-2">
+                      <LocaleFlag
+                        code={locale.code}
+                        name={locale.name}
+                        countryCode={locale.countryCode}
+                        placement="bottom"
+                      />
+                      <span className="normal-case">{locale.name}</span>
+                    </span>
                   </th>
                 ))}
                 <th className="sticky right-0 z-20 border-b border-l border-line bg-surface px-3 py-2" />
