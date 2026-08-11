@@ -1,11 +1,13 @@
 import { ChevronDown } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { cx } from '../../lib/cx.js';
 
 export interface MultiSelectOption {
   value: string;
-  label: string;
+  label: ReactNode;
+  /** Extra text shown next to the label in the dropdown only (e.g. when the label is an icon). */
+  hint?: ReactNode;
 }
 
 export interface MultiSelectProps {
@@ -74,7 +76,12 @@ export function MultiSelect({
           {allSelected
             ? allLabel
             : selectedLabels.length > 0
-              ? selectedLabels.map((option) => option.label).join(', ')
+              ? selectedLabels.map((option, index) => (
+                  <span key={option.value}>
+                    {index > 0 && ', '}
+                    {option.label}
+                  </span>
+                ))
               : 'None'}
         </span>
         <ChevronDown size={14} className="shrink-0 text-ink-3" />
@@ -95,6 +102,9 @@ export function MultiSelect({
                   className="size-3.5 accent-accent"
                 />
                 <span className="truncate">{option.label}</span>
+                {option.hint != null && (
+                  <span className="truncate text-xs text-ink-3">{option.hint}</span>
+                )}
               </label>
             ))}
             {options.length === 0 && (

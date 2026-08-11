@@ -10,6 +10,7 @@ import { Button } from '../components/ui/button.js';
 import { IconButton } from '../components/ui/icon-button.js';
 import { Input, Textarea } from '../components/ui/input.js';
 import { MultiSelect } from '../components/ui/multi-select.js';
+import { LocaleFlag } from '../components/ui/locale-flag.js';
 import { trpc } from '../trpc.js';
 
 function useDebounced<T>(value: T, ms: number): T {
@@ -138,7 +139,13 @@ export function ProjectPage() {
             size="sm"
             className="w-48"
             allLabel="All locales"
-            options={locales.map((locale) => ({ value: String(locale.id), label: locale.code }))}
+            options={locales.map((locale) => ({
+              value: String(locale.id),
+              label: (
+                <LocaleFlag code={locale.code} name={locale.name} countryCode={locale.countryCode} />
+              ),
+              hint: `${locale.code} — ${locale.name}`,
+            }))}
             selected={visibleLocales.map((locale) => String(locale.id))}
             onChange={(next) => {
               const selectedIds = new Set(next.map(Number));
@@ -180,7 +187,12 @@ export function ProjectPage() {
                     key={locale.id}
                     className="min-w-40 border-b border-line bg-surface px-3 py-2 font-medium"
                   >
-                    {locale.code}
+                    <LocaleFlag
+                      code={locale.code}
+                      name={locale.name}
+                      countryCode={locale.countryCode}
+                      placement="bottom"
+                    />
                   </th>
                 ))}
                 <th className="sticky right-0 z-20 border-b border-l border-line bg-surface px-3 py-2" />

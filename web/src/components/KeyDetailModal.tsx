@@ -8,6 +8,7 @@ import { Button } from './ui/button.js';
 import { IconButton } from './ui/icon-button.js';
 import { Field, Input, Textarea } from './ui/input.js';
 import { Modal } from './ui/modal.js';
+import { LocaleFlag } from './ui/locale-flag.js';
 
 export interface KeyDetailWord {
   id: number;
@@ -113,8 +114,13 @@ export function KeyDetailModal({
             {locales.map((locale) => (
               <div key={locale.id}>
                 <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium text-ink-2">
-                    {locale.code} — {locale.name}
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-2">
+                    <LocaleFlag
+                      code={locale.code}
+                      name={locale.name}
+                      countryCode={locale.countryCode}
+                    />
+                    {locale.name}
                   </span>
                   <IconButton
                     label={`History for ${locale.code}`}

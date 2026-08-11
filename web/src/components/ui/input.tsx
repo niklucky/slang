@@ -52,7 +52,7 @@ export function Textarea({ size = 'md', className, ...rest }: TextareaProps) {
   );
 }
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-medium text-ink-2">{label}</span>
