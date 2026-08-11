@@ -81,7 +81,7 @@ export function ProjectPage() {
   // Selection is tied to the current listing; reset it when it changes.
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [id, debouncedSearch, showDeleted]);
+  }, [id, search, showDeleted]);
 
   const [editing, setEditing] = useState<CellRef | null>(null);
   const [draft, setDraft] = useState('');

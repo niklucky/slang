@@ -4,13 +4,16 @@ import type { Database } from '../../db/client.js';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
-import { deleteWordPermanently, listTranslationVersions, listWords, renameWord, restoreWord, softDeleteWord, upsertWord } from '../../services/words.js';
+import { deleteWordPermanently, deleteWordsPermanently, listTranslationVersions, listWords, renameWord, restoreWord, restoreWords, softDeleteWord, softDeleteWords, upsertWord } from '../../services/words.js';
 import { requirePermission, requireProject, requireProjectMembership } from '../guards.js';
 import { protectedProcedure, router } from '../init.js';
 
+/** Upper bound for batch operations; larger selections must be chunked by the client. */
+export const MAX_BATCH_SIZE = 100;
+
 const batchInput = z.object({
   projectId: z.number().int(),
-  wordIds: z.array(z.number().int()).min(1),
+  wordIds: z.array(z.number().int()).min(1).max(MAX_BATCH_SIZE),
 });
 
 /** Checks delete permission and that every word belongs to the project. */
@@ -191,30 +194,30 @@ export const wordsRouter = router({
       return { ok: true };
     }),
 
-  /** Batch counterpart of remove: soft-deletes several keys. */
+  /** Batch counterpart of remove: soft-deletes several keys atomically. */
   removeMany: protectedProcedure.input(batchInput).mutation(async ({ ctx, input }) => {
-    await requireOwnedWords(ctx.db, input.projectId, ctx.user.id, input.wordIds);
-    for (const wordId of input.wordIds) {
-      await softDeleteWord(ctx.db, wordId, ctx.user.id);
-    }
+    const wordIds = [...new Set(input.wordIds)];
+    await requireOwnedWords(ctx.db, input.projectId, ctx.user.id, wordIds);
+    const deleted = await softDeleteWords(ctx.db, wordIds, ctx.user.id);
+    if (!deleted) throw new TRPCError({ code: 'CONFLICT', message: 'word_state_conflict' });
     return { ok: true };
   }),
 
   /** Batch counterpart of restore. */
   restoreMany: protectedProcedure.input(batchInput).mutation(async ({ ctx, input }) => {
-    await requireOwnedWords(ctx.db, input.projectId, ctx.user.id, input.wordIds);
-    for (const wordId of input.wordIds) {
-      await restoreWord(ctx.db, wordId, ctx.user.id);
-    }
+    const wordIds = [...new Set(input.wordIds)];
+    await requireOwnedWords(ctx.db, input.projectId, ctx.user.id, wordIds);
+    const restored = await restoreWords(ctx.db, wordIds, ctx.user.id);
+    if (!restored) throw new TRPCError({ code: 'CONFLICT', message: 'word_state_conflict' });
     return { ok: true };
   }),
 
   /** Batch counterpart of removePermanently. Irreversible. */
   removePermanentlyMany: protectedProcedure.input(batchInput).mutation(async ({ ctx, input }) => {
-    await requireOwnedWords(ctx.db, input.projectId, ctx.user.id, input.wordIds);
-    for (const wordId of input.wordIds) {
-      await deleteWordPermanently(ctx.db, wordId);
-    }
+    const wordIds = [...new Set(input.wordIds)];
+    await requireOwnedWords(ctx.db, input.projectId, ctx.user.id, wordIds);
+    const deleted = await deleteWordsPermanently(ctx.db, wordIds);
+    if (!deleted) throw new TRPCError({ code: 'CONFLICT', message: 'word_state_conflict' });
     return { ok: true };
   }),
 });
