@@ -2,14 +2,14 @@ import { cx } from '../../lib/cx.js';
 
 export function Logo({ size = 'md', className }: { size?: 'sm' | 'md'; className?: string }) {
   return (
-    <span
+    <img
+      src="/logo.png"
+      alt="Slang"
       className={cx(
-        'inline-flex shrink-0 select-none items-center justify-center rounded-xl bg-primary font-bold text-primary-ink',
-        size === 'sm' ? 'h-8 w-8 text-base' : 'h-9 w-9 text-lg',
+        'inline-block shrink-0 select-none rounded-xl',
+        size === 'sm' ? 'h-8 w-8' : 'h-9 w-9',
         className,
       )}
-    >
-      S
-    </span>
+    />
   );
 }
