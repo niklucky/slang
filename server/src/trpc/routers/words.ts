@@ -1,11 +1,30 @@
 import { TRPCError } from '@trpc/server';
-import { and, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
+import type { Database } from '../../db/client.js';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
 import { deleteWordPermanently, listTranslationVersions, listWords, renameWord, restoreWord, softDeleteWord, upsertWord } from '../../services/words.js';
 import { requirePermission, requireProject, requireProjectMembership } from '../guards.js';
 import { protectedProcedure, router } from '../init.js';
+
+const batchInput = z.object({
+  projectId: z.number().int(),
+  wordIds: z.array(z.number().int()).min(1),
+});
+
+/** Checks delete permission and that every word belongs to the project. */
+async function requireOwnedWords(db: Database, projectId: number, userId: number, wordIds: number[]) {
+  const { permissions } = await requireProjectMembership(db, projectId, userId);
+  requirePermission(permissions, 'canDeleteKeys', 'delete_keys_forbidden');
+  const rows = await db
+    .select({ id: words.id })
+    .from(words)
+    .where(and(eq(words.projectId, projectId), inArray(words.id, wordIds)));
+  if (rows.length !== new Set(wordIds).size) {
+    throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
+  }
+}
 
 export const wordsRouter = router({
   list: protectedProcedure
@@ -171,4 +190,31 @@ export const wordsRouter = router({
       if (!restored) throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
       return { ok: true };
     }),
+
+  /** Batch counterpart of remove: soft-deletes several keys. */
+  removeMany: protectedProcedure.input(batchInput).mutation(async ({ ctx, input }) => {
+    await requireOwnedWords(ctx.db, input.projectId, ctx.user.id, input.wordIds);
+    for (const wordId of input.wordIds) {
+      await softDeleteWord(ctx.db, wordId, ctx.user.id);
+    }
+    return { ok: true };
+  }),
+
+  /** Batch counterpart of restore. */
+  restoreMany: protectedProcedure.input(batchInput).mutation(async ({ ctx, input }) => {
+    await requireOwnedWords(ctx.db, input.projectId, ctx.user.id, input.wordIds);
+    for (const wordId of input.wordIds) {
+      await restoreWord(ctx.db, wordId, ctx.user.id);
+    }
+    return { ok: true };
+  }),
+
+  /** Batch counterpart of removePermanently. Irreversible. */
+  removePermanentlyMany: protectedProcedure.input(batchInput).mutation(async ({ ctx, input }) => {
+    await requireOwnedWords(ctx.db, input.projectId, ctx.user.id, input.wordIds);
+    for (const wordId of input.wordIds) {
+      await deleteWordPermanently(ctx.db, wordId);
+    }
+    return { ok: true };
+  }),
 });
