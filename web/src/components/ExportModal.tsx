@@ -81,6 +81,23 @@ export function ExportModal({
       <div className="space-y-4">
         <Field label="Locales">
           <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-line p-2">
+            {locales.length > 0 && (
+              <label className="flex cursor-pointer items-center gap-2 rounded-md border-b border-line px-2 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-fill">
+                <input
+                  type="checkbox"
+                  className="accent-accent"
+                  checked={selectedIds.length === locales.length}
+                  onChange={() =>
+                    setSelectedIds(
+                      selectedIds.length === locales.length
+                        ? []
+                        : locales.map((locale) => locale.id),
+                    )
+                  }
+                />
+                Select all
+              </label>
+            )}
             {locales.map((locale) => (
               <label
                 key={locale.id}
