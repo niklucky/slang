@@ -168,6 +168,24 @@ describe('words.exportCsv / importCsv', () => {
     expect(exported.csv).toBe('key;en;de\nhello;"Hello; world!";Hallo');
   });
 
+  it('ignores a trailing separator column from spreadsheet exports', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const { project } = await makeProjectWithLocales(accessToken, ['en']);
+
+    const result = await trpc<{ keys: number }>(app, 'words.importCsv', {
+      input: { projectId: project.id, csv: 'key;en;\r\nhello;Hi;\r\n', separator: ';' },
+      token: accessToken,
+    });
+    expect(result.keys).toBe(1);
+
+    const list = await trpc<Array<{ key: string; translations: Array<{ value: string }> }>>(
+      app,
+      'words.list',
+      { input: { projectId: project.id }, token: accessToken, kind: 'query' },
+    );
+    expect(list.find((word) => word.key === 'hello')!.translations[0]!.value).toBe('Hi');
+  });
+
   it('rejects a malformed header and an out-of-project export locale', async () => {
     const { accessToken } = await login('alice@example.com');
     const { project } = await makeProjectWithLocales(accessToken, ['en']);

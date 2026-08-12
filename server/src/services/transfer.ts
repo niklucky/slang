@@ -93,6 +93,11 @@ export async function importWordsCsv(
 ): Promise<ImportWordsResult> {
   const rows = parseCsv(csv, separator);
   const header = rows[0]?.map((cell) => cell.trim());
+  // Spreadsheets often export a trailing separator, leaving an empty last
+  // header cell; drop those instead of rejecting the file.
+  while (header && header.length > 1 && header[header.length - 1] === '') {
+    header.pop();
+  }
   if (!header || header[0]?.toLowerCase() !== 'key' || header.length < 2) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'csv_header_invalid' });
   }
