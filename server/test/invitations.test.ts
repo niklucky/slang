@@ -515,11 +515,13 @@ describe('member permissions', () => {
     ).rejects.toMatchObject({ code: 'FORBIDDEN', message: expect.stringContaining('create_keys_forbidden') });
 
     // Deleting is forbidden too.
-    const list = await trpc<Array<{ id: number }>>(app, 'words.list', {
-      kind: 'query',
-      input: { projectId: project.id },
-      token: bob.accessToken,
-    });
+    const list = (
+      await trpc<{ items: Array<{ id: number }>; total: number; nextCursor: number | null }>(app, 'words.list', {
+        kind: 'query',
+        input: { projectId: project.id },
+        token: bob.accessToken,
+      })
+    ).items;
     await expect(
       trpc(app, 'words.remove', {
         input: { projectId: project.id, wordId: list[0]!.id },

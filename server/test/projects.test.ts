@@ -30,6 +30,12 @@ interface WordRow {
   translations: Array<{ value: string; localeCode: string; channelId: number }>;
 }
 
+interface WordsPage {
+  items: WordRow[];
+  total: number;
+  nextCursor: number | null;
+}
+
 async function login(email: string): Promise<AuthResult> {
   const user = await seedUser(handle, email);
   const result = await trpc<AuthResult>(app, 'auth.login', {
@@ -290,11 +296,11 @@ describe('words', () => {
       token: accessToken,
     });
 
-    const list = await trpc<WordRow[]>(app, 'words.list', {
+    const list = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
     expect(list).toHaveLength(1);
     expect(list[0]!.key).toBe('greeting');
     expect(list[0]!.translations).toEqual([
@@ -302,11 +308,11 @@ describe('words', () => {
     ]);
 
     // Search index covers values, not just keys.
-    const searched = await trpc<WordRow[]>(app, 'words.list', {
+    const searched = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id, search: 'hello' },
       token: accessToken,
-    });
+    })).items;
     expect(searched).toHaveLength(1);
   });
 
@@ -320,21 +326,21 @@ describe('words', () => {
       },
       token: accessToken,
     });
-    const list = await trpc<WordRow[]>(app, 'words.list', {
+    const list = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
 
     await trpc(app, 'words.remove', {
       input: { projectId: project.id, wordId: list[0]!.id },
       token: accessToken,
     });
-    const after = await trpc<WordRow[]>(app, 'words.list', {
+    const after = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
     expect(after).toHaveLength(0);
   });
 
@@ -350,30 +356,30 @@ describe('words', () => {
         token: accessToken,
       });
     }
-    const list = await trpc<WordRow[]>(app, 'words.list', {
+    const list = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
     const target = list.find((word) => word.key === 'greeting')!;
     await trpc(app, 'words.remove', {
       input: { projectId: project.id, wordId: target.id },
       token: accessToken,
     });
 
-    const live = await trpc<WordRow[]>(app, 'words.list', {
+    const live = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
     expect(live.map((word) => word.key)).toEqual(['farewell']);
     expect(live[0]!.deletedAt).toBeNull();
 
-    const deleted = await trpc<WordRow[]>(app, 'words.list', {
+    const deleted = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id, deleted: true },
       token: accessToken,
-    });
+    })).items;
     expect(deleted).toHaveLength(1);
     expect(deleted[0]!.key).toBe('greeting');
     expect(deleted[0]!.deletedAt).not.toBeNull();
@@ -393,11 +399,11 @@ describe('words', () => {
       },
       token: accessToken,
     });
-    const list = await trpc<WordRow[]>(app, 'words.list', {
+    const list = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
     const wordId = list[0]!.id;
 
     await expect(
@@ -407,11 +413,11 @@ describe('words', () => {
       }),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
 
-    const after = await trpc<WordRow[]>(app, 'words.list', {
+    const after = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
     expect(after).toHaveLength(1);
     expect(after[0]!.translations).toEqual([
       expect.objectContaining({ value: 'Hello', localeCode: 'en' }),
@@ -430,11 +436,11 @@ describe('words', () => {
       },
       token: accessToken,
     });
-    const list = await trpc<WordRow[]>(app, 'words.list', {
+    const list = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
     const wordId = list[0]!.id;
     await trpc(app, 'words.remove', {
       input: { projectId: project.id, wordId },
@@ -446,11 +452,11 @@ describe('words', () => {
       token: accessToken,
     });
 
-    const deletedList = await trpc<WordRow[]>(app, 'words.list', {
+    const deletedList = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id, deleted: true },
       token: accessToken,
-    });
+    })).items;
     expect(deletedList).toHaveLength(0);
     expect(await handle.db.select().from(words)).toHaveLength(0);
     expect(await handle.db.select().from(translations)).toHaveLength(0);
@@ -466,11 +472,11 @@ describe('words', () => {
       },
       token: accessToken,
     });
-    const list = await trpc<WordRow[]>(app, 'words.list', {
+    const list = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
     const wordId = list[0]!.id;
     await trpc(app, 'words.remove', {
       input: { projectId: project.id, wordId },
@@ -482,11 +488,11 @@ describe('words', () => {
       token: accessToken,
     });
 
-    const restored = await trpc<WordRow[]>(app, 'words.list', {
+    const restored = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id },
       token: accessToken,
-    });
+    })).items;
     expect(restored).toHaveLength(1);
     expect(restored[0]!.key).toBe('greeting');
     expect(restored[0]!.deletedAt).toBeNull();
@@ -494,11 +500,11 @@ describe('words', () => {
       expect.objectContaining({ value: 'Hello', localeCode: 'en' }),
     ]);
 
-    const deletedList = await trpc<WordRow[]>(app, 'words.list', {
+    const deletedList = (await trpc<WordsPage>(app, 'words.list', {
       kind: 'query',
       input: { projectId: project.id, deleted: true },
       token: accessToken,
-    });
+    })).items;
     expect(deletedList).toHaveLength(0);
   });
 
@@ -512,5 +518,48 @@ describe('words', () => {
         token: bob.accessToken,
       }),
     ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('list paginates with limit/cursor and total reflects the search filter', async () => {
+    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    for (const key of ['alpha', 'beta', 'gamma']) {
+      await trpc(app, 'words.upsert', {
+        input: {
+          projectId: project.id,
+          key,
+          translations: [{ localeId: en.id, channelId, value: key }],
+        },
+        token: accessToken,
+      });
+    }
+
+    const first = await trpc<WordsPage>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id, limit: 2 },
+      token: accessToken,
+    });
+    expect(first.items).toHaveLength(2);
+    expect(first.total).toBe(3);
+    expect(first.nextCursor).toBe(2);
+
+    const second = await trpc<WordsPage>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id, limit: 2, cursor: first.nextCursor },
+      token: accessToken,
+    });
+    expect(second.items).toHaveLength(1);
+    expect(second.total).toBe(3);
+    expect(second.nextCursor).toBeNull();
+
+    const keys = [...first.items, ...second.items].map((word) => word.key).sort();
+    expect(keys).toEqual(['alpha', 'beta', 'gamma']);
+
+    const searched = await trpc<WordsPage>(app, 'words.list', {
+      kind: 'query',
+      input: { projectId: project.id, search: 'beta' },
+      token: accessToken,
+    });
+    expect(searched.items).toHaveLength(1);
+    expect(searched.total).toBe(1);
   });
 });

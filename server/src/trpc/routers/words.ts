@@ -38,6 +38,10 @@ export const wordsRouter = router({
         search: z.string().trim().optional(),
         localeId: z.number().int().optional(),
         deleted: z.boolean().optional(),
+        /** Offset of the page to fetch. */
+        cursor: z.number().int().min(0).nullish(),
+        limit: z.number().int().min(1).max(1000).default(100),
+        missingLocaleIds: z.array(z.number().int()).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {

@@ -59,7 +59,14 @@ export async function exportWordsCsv(db: Database, options: ExportWordsOptions):
   const selected = options.localeIds.map((id) => ({ id, code: codesById.get(id)! }));
 
   const defaultChannel = await findDefaultChannel(db, options.projectId);
-  const list = await listWords(db, { projectId: options.projectId });
+  // Export covers every key; page through the listing.
+  const list: Awaited<ReturnType<typeof listWords>>['items'] = [];
+  let cursor: number | null = 0;
+  while (cursor !== null) {
+    const page = await listWords(db, { projectId: options.projectId, cursor, limit: 1000 });
+    list.push(...page.items);
+    cursor = page.nextCursor;
+  }
 
   const csvRows: string[][] = [['key', ...selected.map((locale) => locale.code)]];
   for (const word of list) {

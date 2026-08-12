@@ -1,4 +1,12 @@
-import { Download, MoreHorizontal, Plus, Settings, Upload, Users, Wand2 } from "lucide-react";
+import {
+  Download,
+  MoreHorizontal,
+  Plus,
+  Settings,
+  Upload,
+  Users,
+  Wand2,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
@@ -43,11 +51,41 @@ export function ProjectPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 300);
   const [showDeleted, setShowDeleted] = useState(false);
-  const words = trpc.words.list.useQuery({
-    projectId: id,
-    ...(debouncedSearch ? { search: debouncedSearch } : {}),
-    ...(showDeleted ? { deleted: true } : {}),
-  });
+  // Locales removed from this set are hidden from the table; new locales default to visible.
+  const [excludedLocaleIds, setExcludedLocaleIds] = useState<number[]>([]);
+  const [missingOnly, setMissingOnly] = useState(false);
+
+  const visibleLocales = (details.data?.locales ?? []).filter(
+    (locale) => !excludedLocaleIds.includes(locale.id),
+  );
+
+  const words = trpc.words.list.useInfiniteQuery(
+    {
+      projectId: id,
+      limit: 100,
+      ...(debouncedSearch ? { search: debouncedSearch } : {}),
+      ...(showDeleted ? { deleted: true } : {}),
+      ...(missingOnly
+        ? { missingLocaleIds: visibleLocales.map((locale) => locale.id) }
+        : {}),
+    },
+    { getNextPageParam: (lastPage) => lastPage.nextCursor },
+  );
+
+  // Load the next page when the bottom of the table scrolls into view.
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = words;
+  useEffect(() => {
+    const element = loadMoreRef.current;
+    if (!element) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        void fetchNextPage();
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const invalidateWords = () => {
     void utils.words.list.invalidate({ projectId: id });
@@ -94,7 +132,7 @@ export function ProjectPage() {
   // Selection is tied to the current listing; reset it when it changes.
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [id, search, showDeleted]);
+  }, [id, search, showDeleted, missingOnly]);
 
   const [editing, setEditing] = useState<CellRef | null>(null);
   const [draft, setDraft] = useState("");
@@ -106,9 +144,6 @@ export function ProjectPage() {
   const [exportOpen, setExportOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [detailWord, setDetailWord] = useState<KeyDetailWord | null>(null);
-  // Locales removed from this set are hidden from the table; new locales default to visible.
-  const [excludedLocaleIds, setExcludedLocaleIds] = useState<number[]>([]);
-  const [missingOnly, setMissingOnly] = useState(false);
 
   if (details.isPending) return <p className="text-sm text-ink-3">Loading…</p>;
   if (!details.data)
@@ -116,17 +151,9 @@ export function ProjectPage() {
 
   const { project, locales, channels } = details.data;
   const defaultChannel = channels[0];
-  const visibleLocales = locales.filter(
-    (locale) => !excludedLocaleIds.includes(locale.id),
-  );
-  const visibleWords = missingOnly
-    ? (words.data ?? []).filter((word) =>
-        visibleLocales.some(
-          (locale) =>
-            !word.translations.some((t) => t.localeId === locale.id && t.value),
-        ),
-      )
-    : (words.data ?? []);
+  const loadedWords = words.data?.pages.flatMap((page) => page.items) ?? [];
+  const totalKeys = words.data?.pages[0]?.total ?? 0;
+  const visibleWords = loadedWords;
 
   const selectedCount = selectedIds.size;
   const allSelected =
@@ -189,7 +216,9 @@ export function ProjectPage() {
     localeId: number,
     value: string,
   ) {
-    const word = words.data?.find((entry) => entry.id === wordId);
+    const word = words.data?.pages
+      .flatMap((page) => page.items)
+      .find((entry) => entry.id === wordId);
     const untouched = (word?.translations ?? [])
       .filter((translation) => translation.localeId !== localeId)
       .map((translation) => ({
@@ -263,6 +292,7 @@ export function ProjectPage() {
             placeholder="Search keys and values…"
             className="max-w-sm"
           />
+          <span className="text-sm text-ink-3">Total: {totalKeys} keys</span>
           <MultiSelect
             size="sm"
             className="w-48"
@@ -355,7 +385,7 @@ export function ProjectPage() {
               <>
                 <Button
                   variant="secondary"
-                  size="sm"
+                  size="md"
                   disabled
                   title="Coming soon"
                 >
@@ -364,7 +394,7 @@ export function ProjectPage() {
                 </Button>
                 <Button
                   variant="danger"
-                  size="sm"
+                  size="md"
                   disabled={selectedCount === 0}
                   onClick={() => setConfirmAction("delete")}
                 >
@@ -378,7 +408,10 @@ export function ProjectPage() {
           <table className="w-full border-separate border-spacing-0 text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-ink-3">
-                <th className="sticky left-0 z-20 min-w-48 border-b border-r border-line bg-surface px-3 py-2 font-medium">
+                <th className="sticky left-0 z-20 w-12 min-w-12 border-b border-r border-line bg-surface px-3 py-2 text-right font-medium">
+                  #
+                </th>
+                <th className="sticky left-12 z-20 min-w-48 border-b border-r border-line bg-surface px-3 py-2 font-medium">
                   <label className="flex items-center gap-2">
                     <input
                       ref={selectAllRef}
@@ -411,7 +444,7 @@ export function ProjectPage() {
               </tr>
             </thead>
             <tbody>
-              {visibleWords.map((word) => {
+              {visibleWords.map((word, index) => {
                 const isDeleted = word.deletedAt !== null;
                 return (
                   <tr
@@ -423,7 +456,16 @@ export function ProjectPage() {
                     }`}
                   >
                     <td
-                      className={`sticky left-0 z-10 border-b border-r border-line px-3 py-2 font-mono text-xs ${
+                      className={`sticky left-0 z-10 w-12 min-w-12 border-b border-r border-line px-3 py-2 text-right text-xs ${
+                        isDeleted
+                          ? "bg-danger-soft text-danger"
+                          : "bg-surface text-ink-3 group-hover:bg-fill"
+                      }`}
+                    >
+                      {index + 1}
+                    </td>
+                    <td
+                      className={`sticky left-12 z-10 border-b border-r border-line px-3 py-2 font-mono text-xs ${
                         isDeleted
                           ? "bg-danger-soft text-danger"
                           : "bg-surface text-ink-2 group-hover:bg-fill"
@@ -604,6 +646,10 @@ export function ProjectPage() {
               })}
             </tbody>
           </table>
+          <div ref={loadMoreRef} />
+          {words.isFetchingNextPage && (
+            <p className="p-4 text-sm text-ink-3">Loading more keys…</p>
+          )}
           {visibleWords.length === 0 && !words.isPending && (
             <p className="p-4 text-sm text-ink-3">
               {missingOnly

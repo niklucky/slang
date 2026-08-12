@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq, ilike, inArray, isNotNull, isNull, type ExtractTablesWithRelations, type SQL } from 'drizzle-orm';
+import { and, count, desc, eq, ilike, inArray, isNotNull, isNull, or, sql, type ExtractTablesWithRelations, type SQL } from 'drizzle-orm';
 import type { PgTransaction } from 'drizzle-orm/pg-core';
 import type { PostgresJsQueryResultHKT } from 'drizzle-orm/postgres-js';
 
@@ -40,10 +40,30 @@ export interface WordWithTranslations {
   }>;
 }
 
+export interface WordsPage {
+  items: WordWithTranslations[];
+  /** Total keys matching the filters, across all pages. */
+  total: number;
+  /** Offset for the next page, or null when everything is loaded. */
+  nextCursor: number | null;
+}
+
 export async function listWords(
   db: Database,
-  options: { projectId: number; search?: string; localeId?: number; deleted?: boolean },
-): Promise<WordWithTranslations[]> {
+  options: {
+    projectId: number;
+    search?: string;
+    localeId?: number;
+    deleted?: boolean;
+    cursor?: number | null;
+    limit?: number;
+    /** When set, only keys missing a translation in at least one of these locales. */
+    missingLocaleIds?: number[];
+  },
+): Promise<WordsPage> {
+  const limit = options.limit ?? 100;
+  const offset = options.cursor ?? 0;
+
   const conditions: (SQL | undefined)[] = [
     eq(words.projectId, options.projectId),
     options.deleted ? isNotNull(words.deletedAt) : isNull(words.deletedAt),
@@ -51,53 +71,87 @@ export async function listWords(
   if (options.search) {
     conditions.push(ilike(words.searchIndex, `%${options.search}%`));
   }
-
-  const joinConditions: (SQL | undefined)[] = [
-    eq(translations.wordId, words.id),
-    options.deleted ? isNotNull(translations.deletedAt) : isNull(translations.deletedAt),
-  ];
-  if (options.localeId !== undefined) {
-    joinConditions.push(eq(translations.localeId, options.localeId));
+  if (options.missingLocaleIds && options.missingLocaleIds.length > 0) {
+    conditions.push(
+      or(
+        ...options.missingLocaleIds.map(
+          (localeId) => sql`not exists (
+            select 1 from ${translations}
+            where ${translations.wordId} = ${words.id}
+              and ${translations.localeId} = ${localeId}
+              and ${translations.deletedAt} is null
+              and ${translations.value} <> ''
+          )`,
+        ),
+      ),
+    );
   }
+  const where = and(...conditions);
 
-  const rows = await db
+  const [countRow] = await db.select({ total: count() }).from(words).where(where);
+  const total = countRow?.total ?? 0;
+
+  const pageWords = await db
     .select({
-      wordId: words.id,
+      id: words.id,
       key: words.key,
       createdAt: words.createdAt,
       updatedAt: words.updatedAt,
       deletedAt: words.deletedAt,
+    })
+    .from(words)
+    .where(where)
+    .orderBy(desc(words.createdAt), words.id)
+    .limit(limit)
+    .offset(offset);
+
+  if (pageWords.length === 0) {
+    return { items: [], total, nextCursor: null };
+  }
+
+  const translationConditions: (SQL | undefined)[] = [
+    inArray(translations.wordId, pageWords.map((word) => word.id)),
+    options.deleted ? isNotNull(translations.deletedAt) : isNull(translations.deletedAt),
+  ];
+  if (options.localeId !== undefined) {
+    translationConditions.push(eq(translations.localeId, options.localeId));
+  }
+
+  const translationRows = await db
+    .select({
+      wordId: translations.wordId,
       translationId: translations.id,
       value: translations.value,
       localeId: translations.localeId,
       channelId: translations.channelId,
     })
-    .from(words)
-    .leftJoin(translations, and(...joinConditions))
-    .where(and(...conditions))
-    .orderBy(desc(words.createdAt), words.id);
+    .from(translations)
+    .where(and(...translationConditions));
 
-  const byId = new Map<number, WordWithTranslations>();
-  for (const row of rows) {
-    let entry = byId.get(row.wordId);
-    if (!entry) {
-      entry = { id: row.wordId, key: row.key, createdAt: row.createdAt, updatedAt: row.updatedAt, deletedAt: row.deletedAt, namespaces: [], translations: [] };
-      byId.set(row.wordId, entry);
-    }
-    if (row.translationId !== null && row.localeId !== null) {
-      entry.translations.push({
-        id: row.translationId,
-        value: row.value ?? '',
-        localeId: row.localeId,
-        localeCode: '', // filled below
-        channelId: row.channelId,
-      });
-    }
+  const translationsByWord = new Map<number, WordWithTranslations['translations']>();
+  for (const row of translationRows) {
+    const bucket = translationsByWord.get(row.wordId) ?? [];
+    bucket.push({
+      id: row.translationId,
+      value: row.value ?? '',
+      localeId: row.localeId,
+      localeCode: '', // filled below
+      channelId: row.channelId,
+    });
+    translationsByWord.set(row.wordId, bucket);
   }
 
-  await attachNamespaces(db, [...byId.values()]);
-  await attachLocaleCodes(db, [...byId.values()]);
-  return [...byId.values()];
+  const items: WordWithTranslations[] = pageWords.map((word) => ({
+    ...word,
+    namespaces: [],
+    translations: translationsByWord.get(word.id) ?? [],
+  }));
+
+  await attachNamespaces(db, items);
+  await attachLocaleCodes(db, items);
+
+  const nextOffset = offset + pageWords.length;
+  return { items, total, nextCursor: nextOffset < total ? nextOffset : null };
 }
 
 async function attachNamespaces(db: Database, list: WordWithTranslations[]): Promise<void> {

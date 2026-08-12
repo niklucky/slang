@@ -67,11 +67,13 @@ describe('words.exportCsv / importCsv', () => {
     expect(lines).toContain('bye,Bye,');
     expect(exported.csv).toContain('multi,"line one\nline two",x');
 
-    const list = await trpc<Array<{ key: string; translations: Array<{ localeCode: string; value: string }> }>>(
-      app,
-      'words.list',
-      { input: { projectId: project.id }, token: accessToken, kind: 'query' },
-    );
+    const list = (
+      await trpc<{
+        items: Array<{ key: string; translations: Array<{ localeCode: string; value: string }> }>;
+        total: number;
+        nextCursor: number | null;
+      }>(app, 'words.list', { input: { projectId: project.id }, token: accessToken, kind: 'query' })
+    ).items;
     expect(list).toHaveLength(3);
     const bye = list.find((word) => word.key === 'bye')!;
     expect(bye.translations.find((t) => t.localeCode === 'de')).toBeUndefined();
@@ -91,11 +93,13 @@ describe('words.exportCsv / importCsv', () => {
     });
     expect(result.keys).toBe(1);
 
-    const list = await trpc<Array<{ key: string; translations: Array<{ value: string }> }>>(
-      app,
-      'words.list',
-      { input: { projectId: project.id }, token: accessToken, kind: 'query' },
-    );
+    const list = (
+      await trpc<{
+        items: Array<{ key: string; translations: Array<{ value: string }> }>;
+        total: number;
+        nextCursor: number | null;
+      }>(app, 'words.list', { input: { projectId: project.id }, token: accessToken, kind: 'query' })
+    ).items;
     expect(list.map((word) => word.key).sort()).toEqual(['bye', 'hello']);
     expect(list.find((word) => word.key === 'hello')!.translations[0]!.value).toBe('Hi');
   });
@@ -178,11 +182,13 @@ describe('words.exportCsv / importCsv', () => {
     });
     expect(result.keys).toBe(1);
 
-    const list = await trpc<Array<{ key: string; translations: Array<{ value: string }> }>>(
-      app,
-      'words.list',
-      { input: { projectId: project.id }, token: accessToken, kind: 'query' },
-    );
+    const list = (
+      await trpc<{
+        items: Array<{ key: string; translations: Array<{ value: string }> }>;
+        total: number;
+        nextCursor: number | null;
+      }>(app, 'words.list', { input: { projectId: project.id }, token: accessToken, kind: 'query' })
+    ).items;
     expect(list.find((word) => word.key === 'hello')!.translations[0]!.value).toBe('Hi');
   });
 
