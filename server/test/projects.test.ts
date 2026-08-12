@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
-import { translations, words, type Project } from '../src/db/schema.js';
+import { Role, translations, usersToProjects, words, type Project } from '../src/db/schema.js';
 import { openTestDb, resetDb, seedUser, trpc } from './helpers.js';
 
 const handle = openTestDb();
@@ -21,6 +21,15 @@ interface ProjectDetails {
   channels: Array<{ id: number; name: string }>;
   namespaces: Array<{ id: number; name: string }>;
   wordCount: number;
+}
+
+interface ProjectListItem extends Project {
+  wordCount: number;
+  localeCount: number;
+  untranslatedCount: number;
+  members: Array<{ name: string }>;
+  /** Dates travel as ISO strings over the plain-JSON tRPC link. */
+  lastActivityAt: string | Date;
 }
 
 interface WordRow {
@@ -256,6 +265,106 @@ describe('projects', () => {
       { kind: 'query', token: accessToken },
     );
     expect(projects[0]!.untranslatedCount).toBe(1);
+  });
+
+  it('list is sorted by id desc and includes the owner as the only member', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const first = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'First', url: null },
+      token: accessToken,
+    });
+    const second = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Second', url: null },
+      token: accessToken,
+    });
+
+    const projects = await trpc<ProjectListItem[]>(app, 'projects.list', {
+      kind: 'query',
+      token: accessToken,
+    });
+    expect(projects.map((project) => project.id)).toEqual([second.id, first.id]);
+    expect(projects[0]!.members).toEqual([{ name: 'alice' }]);
+    expect(new Date(projects[0]!.lastActivityAt).getTime()).not.toBeNaN();
+  });
+
+  it('list members are the owner first, then the rest by join order', async () => {
+    const alice = await login('alice@example.com');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Team', url: null },
+      token: alice.accessToken,
+    });
+    const bob = await seedUser(handle, 'bob@example.com');
+    const carol = await seedUser(handle, 'carol@example.com');
+    // Carol joined later than Bob; the memberships carry explicit join times.
+    await handle.db.insert(usersToProjects).values([
+      {
+        projectId: project.id,
+        userId: bob.id,
+        assignedById: alice.user.id,
+        roleId: Role.EDITOR,
+        assignedAt: new Date('2026-01-01T00:00:00Z'),
+      },
+      {
+        projectId: project.id,
+        userId: carol.id,
+        assignedById: alice.user.id,
+        roleId: Role.TRANSLATOR,
+        assignedAt: new Date('2026-01-02T00:00:00Z'),
+      },
+    ]);
+
+    const projects = await trpc<ProjectListItem[]>(app, 'projects.list', {
+      kind: 'query',
+      token: alice.accessToken,
+    });
+    expect(projects[0]!.members.map((member) => member.name)).toEqual([
+      'alice',
+      'bob',
+      'carol',
+    ]);
+  });
+
+  it('list lastActivityAt moves forward when a key is added', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Active', url: null },
+      token: accessToken,
+    });
+    const details = await trpc<ProjectDetails>(app, 'projects.get', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    const channelId = details.channels[0]!.id;
+    const catalog = await trpc<Array<{ id: number; code: string }>>(app, 'locales.catalog', {
+      kind: 'query',
+      token: accessToken,
+    });
+    const en = catalog.find((locale) => locale.code === 'en')!;
+    await trpc(app, 'locales.add', {
+      input: { projectId: project.id, localeId: en.id },
+      token: accessToken,
+    });
+
+    const listProject = async () => {
+      const projects = await trpc<ProjectListItem[]>(app, 'projects.list', {
+        kind: 'query',
+        token: accessToken,
+      });
+      return projects.find(({ id }) => id === project.id)!;
+    };
+
+    const before = new Date((await listProject()).lastActivityAt).getTime();
+    await trpc(app, 'words.upsert', {
+      input: {
+        projectId: project.id,
+        key: 'greeting',
+        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+      },
+      token: accessToken,
+    });
+    const after = new Date((await listProject()).lastActivityAt).getTime();
+    expect(after).toBeGreaterThan(before);
   });
 });
 

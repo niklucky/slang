@@ -1,13 +1,36 @@
-import { Folder, LogOut, Plus } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 
 import { cx } from "../../lib/cx.js";
+import { formatRelativeTime } from "../../lib/time.js";
 import { trpc } from "../../trpc.js";
 import { useLogout } from "../RequireAuth.js";
 import { Avatar } from "../ui/avatar.js";
 import { IconButton } from "../ui/icon-button.js";
 import { Logo } from "../ui/logo.js";
 import { ThemeToggle } from "../ui/theme-toggle.js";
+
+/** Overlapping member initials: first few avatars, then a +N overflow chip. */
+function MemberStack({ names }: { names: string[] }) {
+  const visible = names.slice(0, 3);
+  const overflow = names.length - visible.length;
+  if (names.length === 0) return null;
+  return (
+    <div
+      className="flex shrink-0 items-center -space-x-1.5"
+      title={names.join(", ")}
+    >
+      {visible.map((name, index) => (
+        <Avatar key={`${name}-${index}`} name={name} size="xs" />
+      ))}
+      {overflow > 0 && (
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-fill text-[9px] font-semibold text-ink-2">
+          +{overflow}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function Sidebar() {
   const projects = trpc.projects.list.useQuery();
@@ -41,15 +64,54 @@ export function Sidebar() {
                 to={`/projects/${project.id}`}
                 className={({ isActive }) =>
                   cx(
-                    "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors",
-                    isActive
-                      ? "bg-selected font-medium text-ink"
-                      : "text-ink-2 hover:bg-fill hover:text-ink",
+                    "block rounded-lg px-2.5 py-2 transition-colors",
+                    isActive ? "bg-selected" : "hover:bg-fill",
                   )
                 }
               >
-                <Folder size={15} className="shrink-0 text-ink-3" />
-                <span className="truncate">{project.name}</span>
+                {({ isActive }) => (
+                  <>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="shrink-0 text-[11px] font-medium tabular-nums text-ink-3">
+                        #{project.id}
+                      </span>
+                      <span
+                        className={cx(
+                          "truncate",
+                          isActive ? "font-medium text-ink" : "text-ink-2",
+                        )}
+                        title={project.name}
+                      >
+                        {project.name}
+                      </span>
+                      <span
+                        className="ml-auto shrink-0 text-[11px] tabular-nums text-ink-3"
+                        title={`${project.wordCount} keys · ${project.untranslatedCount} untranslated`}
+                      >
+                        {project.wordCount}
+                        <span className="px-0.5">|</span>
+                        <span
+                          className={cx(
+                            project.untranslatedCount > 0 && "text-warning",
+                          )}
+                        >
+                          {project.untranslatedCount}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-2">
+                      <span
+                        className="truncate text-[11px] text-ink-3"
+                        title={`Updated ${new Date(project.lastActivityAt).toLocaleString()}`}
+                      >
+                        {formatRelativeTime(project.lastActivityAt)}
+                      </span>
+                      <MemberStack
+                        names={project.members.map((member) => member.name)}
+                      />
+                    </div>
+                  </>
+                )}
               </NavLink>
             </li>
           ))}

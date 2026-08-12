@@ -1,4 +1,4 @@
-import { and, count, eq, exists, inArray, isNull, notExists, or } from 'drizzle-orm';
+import { and, count, desc, eq, exists, inArray, isNull, max, notExists, or } from 'drizzle-orm';
 
 import type { Database } from '../db/client.js';
 import {
@@ -9,8 +9,11 @@ import {
   projects,
   projectsToLocales,
   Role,
+  translationVersions,
   translations,
+  users,
   usersToProjects,
+  wordVersions,
   words,
   type Project,
 } from '../db/schema.js';
@@ -54,6 +57,10 @@ export interface ProjectSummary extends Project {
   wordCount: number;
   localeCount: number;
   untranslatedCount: number;
+  /** Member display names, owner first, then by join order. */
+  members: Array<{ name: string }>;
+  /** Newest key/translation activity; falls back to the project's own update time. */
+  lastActivityAt: Date;
 }
 
 export async function findProjectsForUser(db: Database, userId: number): Promise<ProjectSummary[]> {
@@ -67,12 +74,13 @@ export async function findProjectsForUser(db: Database, userId: number): Promise
         or(eq(projects.ownerId, userId), eq(usersToProjects.userId, userId)),
       ),
     )
-    .groupBy(projects.id);
+    .groupBy(projects.id)
+    .orderBy(desc(projects.id));
 
   if (rows.length === 0) return [];
 
   const ids = rows.map((row) => row.project.id);
-  const [wordCounts, localeCounts, untranslatedCounts] = await Promise.all([
+  const [wordCounts, localeCounts, untranslatedCounts, memberRows, translationActivity, wordActivity] = await Promise.all([
     db
       .select({ projectId: words.projectId, value: count() })
       .from(words)
@@ -116,6 +124,30 @@ export async function findProjectsForUser(db: Database, userId: number): Promise
         ),
       )
       .groupBy(words.projectId),
+    db
+      .select({
+        projectId: usersToProjects.projectId,
+        userId: usersToProjects.userId,
+        name: users.name,
+        assignedAt: usersToProjects.assignedAt,
+      })
+      .from(usersToProjects)
+      .innerJoin(users, eq(usersToProjects.userId, users.id))
+      .where(inArray(usersToProjects.projectId, ids))
+      .orderBy(usersToProjects.assignedAt),
+    // Newest activity per project, split by version table.
+    db
+      .select({ projectId: words.projectId, value: max(translationVersions.createdAt) })
+      .from(translationVersions)
+      .innerJoin(words, eq(words.id, translationVersions.wordId))
+      .where(inArray(words.projectId, ids))
+      .groupBy(words.projectId),
+    db
+      .select({ projectId: words.projectId, value: max(wordVersions.createdAt) })
+      .from(wordVersions)
+      .innerJoin(words, eq(words.id, wordVersions.wordId))
+      .where(inArray(words.projectId, ids))
+      .groupBy(words.projectId),
   ]);
 
   const wordsByProject = new Map(wordCounts.map((row) => [row.projectId, row.value]));
@@ -124,12 +156,67 @@ export async function findProjectsForUser(db: Database, userId: number): Promise
     untranslatedCounts.map((row) => [row.projectId, row.value]),
   );
 
-  return rows.map(({ project }) => ({
-    ...project,
-    wordCount: wordsByProject.get(project.id) ?? 0,
-    localeCount: localesByProject.get(project.id) ?? 0,
-    untranslatedCount: untranslatedByProject.get(project.id) ?? 0,
-  }));
+  const ownerByProject = new Map(rows.map(({ project }) => [project.id, project.ownerId]));
+  const membersByProject = new Map<
+    number,
+    Array<{ userId: number; name: string; isOwner: boolean; assignedAt: Date }>
+  >();
+  for (const row of memberRows) {
+    const list = membersByProject.get(row.projectId) ?? [];
+    list.push({ ...row, isOwner: row.userId === ownerByProject.get(row.projectId) });
+    membersByProject.set(row.projectId, list);
+  }
+  // Defensive against legacy data: include the owner even without a membership row.
+  const ownerIdsWithoutMembership = [
+    ...new Set(
+      rows
+        .filter(({ project }) => {
+          const list = membersByProject.get(project.id) ?? [];
+          return !list.some((member) => member.userId === project.ownerId);
+        })
+        .map(({ project }) => project.ownerId),
+    ),
+  ];
+  const ownersWithoutMembership =
+    ownerIdsWithoutMembership.length > 0
+      ? await db
+          .select({ id: users.id, name: users.name, createdAt: users.createdAt })
+          .from(users)
+          .where(inArray(users.id, ownerIdsWithoutMembership))
+      : [];
+  for (const owner of ownersWithoutMembership) {
+    for (const { project } of rows) {
+      if (project.ownerId !== owner.id) continue;
+      const list = membersByProject.get(project.id) ?? [];
+      list.unshift({ userId: owner.id, name: owner.name, isOwner: true, assignedAt: owner.createdAt });
+      membersByProject.set(project.id, list);
+    }
+  }
+
+  const activityByProject = new Map<number, Date>();
+  for (const row of [...translationActivity, ...wordActivity]) {
+    if (!row.value) continue;
+    const current = activityByProject.get(row.projectId);
+    if (!current || row.value.getTime() > current.getTime()) {
+      activityByProject.set(row.projectId, row.value);
+    }
+  }
+
+  return rows.map(({ project }) => {
+    const members = membersByProject.get(project.id) ?? [];
+    members.sort(
+      (a, b) =>
+        Number(b.isOwner) - Number(a.isOwner) || a.assignedAt.getTime() - b.assignedAt.getTime(),
+    );
+    return {
+      ...project,
+      wordCount: wordsByProject.get(project.id) ?? 0,
+      localeCount: localesByProject.get(project.id) ?? 0,
+      untranslatedCount: untranslatedByProject.get(project.id) ?? 0,
+      members: members.map(({ name }) => ({ name })),
+      lastActivityAt: activityByProject.get(project.id) ?? project.updatedAt,
+    };
+  });
 }
 
 /** Project row when the user owns it or holds a membership, otherwise null. */
