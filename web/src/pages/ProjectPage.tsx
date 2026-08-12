@@ -1,8 +1,10 @@
-import { MoreHorizontal, Plus, Settings, Users, Wand2 } from "lucide-react";
+import { Download, MoreHorizontal, Plus, Settings, Upload, Users, Wand2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { AddKeyModal } from "../components/AddKeyModal.js";
+import { ExportModal } from "../components/ExportModal.js";
+import { ImportModal } from "../components/ImportModal.js";
 import {
   KeyDetailModal,
   type KeyDetailWord,
@@ -101,6 +103,8 @@ export function ProjectPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
   const [addKeyOpen, setAddKeyOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [detailWord, setDetailWord] = useState<KeyDetailWord | null>(null);
   // Locales removed from this set are hidden from the table; new locales default to visible.
   const [excludedLocaleIds, setExcludedLocaleIds] = useState<number[]>([]);
@@ -310,6 +314,23 @@ export function ProjectPage() {
             Show deleted
           </label>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setImportOpen(true)}
+            >
+              <Upload size={14} />
+              Import
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setExportOpen(true)}
+              disabled={locales.length === 0}
+            >
+              <Download size={14} />
+              Export
+            </Button>
             {showDeleted ? (
               <>
                 <Button
@@ -657,6 +678,20 @@ export function ProjectPage() {
         channelId={defaultChannel?.id}
         open={addKeyOpen}
         onClose={() => setAddKeyOpen(false)}
+      />
+
+      <ExportModal
+        projectId={id}
+        projectName={project.name}
+        locales={locales}
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+      />
+
+      <ImportModal
+        projectId={id}
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
       />
 
       <ProjectFormModal
