@@ -229,6 +229,7 @@ export const wordsRouter = router({
         projectId: z.number().int(),
         localeIds: z.array(z.number().int()).min(1),
         missingOnly: z.boolean().default(false),
+        separator: z.enum([',', ';']).default(','),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -245,6 +246,7 @@ export const wordsRouter = router({
       z.object({
         projectId: z.number().int(),
         csv: z.string().min(1).max(5 * 1024 * 1024),
+        separator: z.enum([',', ';']).default(','),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -254,6 +256,6 @@ export const wordsRouter = router({
         ctx.user.id,
       );
       requirePermission(permissions, 'canCreateKeys', 'create_keys_forbidden');
-      return importWordsCsv(ctx.db, input.projectId, input.csv, ctx.user.id);
+      return importWordsCsv(ctx.db, input.projectId, input.csv, ctx.user.id, input.separator);
     }),
 });

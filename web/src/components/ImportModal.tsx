@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { trpc } from "../trpc.js";
 import { Button } from "./ui/button.js";
-import { Field, Input } from "./ui/input.js";
+import { Field, Input, Select } from "./ui/input.js";
 import { Modal } from "./ui/modal.js";
 
 export interface ImportModalProps {
@@ -15,12 +15,14 @@ export function ImportModal({ projectId, open, onClose }: ImportModalProps) {
   const utils = trpc.useUtils();
 
   const [file, setFile] = useState<File | null>(null);
+  const [separator, setSeparator] = useState<"," | ";">(",");
   const [result, setResult] = useState<string | null>(null);
   const importCsv = trpc.words.importCsv.useMutation();
 
   useEffect(() => {
     if (!open) return;
     setFile(null);
+    setSeparator(",");
     setResult(null);
   }, [open]);
 
@@ -28,7 +30,7 @@ export function ImportModal({ projectId, open, onClose }: ImportModalProps) {
     if (!file) return;
     const csv = await file.text();
     importCsv.mutate(
-      { projectId, csv },
+      { projectId, csv, separator },
       {
         onSuccess: async ({ keys }) => {
           await utils.words.list.invalidate({ projectId });
@@ -49,13 +51,24 @@ export function ImportModal({ projectId, open, onClose }: ImportModalProps) {
       description="CSV with a `key` column followed by one column per locale code (e.g. en, fr). Import only creates or updates keys — nothing is deleted."
       size="md"
     >
-      <Field label="CSV file">
-        <Input
-          type="file"
-          accept=".csv,text/csv"
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-        />
-      </Field>
+      <div className="space-y-4">
+        <Field label="CSV file">
+          <Input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          />
+        </Field>
+        <Field label="Separator">
+          <Select
+            value={separator}
+            onChange={(event) => setSeparator(event.target.value as "," | ";")}
+          >
+            <option value=",">Comma (,)</option>
+            <option value=";">Semicolon (;)</option>
+          </Select>
+        </Field>
+      </div>
 
       {importCsv.error && (
         <p className="mt-3 text-sm text-danger">{importCsv.error.message}</p>

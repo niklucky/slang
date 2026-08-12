@@ -142,6 +142,32 @@ describe('words.exportCsv / importCsv', () => {
     ).rejects.toMatchObject({ message: 'unknown_locale:not-a-locale' });
   });
 
+  it('round-trips with a semicolon separator', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const { project, localeIds } = await makeProjectWithLocales(accessToken, ['en', 'de']);
+
+    await trpc(app, 'words.importCsv', {
+      input: {
+        projectId: project.id,
+        csv: 'key;en;de\nhello;"Hello; world!";Hallo',
+        separator: ';',
+      },
+      token: accessToken,
+    });
+
+    const exported = await trpc<{ csv: string }>(app, 'words.exportCsv', {
+      input: {
+        projectId: project.id,
+        localeIds: [localeIds.en!, localeIds.de!],
+        missingOnly: false,
+        separator: ';',
+      },
+      token: accessToken,
+      kind: 'query',
+    });
+    expect(exported.csv).toBe('key;en;de\nhello;"Hello; world!";Hallo');
+  });
+
   it('rejects a malformed header and an out-of-project export locale', async () => {
     const { accessToken } = await login('alice@example.com');
     const { project } = await makeProjectWithLocales(accessToken, ['en']);

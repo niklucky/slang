@@ -1,8 +1,9 @@
 /**
- * Minimal RFC 4180 CSV codec: quoted cells may contain commas, quotes
- * (escaped as "") and newlines. Rows are separated by \n or \r\n.
+ * Minimal RFC 4180-style CSV codec: quoted cells may contain separators, quotes
+ * (escaped as "") and newlines. Rows are separated by \n or \r\n. The cell
+ * separator defaults to `,`; `;` is common in spreadsheet exports.
  */
-export function parseCsv(text: string): string[][] {
+export function parseCsv(text: string, separator = ','): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = '';
@@ -41,7 +42,7 @@ export function parseCsv(text: string): string[][] {
       i += 1;
       continue;
     }
-    if (char === ',') {
+    if (char === separator) {
       pushCell();
       i += 1;
       continue;
@@ -61,12 +62,13 @@ export function parseCsv(text: string): string[][] {
   return rows.filter((entry) => entry.some((value) => value !== ''));
 }
 
-export function serializeCsv(rows: string[][]): string {
+export function serializeCsv(rows: string[][], separator = ','): string {
+  const quoting = new RegExp(`["\\r\\n${separator}]`);
   return rows
     .map((row) =>
       row
-        .map((cell) => (/[",\r\n]/.test(cell) ? `"${cell.replaceAll('"', '""')}"` : cell))
-        .join(','),
+        .map((cell) => (quoting.test(cell) ? `"${cell.replaceAll('"', '""')}"` : cell))
+        .join(separator),
     )
     .join('\n');
 }

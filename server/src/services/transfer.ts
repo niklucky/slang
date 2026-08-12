@@ -28,6 +28,8 @@ export interface ExportWordsOptions {
   localeIds: number[];
   /** When true, only keys missing a translation in at least one selected locale. */
   missingOnly: boolean;
+  /** Cell separator: `,` or `;` (spreadsheet exports). */
+  separator: string;
 }
 
 /**
@@ -69,7 +71,7 @@ export async function exportWordsCsv(db: Database, options: ExportWordsOptions):
     if (options.missingOnly && values.every((value) => value !== '')) continue;
     csvRows.push([word.key, ...values]);
   }
-  return serializeCsv(csvRows);
+  return serializeCsv(csvRows, options.separator);
 }
 
 export interface ImportWordsResult {
@@ -87,8 +89,9 @@ export async function importWordsCsv(
   projectId: number,
   csv: string,
   changedById: number,
+  separator = ',',
 ): Promise<ImportWordsResult> {
-  const rows = parseCsv(csv);
+  const rows = parseCsv(csv, separator);
   const header = rows[0]?.map((cell) => cell.trim());
   if (!header || header[0]?.toLowerCase() !== 'key' || header.length < 2) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'csv_header_invalid' });

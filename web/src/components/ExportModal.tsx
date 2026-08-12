@@ -26,6 +26,7 @@ export function ExportModal({
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [missingOnly, setMissingOnly] = useState(false);
+  const [separator, setSeparator] = useState<"," | ";">(",");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +34,7 @@ export function ExportModal({
     if (!open) return;
     setSelectedIds(locales.map((locale) => locale.id));
     setMissingOnly(false);
+    setSeparator(",");
     setPending(false);
     setError(null);
   }, [open, locales]);
@@ -53,6 +55,7 @@ export function ExportModal({
         projectId,
         localeIds: selectedIds,
         missingOnly,
+        separator,
       });
       const url = URL.createObjectURL(
         new Blob([csv], { type: "text/csv;charset=utf-8" }),
@@ -148,11 +151,22 @@ export function ExportModal({
             </label>
           </div>
         </Field>
-        <Field label="Format">
-          <Select value="csv" disabled>
-            <option value="csv">CSV</option>
-          </Select>
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Format">
+            <Select value="csv" disabled>
+              <option value="csv">CSV</option>
+            </Select>
+          </Field>
+          <Field label="Separator">
+            <Select
+              value={separator}
+              onChange={(event) => setSeparator(event.target.value as "," | ";")}
+            >
+              <option value=",">Comma (,)</option>
+              <option value=";">Semicolon (;)</option>
+            </Select>
+          </Field>
+        </div>
       </div>
 
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}
