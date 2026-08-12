@@ -730,6 +730,7 @@ export function ProjectPage() {
         projectId={id}
         projectName={project.name}
         locales={locales}
+        selectedKeyIds={[...selectedIds]}
         open={exportOpen}
         onClose={() => setExportOpen(false)}
       />

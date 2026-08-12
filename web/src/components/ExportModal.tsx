@@ -11,21 +11,26 @@ export interface ExportModalProps {
   projectId: number;
   projectName: string;
   locales: CatalogLocale[];
+  /** Ids of keys selected in the table; enables the "Selected keys" option. */
+  selectedKeyIds?: number[];
   open: boolean;
   onClose: () => void;
 }
+
+type ExportContent = "all" | "missing" | "selected";
 
 export function ExportModal({
   projectId,
   projectName,
   locales,
+  selectedKeyIds = [],
   open,
   onClose,
 }: ExportModalProps) {
   const utils = trpc.useUtils();
 
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [missingOnly, setMissingOnly] = useState(false);
+  const [content, setContent] = useState<ExportContent>("all");
   const [separator, setSeparator] = useState<"," | ";">(",");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +38,7 @@ export function ExportModal({
   useEffect(() => {
     if (!open) return;
     setSelectedIds(locales.map((locale) => locale.id));
-    setMissingOnly(false);
+    setContent("all");
     setSeparator(",");
     setPending(false);
     setError(null);
@@ -54,7 +59,8 @@ export function ExportModal({
       const { csv } = await utils.words.exportCsv.fetch({
         projectId,
         localeIds: selectedIds,
-        missingOnly,
+        missingOnly: content === "missing",
+        wordIds: content === "selected" ? selectedKeyIds : undefined,
         separator,
       });
       const url = URL.createObjectURL(
@@ -128,14 +134,14 @@ export function ExportModal({
           </div>
         </Field>
         <Field label="Content">
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
               <input
                 type="radio"
                 name="export-content"
                 className="accent-accent"
-                checked={!missingOnly}
-                onChange={() => setMissingOnly(false)}
+                checked={content === "all"}
+                onChange={() => setContent("all")}
               />
               All keys
             </label>
@@ -144,10 +150,27 @@ export function ExportModal({
                 type="radio"
                 name="export-content"
                 className="accent-accent"
-                checked={missingOnly}
-                onChange={() => setMissingOnly(true)}
+                checked={content === "missing"}
+                onChange={() => setContent("missing")}
               />
               Only missing translations
+            </label>
+            <label
+              className={`flex items-center gap-2 text-sm ${
+                selectedKeyIds.length === 0
+                  ? "cursor-not-allowed text-ink-3"
+                  : "cursor-pointer text-ink"
+              }`}
+            >
+              <input
+                type="radio"
+                name="export-content"
+                className="accent-accent"
+                disabled={selectedKeyIds.length === 0}
+                checked={content === "selected"}
+                onChange={() => setContent("selected")}
+              />
+              Selected keys ({selectedKeyIds.length})
             </label>
           </div>
         </Field>

@@ -233,6 +233,7 @@ export const wordsRouter = router({
         projectId: z.number().int(),
         localeIds: z.array(z.number().int()).min(1),
         missingOnly: z.boolean().default(false),
+        wordIds: z.array(z.number().int()).max(5000).optional(),
         separator: z.enum([',', ';']).default(','),
       }),
     )

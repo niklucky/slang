@@ -30,6 +30,8 @@ export interface ExportWordsOptions {
   missingOnly: boolean;
   /** Cell separator: `,` or `;` (spreadsheet exports). */
   separator: string;
+  /** When set, only these keys are exported. */
+  wordIds?: number[];
 }
 
 /**
@@ -69,7 +71,9 @@ export async function exportWordsCsv(db: Database, options: ExportWordsOptions):
   }
 
   const csvRows: string[][] = [['key', ...selected.map((locale) => locale.code)]];
+  const wordIds = options.wordIds ? new Set(options.wordIds) : null;
   for (const word of list) {
+    if (wordIds && !wordIds.has(word.id)) continue;
     const values = selected.map((locale) => {
       const candidates = word.translations.filter((t) => t.localeId === locale.id);
       const match =
