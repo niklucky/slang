@@ -8,29 +8,8 @@ import { useLogout } from "../RequireAuth.js";
 import { Avatar } from "../ui/avatar.js";
 import { IconButton } from "../ui/icon-button.js";
 import { Logo } from "../ui/logo.js";
+import { MemberStack } from "../ui/member-stack.js";
 import { ThemeToggle } from "../ui/theme-toggle.js";
-
-/** Overlapping member initials: first few avatars, then a +N overflow chip. */
-function MemberStack({ names }: { names: string[] }) {
-  const visible = names.slice(0, 3);
-  const overflow = names.length - visible.length;
-  if (names.length === 0) return null;
-  return (
-    <div
-      className="flex shrink-0 items-center -space-x-1.5"
-      title={names.join(", ")}
-    >
-      {visible.map((name, index) => (
-        <Avatar key={`${name}-${index}`} name={name} size="xs" />
-      ))}
-      {overflow > 0 && (
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-fill text-[9px] font-semibold text-ink-2">
-          +{overflow}
-        </span>
-      )}
-    </div>
-  );
-}
 
 export function Sidebar() {
   const projects = trpc.projects.list.useQuery();
@@ -107,6 +86,7 @@ export function Sidebar() {
                         {formatRelativeTime(project.lastActivityAt)}
                       </span>
                       <MemberStack
+                        size="xs"
                         names={project.members.map((member) => member.name)}
                       />
                     </div>

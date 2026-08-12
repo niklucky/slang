@@ -54,7 +54,12 @@ type Invitation = MembersData['invitations'][number];
 
 function MembersContent({ projectId, data }: { projectId: number; data: MembersData }) {
   const utils = trpc.useUtils();
-  const invalidate = () => void utils.projects.members.invalidate({ projectId });
+  // Membership also feeds the member stacks in projects.get and projects.list.
+  const invalidate = () => {
+    void utils.projects.members.invalidate({ projectId });
+    void utils.projects.get.invalidate({ projectId });
+    void utils.projects.list.invalidate();
+  };
 
   return (
     <div className="space-y-6">

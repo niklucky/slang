@@ -23,6 +23,7 @@ import { Button } from "../components/ui/button.js";
 import { IconButton } from "../components/ui/icon-button.js";
 import { Input, Textarea } from "../components/ui/input.js";
 import { LocaleFlag } from "../components/ui/locale-flag.js";
+import { MemberStack } from "../components/ui/member-stack.js";
 import { Modal } from "../components/ui/modal.js";
 import { MultiSelect } from "../components/ui/multi-select.js";
 import { trpc } from "../trpc.js";
@@ -149,7 +150,7 @@ export function ProjectPage() {
   if (!details.data)
     return <p className="text-sm text-danger">Project not found.</p>;
 
-  const { project, locales, channels } = details.data;
+  const { project, locales, channels, members } = details.data;
   const defaultChannel = channels[0];
   const loadedWords = words.data?.pages.flatMap((page) => page.items) ?? [];
   const totalKeys = words.data?.pages[0]?.total ?? 0;
@@ -256,6 +257,7 @@ export function ProjectPage() {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <MemberStack names={members.map((member) => member.name)} />
           <Button
             variant="secondary"
             size="md"

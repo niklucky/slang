@@ -12,6 +12,7 @@ export function InvitationBanner() {
     void utils.invitations.myPending.invalidate();
     void utils.projects.list.invalidate();
     void utils.projects.members.invalidate();
+    void utils.projects.get.invalidate();
   };
   const accept = trpc.invitations.accept.useMutation({ onSuccess: invalidate });
   const decline = trpc.invitations.decline.useMutation({ onSuccess: invalidate });

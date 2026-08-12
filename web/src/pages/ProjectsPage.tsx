@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { ProjectFormModal } from "../components/ProjectFormModal.js";
 import { Badge } from "../components/ui/badge.js";
 import { Button } from "../components/ui/button.js";
+import { MemberStack } from "../components/ui/member-stack.js";
 import { trpc } from "../trpc.js";
 
 export function ProjectsPage() {
@@ -53,6 +54,10 @@ export function ProjectsPage() {
                     : "all translated"}
                 </Badge>
               )}
+              <MemberStack
+                className="ml-auto"
+                names={project.members.map((member) => member.name)}
+              />
             </div>
           </Link>
         ))}

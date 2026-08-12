@@ -21,6 +21,7 @@ interface ProjectDetails {
   channels: Array<{ id: number; name: string }>;
   namespaces: Array<{ id: number; name: string }>;
   wordCount: number;
+  members: Array<{ name: string }>;
 }
 
 interface ProjectListItem extends Project {
@@ -70,6 +71,7 @@ describe('projects', () => {
     expect(details.channels.map((channel) => channel.name)).toEqual(['default']);
     expect(details.locales).toEqual([]);
     expect(details.wordCount).toBe(0);
+    expect(details.members).toEqual([{ name: 'alice' }]);
   });
 
   it('create accepts a null url; update can set and clear it', async () => {

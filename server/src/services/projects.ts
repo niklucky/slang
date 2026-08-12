@@ -18,6 +18,7 @@ import {
   type Project,
 } from '../db/schema.js';
 import { generateApiKey } from '../lib/ids.js';
+import { listMembers } from './members.js';
 
 export interface CreateProjectInput {
   name: string;
@@ -246,37 +247,41 @@ export interface ProjectDetails {
   channels: Array<{ id: number; name: string }>;
   namespaces: Array<{ id: number; name: string }>;
   wordCount: number;
+  /** Member display names, owner first. */
+  members: Array<{ name: string }>;
 }
 
 export async function findProjectDetails(db: Database, project: Project): Promise<ProjectDetails> {
-  const [projectLocales, projectChannels, projectNamespaces, wordCountRows] = await Promise.all([
-    db
-      .select({
-        id: locales.id,
-        code: locales.code,
-        name: locales.name,
-        title: locales.title,
-        countryCode: locales.countryCode,
-      })
-      .from(projectsToLocales)
-      .innerJoin(locales, eq(projectsToLocales.localeId, locales.id))
-      .where(eq(projectsToLocales.projectId, project.id))
-      .orderBy(locales.code),
-    db
-      .select({ id: channels.id, name: channels.name })
-      .from(channels)
-      .where(and(eq(channels.projectId, project.id), isNull(channels.deletedAt)))
-      .orderBy(channels.id),
-    db
-      .select({ id: namespaces.id, name: namespaces.name })
-      .from(namespaces)
-      .where(and(eq(namespaces.projectId, project.id), isNull(namespaces.deletedAt)))
-      .orderBy(namespaces.name),
-    db
-      .select({ value: count() })
-      .from(words)
-      .where(and(eq(words.projectId, project.id), isNull(words.deletedAt))),
-  ]);
+  const [projectLocales, projectChannels, projectNamespaces, wordCountRows, projectMembers] =
+    await Promise.all([
+      db
+        .select({
+          id: locales.id,
+          code: locales.code,
+          name: locales.name,
+          title: locales.title,
+          countryCode: locales.countryCode,
+        })
+        .from(projectsToLocales)
+        .innerJoin(locales, eq(projectsToLocales.localeId, locales.id))
+        .where(eq(projectsToLocales.projectId, project.id))
+        .orderBy(locales.code),
+      db
+        .select({ id: channels.id, name: channels.name })
+        .from(channels)
+        .where(and(eq(channels.projectId, project.id), isNull(channels.deletedAt)))
+        .orderBy(channels.id),
+      db
+        .select({ id: namespaces.id, name: namespaces.name })
+        .from(namespaces)
+        .where(and(eq(namespaces.projectId, project.id), isNull(namespaces.deletedAt)))
+        .orderBy(namespaces.name),
+      db
+        .select({ value: count() })
+        .from(words)
+        .where(and(eq(words.projectId, project.id), isNull(words.deletedAt))),
+      listMembers(db, project.id, project.ownerId),
+    ]);
 
   return {
     project,
@@ -284,6 +289,7 @@ export async function findProjectDetails(db: Database, project: Project): Promis
     channels: projectChannels,
     namespaces: projectNamespaces,
     wordCount: wordCountRows[0]?.value ?? 0,
+    members: projectMembers.map(({ name }) => ({ name })),
   };
 }
 
