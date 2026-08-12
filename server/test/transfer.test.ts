@@ -186,6 +186,54 @@ describe('words.exportCsv / importCsv', () => {
     expect(list.find((word) => word.key === 'hello')!.translations[0]!.value).toBe('Hi');
   });
 
+  it('rejects malformed CSV and duplicate export locales', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const { project, localeIds } = await makeProjectWithLocales(accessToken, ['en']);
+
+    await expect(
+      trpc(app, 'words.importCsv', {
+        input: { projectId: project.id, csv: 'key,en\nhello,"unterminated' },
+        token: accessToken,
+      }),
+    ).rejects.toMatchObject({ message: 'csv_malformed:unterminated_quoted_cell' });
+
+    await expect(
+      trpc(app, 'words.importCsv', {
+        input: { projectId: project.id, csv: 'key,en\nhello,"Hi"stray' },
+        token: accessToken,
+      }),
+    ).rejects.toMatchObject({ message: 'csv_malformed:unexpected_character_after_quote' });
+
+    await expect(
+      trpc(app, 'words.exportCsv', {
+        input: {
+          projectId: project.id,
+          localeIds: [localeIds.en!, localeIds.en!],
+          missingOnly: false,
+        },
+        token: accessToken,
+        kind: 'query',
+      }),
+    ).rejects.toMatchObject({ message: 'locale_not_in_project' });
+  });
+
+  it('escapes spreadsheet formulas on export', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const { project, localeIds } = await makeProjectWithLocales(accessToken, ['en']);
+
+    await trpc(app, 'words.importCsv', {
+      input: { projectId: project.id, csv: 'key,en\nhello,"=SUM(1,2)"' },
+      token: accessToken,
+    });
+
+    const exported = await trpc<{ csv: string }>(app, 'words.exportCsv', {
+      input: { projectId: project.id, localeIds: [localeIds.en!], missingOnly: false },
+      token: accessToken,
+      kind: 'query',
+    });
+    expect(exported.csv).toBe('key,en\nhello,"\'=SUM(1,2)"');
+  });
+
   it('rejects a malformed header and an out-of-project export locale', async () => {
     const { accessToken } = await login('alice@example.com');
     const { project } = await makeProjectWithLocales(accessToken, ['en']);

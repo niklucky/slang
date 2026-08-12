@@ -24,6 +24,7 @@ export function ImportModal({ projectId, open, onClose }: ImportModalProps) {
     setFile(null);
     setSeparator(",");
     setResult(null);
+    importCsv.reset();
   }, [open]);
 
   async function handleImport() {

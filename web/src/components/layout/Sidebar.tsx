@@ -1,5 +1,5 @@
 import { Folder, LogOut, Plus } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 
 import { cx } from "../../lib/cx.js";
 import { trpc } from "../../trpc.js";
@@ -17,10 +17,10 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-line">
-      <a className="flex items-center gap-2.5 px-4 pb-4 pt-5" href="/">
+      <Link className="flex items-center gap-2.5 px-4 pb-4 pt-5" to="/">
         <Logo size="sm" />
         <span className="text-[15px] font-semibold tracking-tight">Slang</span>
-      </a>
+      </Link>
 
       <nav className="flex-1 overflow-y-auto px-2.5 pb-4">
         <div className="flex items-center justify-between px-1.5 pb-1.5 pt-3">

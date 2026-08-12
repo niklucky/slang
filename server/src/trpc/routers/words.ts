@@ -256,6 +256,8 @@ export const wordsRouter = router({
         ctx.user.id,
       );
       requirePermission(permissions, 'canCreateKeys', 'create_keys_forbidden');
+      // Import rows can also update existing keys' translations.
+      requirePermission(permissions, 'canTranslate', 'translate_forbidden');
       return importWordsCsv(ctx.db, input.projectId, input.csv, ctx.user.id, input.separator);
     }),
 });

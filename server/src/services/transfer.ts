@@ -3,7 +3,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 
 import type { Database } from '../db/client.js';
 import { channels, locales, projectsToLocales } from '../db/schema.js';
-import { parseCsv, serializeCsv } from '../lib/csv.js';
+import { parseCsv, serializeCsv, CsvParseError } from '../lib/csv.js';
 import { listWords, upsertWordCore } from './words.js';
 
 const DEFAULT_CHANNEL_NAME = 'default';
@@ -48,10 +48,13 @@ export async function exportWordsCsv(db: Database, options: ExportWordsOptions):
         inArray(projectsToLocales.localeId, options.localeIds),
       ),
     );
-  if (rows.length !== new Set(options.localeIds).size) {
+  const requestedLocaleIds = new Set(options.localeIds);
+  if (
+    requestedLocaleIds.size !== options.localeIds.length ||
+    rows.length !== requestedLocaleIds.size
+  ) {
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'locale_not_in_project' });
-  }
-  const codesById = new Map(rows.map((row) => [row.id, row.code]));
+  }  const codesById = new Map(rows.map((row) => [row.id, row.code]));
   // Keep the caller's locale order.
   const selected = options.localeIds.map((id) => ({ id, code: codesById.get(id)! }));
 
@@ -91,7 +94,15 @@ export async function importWordsCsv(
   changedById: number,
   separator = ',',
 ): Promise<ImportWordsResult> {
-  const rows = parseCsv(csv, separator);
+  let rows: string[][];
+  try {
+    rows = parseCsv(csv, separator);
+  } catch (error) {
+    if (error instanceof CsvParseError) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: `csv_malformed:${error.message}` });
+    }
+    throw error;
+  }
   const header = rows[0]?.map((cell) => cell.trim());
   // Spreadsheets often export a trailing separator, leaving an empty last
   // header cell; drop those instead of rejecting the file.
