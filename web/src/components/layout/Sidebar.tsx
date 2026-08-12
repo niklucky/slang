@@ -1,13 +1,13 @@
-import { Folder, LogOut, Plus } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { Folder, LogOut, Plus } from "lucide-react";
+import { Link, NavLink } from "react-router-dom";
 
-import { cx } from '../../lib/cx.js';
-import { trpc } from '../../trpc.js';
-import { useLogout } from '../RequireAuth.js';
-import { Avatar } from '../ui/avatar.js';
-import { IconButton } from '../ui/icon-button.js';
-import { Logo } from '../ui/logo.js';
-import { ThemeToggle } from '../ui/theme-toggle.js';
+import { cx } from "../../lib/cx.js";
+import { trpc } from "../../trpc.js";
+import { useLogout } from "../RequireAuth.js";
+import { Avatar } from "../ui/avatar.js";
+import { IconButton } from "../ui/icon-button.js";
+import { Logo } from "../ui/logo.js";
+import { ThemeToggle } from "../ui/theme-toggle.js";
 
 export function Sidebar() {
   const projects = trpc.projects.list.useQuery();
@@ -17,10 +17,10 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-line">
-      <div className="flex items-center gap-2.5 px-4 pb-4 pt-5">
+      <Link className="flex items-center gap-2.5 px-4 pb-4 pt-5" to="/">
         <Logo size="sm" />
         <span className="text-[15px] font-semibold tracking-tight">Slang</span>
-      </div>
+      </Link>
 
       <nav className="flex-1 overflow-y-auto px-2.5 pb-4">
         <div className="flex items-center justify-between px-1.5 pb-1.5 pt-3">
@@ -41,10 +41,10 @@ export function Sidebar() {
                 to={`/projects/${project.id}`}
                 className={({ isActive }) =>
                   cx(
-                    'flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors',
+                    "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors",
                     isActive
-                      ? 'bg-selected font-medium text-ink'
-                      : 'text-ink-2 hover:bg-fill hover:text-ink',
+                      ? "bg-selected font-medium text-ink"
+                      : "text-ink-2 hover:bg-fill hover:text-ink",
                   )
                 }
               >
@@ -64,7 +64,9 @@ export function Sidebar() {
           <>
             <Avatar name={user.name} />
             <div className="min-w-0 flex-1 pl-1">
-              <div className="truncate text-sm font-medium text-ink">{user.name}</div>
+              <div className="truncate text-sm font-medium text-ink">
+                {user.name}
+              </div>
               <div className="truncate text-xs text-ink-3">{user.email}</div>
             </div>
           </>

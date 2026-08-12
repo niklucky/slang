@@ -1,18 +1,23 @@
-import { ListFilter, MoreHorizontal, Plus, Settings, Trash2, Users, Wand2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Download, MoreHorizontal, Plus, Settings, Upload, Users, Wand2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 
-import { AddKeyModal } from '../components/AddKeyModal.js';
-import { KeyDetailModal, type KeyDetailWord } from '../components/KeyDetailModal.js';
-import { MembersModal } from '../components/MembersModal.js';
-import { ProjectFormModal } from '../components/ProjectFormModal.js';
-import { Button } from '../components/ui/button.js';
-import { IconButton } from '../components/ui/icon-button.js';
-import { Input, Textarea } from '../components/ui/input.js';
-import { Modal } from '../components/ui/modal.js';
-import { MultiSelect } from '../components/ui/multi-select.js';
-import { LocaleFlag } from '../components/ui/locale-flag.js';
-import { trpc } from '../trpc.js';
+import { AddKeyModal } from "../components/AddKeyModal.js";
+import { ExportModal } from "../components/ExportModal.js";
+import { ImportModal } from "../components/ImportModal.js";
+import {
+  KeyDetailModal,
+  type KeyDetailWord,
+} from "../components/KeyDetailModal.js";
+import { MembersModal } from "../components/MembersModal.js";
+import { ProjectFormModal } from "../components/ProjectFormModal.js";
+import { Button } from "../components/ui/button.js";
+import { IconButton } from "../components/ui/icon-button.js";
+import { Input, Textarea } from "../components/ui/input.js";
+import { LocaleFlag } from "../components/ui/locale-flag.js";
+import { Modal } from "../components/ui/modal.js";
+import { MultiSelect } from "../components/ui/multi-select.js";
+import { trpc } from "../trpc.js";
 
 function useDebounced<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -35,7 +40,7 @@ export function ProjectPage() {
 
   const details = trpc.projects.get.useQuery({ projectId: id });
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const debouncedSearch = useDebounced(search, 300);
   const [showDeleted, setShowDeleted] = useState(false);
   const words = trpc.words.list.useQuery({
@@ -49,10 +54,18 @@ export function ProjectPage() {
     void utils.words.history.invalidate();
   };
   const upsert = trpc.words.upsert.useMutation({ onSuccess: invalidateWords });
-  const removeWord = trpc.words.remove.useMutation({ onSuccess: invalidateWords });
-  const removePermanently = trpc.words.removePermanently.useMutation({ onSuccess: invalidateWords });
-  const restore = trpc.words.restore.useMutation({ onSuccess: invalidateWords });
-  const updateKey = trpc.words.updateKey.useMutation({ onSuccess: invalidateWords });
+  const removeWord = trpc.words.remove.useMutation({
+    onSuccess: invalidateWords,
+  });
+  const removePermanently = trpc.words.removePermanently.useMutation({
+    onSuccess: invalidateWords,
+  });
+  const restore = trpc.words.restore.useMutation({
+    onSuccess: invalidateWords,
+  });
+  const updateKey = trpc.words.updateKey.useMutation({
+    onSuccess: invalidateWords,
+  });
   const removeMany = trpc.words.removeMany.useMutation({
     onSuccess: () => {
       invalidateWords();
@@ -74,7 +87,7 @@ export function ProjectPage() {
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [confirmAction, setConfirmAction] = useState<
-    'delete' | 'restore' | 'deletePermanently' | null
+    "delete" | "restore" | "deletePermanently" | null
   >(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
@@ -84,41 +97,50 @@ export function ProjectPage() {
   }, [id, search, showDeleted]);
 
   const [editing, setEditing] = useState<CellRef | null>(null);
-  const [draft, setDraft] = useState('');
+  const [draft, setDraft] = useState("");
   const [editingKeyId, setEditingKeyId] = useState<number | null>(null);
-  const [keyDraft, setKeyDraft] = useState('');
+  const [keyDraft, setKeyDraft] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
   const [addKeyOpen, setAddKeyOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [detailWord, setDetailWord] = useState<KeyDetailWord | null>(null);
   // Locales removed from this set are hidden from the table; new locales default to visible.
   const [excludedLocaleIds, setExcludedLocaleIds] = useState<number[]>([]);
   const [missingOnly, setMissingOnly] = useState(false);
 
   if (details.isPending) return <p className="text-sm text-ink-3">Loading…</p>;
-  if (!details.data) return <p className="text-sm text-danger">Project not found.</p>;
+  if (!details.data)
+    return <p className="text-sm text-danger">Project not found.</p>;
 
   const { project, locales, channels } = details.data;
   const defaultChannel = channels[0];
-  const visibleLocales = locales.filter((locale) => !excludedLocaleIds.includes(locale.id));
+  const visibleLocales = locales.filter(
+    (locale) => !excludedLocaleIds.includes(locale.id),
+  );
   const visibleWords = missingOnly
     ? (words.data ?? []).filter((word) =>
         visibleLocales.some(
-          (locale) => !word.translations.some((t) => t.localeId === locale.id && t.value),
+          (locale) =>
+            !word.translations.some((t) => t.localeId === locale.id && t.value),
         ),
       )
     : (words.data ?? []);
 
   const selectedCount = selectedIds.size;
   const allSelected =
-    visibleWords.length > 0 && visibleWords.every((word) => selectedIds.has(word.id));
+    visibleWords.length > 0 &&
+    visibleWords.every((word) => selectedIds.has(word.id));
   const someSelected = visibleWords.some((word) => selectedIds.has(word.id));
   if (selectAllRef.current) {
     selectAllRef.current.indeterminate = someSelected && !allSelected;
   }
 
   function toggleAll() {
-    setSelectedIds(allSelected ? new Set() : new Set(visibleWords.map((word) => word.id)));
+    setSelectedIds(
+      allSelected ? new Set() : new Set(visibleWords.map((word) => word.id)),
+    );
   }
 
   function toggleOne(wordId: number) {
@@ -132,33 +154,41 @@ export function ProjectPage() {
 
   function confirmGroupAction() {
     const wordIds = [...selectedIds];
-    if (confirmAction === 'delete') removeMany.mutate({ projectId: id, wordIds });
-    if (confirmAction === 'restore') restoreMany.mutate({ projectId: id, wordIds });
-    if (confirmAction === 'deletePermanently')
+    if (confirmAction === "delete")
+      removeMany.mutate({ projectId: id, wordIds });
+    if (confirmAction === "restore")
+      restoreMany.mutate({ projectId: id, wordIds });
+    if (confirmAction === "deletePermanently")
       removePermanentlyMany.mutate({ projectId: id, wordIds });
     setConfirmAction(null);
   }
 
   const confirmConfig = {
     delete: {
-      title: `Delete ${selectedCount} ${selectedCount === 1 ? 'key' : 'keys'}?`,
-      description: 'Selected keys and their translations will be marked as deleted.',
-      confirmLabel: 'Delete',
+      title: `Delete ${selectedCount} ${selectedCount === 1 ? "key" : "keys"}?`,
+      description:
+        "Selected keys and their translations will be marked as deleted.",
+      confirmLabel: "Delete",
     },
     restore: {
-      title: `Restore ${selectedCount} ${selectedCount === 1 ? 'key' : 'keys'}?`,
-      description: 'Selected keys and their translations will be restored.',
-      confirmLabel: 'Restore',
+      title: `Restore ${selectedCount} ${selectedCount === 1 ? "key" : "keys"}?`,
+      description: "Selected keys and their translations will be restored.",
+      confirmLabel: "Restore",
     },
     deletePermanently: {
-      title: `Permanently delete ${selectedCount} ${selectedCount === 1 ? 'key' : 'keys'}?`,
+      title: `Permanently delete ${selectedCount} ${selectedCount === 1 ? "key" : "keys"}?`,
       description:
-        'Keys, translations and history will be removed for good. This cannot be undone.',
-      confirmLabel: 'Delete permanently',
+        "Keys, translations and history will be removed for good. This cannot be undone.",
+      confirmLabel: "Delete permanently",
     },
   } as const;
 
-  function commitCell(wordId: number, key: string, localeId: number, value: string) {
+  function commitCell(
+    wordId: number,
+    key: string,
+    localeId: number,
+    value: string,
+  ) {
     const word = words.data?.find((entry) => entry.id === wordId);
     const untouched = (word?.translations ?? [])
       .filter((translation) => translation.localeId !== localeId)
@@ -170,7 +200,10 @@ export function ProjectPage() {
     upsert.mutate({
       projectId: id,
       key,
-      translations: [...untouched, { localeId, channelId: defaultChannel?.id ?? null, value }],
+      translations: [
+        ...untouched,
+        { localeId, channelId: defaultChannel?.id ?? null, value },
+      ],
     });
   }
 
@@ -186,19 +219,35 @@ export function ProjectPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight">{project.name}</h1>
-          {project.description && <p className="mt-1 text-sm text-ink-2">{project.description}</p>}
+          <h1 className="text-lg font-semibold tracking-tight">
+            {project.name}
+          </h1>
+          {project.description && (
+            <p className="mt-1 text-sm text-ink-2">{project.description}</p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setMembersOpen(true)}>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => setMembersOpen(true)}
+          >
             <Users size={14} />
             Members
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => setSettingsOpen(true)}>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => setSettingsOpen(true)}
+          >
             <Settings size={14} />
             Settings
           </Button>
-          <Button size="sm" onClick={() => setAddKeyOpen(true)} disabled={locales.length === 0}>
+          <Button
+            size="md"
+            onClick={() => setAddKeyOpen(true)}
+            disabled={locales.length === 0}
+          >
             <Plus size={14} />
             Add key
           </Button>
@@ -221,7 +270,11 @@ export function ProjectPage() {
             options={locales.map((locale) => ({
               value: String(locale.id),
               label: (
-                <LocaleFlag code={locale.code} name={locale.name} countryCode={locale.countryCode} />
+                <LocaleFlag
+                  code={locale.code}
+                  name={locale.name}
+                  countryCode={locale.countryCode}
+                />
               ),
               triggerLabel: locale.code,
               hint: `${locale.code} — ${locale.name}`,
@@ -237,54 +290,75 @@ export function ProjectPage() {
             }}
           />
           <label
-            className="flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-line-strong bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
+            className="flex h-8 cursor-pointer items-center gap-2 rounded-lg bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
             title="Show only keys missing a translation in the selected locales"
           >
             <input
               type="checkbox"
-              className="size-3.5 accent-accent"
+              className="accent-accent"
               checked={missingOnly}
               onChange={() => setMissingOnly((prev) => !prev)}
             />
-            <ListFilter size={14} className="text-ink-3" />
             Missing only
           </label>
           <label
-            className="flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-line-strong bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
+            className="flex h-8 cursor-pointer items-center gap-2 rounded-lg bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
             title="Show deleted keys instead of live ones"
           >
             <input
               type="checkbox"
-              className="size-3.5 accent-accent"
+              className="accent-accent"
               checked={showDeleted}
               onChange={() => setShowDeleted((prev) => !prev)}
             />
-            <Trash2 size={14} className="text-ink-3" />
-            Deleted
+            Show deleted
           </label>
           <div className="ml-auto flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setImportOpen(true)}
+            >
+              <Upload size={14} />
+              Import
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setExportOpen(true)}
+              disabled={locales.length === 0}
+            >
+              <Download size={14} />
+              Export
+            </Button>
             {showDeleted ? (
               <>
                 <Button
                   variant="secondary"
-                  size="sm"
+                  size="md"
                   disabled={selectedCount === 0}
-                  onClick={() => setConfirmAction('restore')}
+                  onClick={() => setConfirmAction("restore")}
                 >
-                  Restore{selectedCount > 0 ? ` (${selectedCount})` : ''}
+                  Restore{selectedCount > 0 ? ` (${selectedCount})` : ""}
                 </Button>
                 <Button
                   variant="danger"
-                  size="sm"
+                  size="md"
                   disabled={selectedCount === 0}
-                  onClick={() => setConfirmAction('deletePermanently')}
+                  onClick={() => setConfirmAction("deletePermanently")}
                 >
-                  Delete permanently{selectedCount > 0 ? ` (${selectedCount})` : ''}
+                  Delete permanently
+                  {selectedCount > 0 ? ` (${selectedCount})` : ""}
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="secondary" size="sm" disabled title="Coming soon">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled
+                  title="Coming soon"
+                >
                   <Wand2 size={14} />
                   Auto translate
                 </Button>
@@ -292,9 +366,9 @@ export function ProjectPage() {
                   variant="danger"
                   size="sm"
                   disabled={selectedCount === 0}
-                  onClick={() => setConfirmAction('delete')}
+                  onClick={() => setConfirmAction("delete")}
                 >
-                  Delete{selectedCount > 0 ? ` (${selectedCount})` : ''}
+                  Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
                 </Button>
               </>
             )}
@@ -340,173 +414,225 @@ export function ProjectPage() {
               {visibleWords.map((word) => {
                 const isDeleted = word.deletedAt !== null;
                 return (
-                <tr
-                  key={word.id}
-                  className={`group align-top [&:last-child_td]:border-b-0 ${
-                    isDeleted ? 'bg-danger-soft/60 text-danger' : 'hover:bg-fill/60'
-                  }`}
-                >
-                  <td
-                    className={`sticky left-0 z-10 border-b border-r border-line px-3 py-2 font-mono text-xs ${
+                  <tr
+                    key={word.id}
+                    className={`group align-top [&:last-child_td]:border-b-0 ${
                       isDeleted
-                        ? 'bg-danger-soft text-danger'
-                        : 'bg-surface text-ink-2 group-hover:bg-fill'
+                        ? "bg-danger-soft/60 text-danger"
+                        : "hover:bg-fill/60"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        className="h-3.5 w-3.5 shrink-0 accent-accent"
-                        checked={selectedIds.has(word.id)}
-                        onClick={(event) => event.stopPropagation()}
-                        onChange={() => toggleOne(word.id)}
-                        title={`Select ${word.key}`}
-                      />
-                      {editingKeyId === word.id ? (
-                        <Input
-                          size="sm"
-                          autoFocus
-                          className="min-w-0 flex-1 font-mono text-xs"
-                          value={keyDraft}
-                          onChange={(event) => setKeyDraft(event.target.value)}
-                          onBlur={() => commitKeyEdit(word.id, word.key)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter') {
-                              event.preventDefault();
-                              commitKeyEdit(word.id, word.key);
-                            }
-                            if (event.key === 'Escape') setEditingKeyId(null);
-                          }}
+                    <td
+                      className={`sticky left-0 z-10 border-b border-r border-line px-3 py-2 font-mono text-xs ${
+                        isDeleted
+                          ? "bg-danger-soft text-danger"
+                          : "bg-surface text-ink-2 group-hover:bg-fill"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5 shrink-0 accent-accent"
+                          checked={selectedIds.has(word.id)}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={() => toggleOne(word.id)}
+                          title={`Select ${word.key}`}
                         />
-                      ) : isDeleted ? (
-                        <span className="min-w-0 flex-1 break-all px-1 py-0.5 line-through">
-                          {word.key}
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingKeyId(word.id);
-                            setKeyDraft(word.key);
-                          }}
-                          className="min-w-0 flex-1 cursor-text break-all rounded-md px-1 py-0.5 text-left transition-colors hover:bg-fill"
-                          title="Click to rename"
-                        >
-                          {word.key}
-                        </button>
-                      )}
-                      <IconButton
-                        label={`Details for ${word.key}`}
-                        size="sm"
-                        className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-                        onClick={() => setDetailWord(word)}
-                      >
-                        <MoreHorizontal size={14} />
-                      </IconButton>
-                    </div>
-                  </td>
-                  {visibleLocales.map((locale) => {
-                    const translation = word.translations.find((t) => t.localeId === locale.id);
-                    const isEditing =
-                      editing?.wordId === word.id && editing.localeId === locale.id;
-                    return (
-                      <td key={locale.id} className="border-b border-line px-3 py-2">
-                        {isEditing ? (
-                          <Textarea
+                        {editingKeyId === word.id ? (
+                          <Input
                             size="sm"
                             autoFocus
-                            value={draft}
-                            onChange={(event) => setDraft(event.target.value)}
-                            onBlur={() => {
-                              commitCell(word.id, word.key, locale.id, draft);
-                              setEditing(null);
-                            }}
+                            className="min-w-0 flex-1 font-mono text-xs"
+                            value={keyDraft}
+                            onChange={(event) =>
+                              setKeyDraft(event.target.value)
+                            }
+                            onBlur={() => commitKeyEdit(word.id, word.key)}
                             onKeyDown={(event) => {
-                              if (event.key === 'Enter' && !event.shiftKey) {
+                              if (event.key === "Enter") {
                                 event.preventDefault();
-                                commitCell(word.id, word.key, locale.id, draft);
-                                setEditing(null);
+                                commitKeyEdit(word.id, word.key);
                               }
-                              if (event.key === 'Escape') setEditing(null);
+                              if (event.key === "Escape") setEditingKeyId(null);
                             }}
                           />
                         ) : isDeleted ? (
-                          <span className="block w-full px-2 py-1 text-left text-sm">
-                            {translation?.value || <span className="text-ink-3">—</span>}
+                          <span className="min-w-0 flex-1 break-all px-1 py-0.5 line-through">
+                            {word.key}
                           </span>
                         ) : (
                           <button
                             type="button"
                             onClick={() => {
-                              setEditing({ wordId: word.id, localeId: locale.id });
-                              setDraft(translation?.value ?? '');
+                              setEditingKeyId(word.id);
+                              setKeyDraft(word.key);
                             }}
-                            className="block w-full cursor-text rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-fill"
+                            className="min-w-0 flex-1 cursor-text break-all rounded-md px-1 py-0.5 text-left transition-colors hover:bg-fill"
+                            title="Click to rename"
                           >
-                            {translation?.value || <span className="text-ink-3">—</span>}
+                            {word.key}
                           </button>
                         )}
-                      </td>
-                    );
-                  })}
-                  <td
-                    className={`sticky right-0 z-10 border-b border-l border-line px-3 py-2 text-right ${
-                      isDeleted ? 'bg-danger-soft' : 'bg-surface group-hover:bg-fill'
-                    }`}
-                  >
-                    {isDeleted ? (
-                      <div className="flex items-center justify-end gap-3">
-                        <button
-                          type="button"
-                          onClick={() => restore.mutate({ projectId: id, wordId: word.id })}
-                          className="text-xs font-medium text-success transition-colors hover:underline"
+                        <IconButton
+                          label={`Details for ${word.key}`}
+                          size="sm"
+                          className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                          onClick={() => setDetailWord(word)}
                         >
-                          Restore
-                        </button>
+                          <MoreHorizontal size={14} />
+                        </IconButton>
+                      </div>
+                    </td>
+                    {visibleLocales.map((locale) => {
+                      const translation = word.translations.find(
+                        (t) => t.localeId === locale.id,
+                      );
+                      const isEditing =
+                        editing?.wordId === word.id &&
+                        editing.localeId === locale.id;
+                      return (
+                        <td
+                          key={locale.id}
+                          className="border-b border-line px-3 py-2"
+                        >
+                          {isEditing ? (
+                            <Textarea
+                              size="sm"
+                              autoFocus
+                              value={draft}
+                              onChange={(event) => setDraft(event.target.value)}
+                              onBlur={() => {
+                                commitCell(word.id, word.key, locale.id, draft);
+                                setEditing(null);
+                              }}
+                              onKeyDown={(event) => {
+                                if (event.key === "Enter" && !event.shiftKey) {
+                                  event.preventDefault();
+                                  commitCell(
+                                    word.id,
+                                    word.key,
+                                    locale.id,
+                                    draft,
+                                  );
+                                  setEditing(null);
+                                }
+                                if (event.key === "Escape") setEditing(null);
+                              }}
+                            />
+                          ) : isDeleted ? (
+                            <span className="block w-full px-2 py-1 text-left text-sm">
+                              {translation?.value || (
+                                <span className="text-ink-3">—</span>
+                              )}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditing({
+                                  wordId: word.id,
+                                  localeId: locale.id,
+                                });
+                                setDraft(translation?.value ?? "");
+                              }}
+                              className="block w-full cursor-text rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-fill"
+                            >
+                              {translation?.value || (
+                                <span className="text-ink-3">—</span>
+                              )}
+                            </button>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td
+                      className={`sticky right-0 z-10 border-b border-l border-line px-3 py-2 text-right ${
+                        isDeleted
+                          ? "bg-danger-soft"
+                          : "bg-surface group-hover:bg-fill"
+                      }`}
+                    >
+                      {isDeleted ? (
+                        <div className="flex items-center justify-end gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              restore.mutate({ projectId: id, wordId: word.id })
+                            }
+                            className="text-xs font-medium text-success transition-colors hover:underline"
+                          >
+                            Restore
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Permanently delete key "${word.key}"? This cannot be undone.`,
+                                )
+                              ) {
+                                removePermanently.mutate({
+                                  projectId: id,
+                                  wordId: word.id,
+                                });
+                              }
+                            }}
+                            className="text-xs font-medium text-danger transition-colors hover:underline"
+                          >
+                            Delete permanently
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           type="button"
                           onClick={() => {
-                            if (
-                              window.confirm(
-                                `Permanently delete key "${word.key}"? This cannot be undone.`,
-                              )
-                            ) {
-                              removePermanently.mutate({ projectId: id, wordId: word.id });
+                            if (window.confirm(`Delete key "${word.key}"?`)) {
+                              removeWord.mutate({
+                                projectId: id,
+                                wordId: word.id,
+                              });
                             }
                           }}
-                          className="text-xs font-medium text-danger transition-colors hover:underline"
+                          className="text-xs text-ink-3 transition-colors hover:text-danger"
                         >
-                          Delete permanently
+                          Delete
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (window.confirm(`Delete key "${word.key}"?`)) {
-                            removeWord.mutate({ projectId: id, wordId: word.id });
-                          }
-                        }}
-                        className="text-xs text-ink-3 transition-colors hover:text-danger"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
+                      )}
+                    </td>
+                  </tr>
                 );
               })}
             </tbody>
           </table>
           {visibleWords.length === 0 && !words.isPending && (
             <p className="p-4 text-sm text-ink-3">
-              {missingOnly ? 'No missing translations for the selected locales.' : 'No keys yet.'}
+              {missingOnly
+                ? "No missing translations for the selected locales."
+                : "No keys yet."}
             </p>
           )}
         </div>
-        {(upsert.error || removeWord.error || removePermanently.error || restore.error || updateKey.error || removeMany.error || restoreMany.error || removePermanentlyMany.error) && (
+        {(upsert.error ||
+          removeWord.error ||
+          removePermanently.error ||
+          restore.error ||
+          updateKey.error ||
+          removeMany.error ||
+          restoreMany.error ||
+          removePermanentlyMany.error) && (
           <p className="border-t border-line p-3 text-sm text-danger">
-            {(upsert.error ?? removeWord.error ?? removePermanently.error ?? restore.error ?? updateKey.error ?? removeMany.error ?? restoreMany.error ?? removePermanentlyMany.error)?.message}
+            {
+              (
+                upsert.error ??
+                removeWord.error ??
+                removePermanently.error ??
+                restore.error ??
+                updateKey.error ??
+                removeMany.error ??
+                restoreMany.error ??
+                removePermanentlyMany.error
+              )?.message
+            }
           </p>
         )}
       </section>
@@ -519,12 +645,19 @@ export function ProjectPage() {
           description={confirmConfig[confirmAction].description}
           footer={
             <>
-              <Button variant="secondary" onClick={() => setConfirmAction(null)}>
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmAction(null)}
+              >
                 Cancel
               </Button>
               <Button
-                variant={confirmAction === 'restore' ? 'primary' : 'danger'}
-                disabled={removeMany.isPending || restoreMany.isPending || removePermanentlyMany.isPending}
+                variant={confirmAction === "restore" ? "primary" : "danger"}
+                disabled={
+                  removeMany.isPending ||
+                  restoreMany.isPending ||
+                  removePermanentlyMany.isPending
+                }
                 onClick={confirmGroupAction}
               >
                 {confirmConfig[confirmAction].confirmLabel}
@@ -533,8 +666,8 @@ export function ProjectPage() {
           }
         >
           <p className="text-sm text-ink-2">
-            This will apply to {selectedCount} selected{' '}
-            {selectedCount === 1 ? 'key' : 'keys'}.
+            This will apply to {selectedCount} selected{" "}
+            {selectedCount === 1 ? "key" : "keys"}.
           </p>
         </Modal>
       )}
@@ -547,6 +680,20 @@ export function ProjectPage() {
         onClose={() => setAddKeyOpen(false)}
       />
 
+      <ExportModal
+        projectId={id}
+        projectName={project.name}
+        locales={locales}
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+      />
+
+      <ImportModal
+        projectId={id}
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+      />
+
       <ProjectFormModal
         mode="edit"
         projectId={id}
@@ -554,7 +701,11 @@ export function ProjectPage() {
         onClose={() => setSettingsOpen(false)}
       />
 
-      <MembersModal projectId={id} open={membersOpen} onClose={() => setMembersOpen(false)} />
+      <MembersModal
+        projectId={id}
+        open={membersOpen}
+        onClose={() => setMembersOpen(false)}
+      />
 
       {detailWord && (
         <KeyDetailModal

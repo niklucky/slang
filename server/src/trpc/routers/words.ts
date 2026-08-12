@@ -4,6 +4,7 @@ import type { Database } from '../../db/client.js';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
+import { exportWordsCsv, importWordsCsv } from '../../services/transfer.js';
 import { deleteWordPermanently, deleteWordsPermanently, listTranslationVersions, listWords, renameWord, restoreWord, restoreWords, softDeleteWord, softDeleteWords, upsertWord } from '../../services/words.js';
 import { requirePermission, requireProject, requireProjectMembership } from '../guards.js';
 import { protectedProcedure, router } from '../init.js';
@@ -220,4 +221,43 @@ export const wordsRouter = router({
     if (!deleted) throw new TRPCError({ code: 'CONFLICT', message: 'word_state_conflict' });
     return { ok: true };
   }),
+
+  /** CSV export of all live keys with one column per selected locale. */
+  exportCsv: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.number().int(),
+        localeIds: z.array(z.number().int()).min(1),
+        missingOnly: z.boolean().default(false),
+        separator: z.enum([',', ';']).default(','),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      await requireProject(ctx.db, input.projectId, ctx.user.id);
+      return { csv: await exportWordsCsv(ctx.db, input) };
+    }),
+
+  /**
+   * CSV import: header `key,<locale codes...>`, then one row per key.
+   * Creates/updates only; nothing is ever deleted.
+   */
+  importCsv: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.number().int(),
+        csv: z.string().min(1).max(5 * 1024 * 1024),
+        separator: z.enum([',', ';']).default(','),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { permissions } = await requireProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.user.id,
+      );
+      requirePermission(permissions, 'canCreateKeys', 'create_keys_forbidden');
+      // Import rows can also update existing keys' translations.
+      requirePermission(permissions, 'canTranslate', 'translate_forbidden');
+      return importWordsCsv(ctx.db, input.projectId, input.csv, ctx.user.id, input.separator);
+    }),
 });

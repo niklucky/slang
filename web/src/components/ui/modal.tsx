@@ -1,16 +1,18 @@
-import { X } from 'lucide-react';
-import { useEffect, useRef, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { X } from "lucide-react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
-import { cx } from '../../lib/cx.js';
-import { IconButton } from './icon-button.js';
+import { cx } from "../../lib/cx.js";
+import { IconButton } from "./icon-button.js";
 
-type Size = 'sm' | 'md' | 'lg';
+type Size = "sm" | "md" | "lg" | "xl" | "2xl";
 
 const widths: Record<Size, string> = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
 };
 
 const FOCUSABLE =
@@ -31,7 +33,7 @@ export function Modal({
   onClose,
   title,
   description,
-  size = 'md',
+  size = "md",
   children,
   footer,
 }: ModalProps) {
@@ -44,19 +46,21 @@ export function Modal({
     if (!open) return;
     restoreFocusRef.current = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     panelRef.current?.focus();
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         event.stopPropagation();
         onCloseRef.current();
         return;
       }
-      if (event.key !== 'Tab') return;
+      if (event.key !== "Tab") return;
       const panel = panelRef.current;
       if (!panel) return;
-      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
+      );
       if (focusable.length === 0) return;
       const first = focusable[0]!;
       const last = focusable[focusable.length - 1]!;
@@ -70,9 +74,9 @@ export function Modal({
       }
     }
 
-    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener("keydown", onKeyDown, true);
     return () => {
-      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener("keydown", onKeyDown, true);
       document.body.style.overflow = previousOverflow;
       restoreFocusRef.current?.focus();
     };
@@ -94,14 +98,18 @@ export function Modal({
         aria-label={title}
         tabIndex={-1}
         className={cx(
-          'my-8 w-full rounded-xl border border-line bg-surface shadow-xl focus:outline-none',
+          "my-8 w-full max-h-[90vh] overflow-y-auto rounded-xl border border-line bg-surface shadow-xl focus:outline-none",
           widths[size],
         )}
       >
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div>
-            <h2 className="text-base font-semibold tracking-tight text-ink">{title}</h2>
-            {description && <p className="mt-0.5 text-sm text-ink-2">{description}</p>}
+            <h2 className="text-base font-semibold tracking-tight text-ink">
+              {title}
+            </h2>
+            {description && (
+              <p className="mt-0.5 text-sm text-ink-2">{description}</p>
+            )}
           </div>
           <IconButton label="Close" onClick={onClose}>
             <X size={16} />
