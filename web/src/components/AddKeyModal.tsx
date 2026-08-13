@@ -81,11 +81,7 @@ export function AddKeyModal({
                 key={locale.id}
                 label={
                   <span className="inline-flex items-center gap-1.5">
-                    <LocaleFlag
-                      code={locale.code}
-                      name={locale.name}
-                      countryCode={locale.countryCode}
-                    />
+                    <LocaleFlag code={locale.code} name={locale.name} />
                     {locale.name}
                   </span>
                 }

@@ -118,11 +118,7 @@ export function ExportModal({
                   checked={selectedIds.includes(locale.id)}
                   onChange={() => toggle(locale.id)}
                 />
-                <LocaleFlag
-                  code={locale.code}
-                  name={locale.name}
-                  countryCode={locale.countryCode}
-                />
+                <LocaleFlag code={locale.code} name={locale.name} />
                 {locale.name}
               </label>
             ))}

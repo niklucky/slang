@@ -1,8 +1,10 @@
-// Maps a locale country code (e.g. "us", "ar_ae") to a flag emoji using
+// Maps a locale code (e.g. "en", "en_ca", "en-CA") to a flag emoji using
 // regional indicator symbols. Falls back to a white flag when the code
 // cannot be mapped to an ISO country.
 
-// Language codes whose countryCode is a language, not a country.
+// Language codes with no region of their own, mapped to the country most
+// associated with the language. Only consulted when the code carries no
+// region part.
 const REGION_OVERRIDES: Record<string, string> = {
   aa: 'et', // Afar
   ab: 'ge', // Abkhaz
@@ -86,10 +88,22 @@ const REGION_OVERRIDES: Record<string, string> = {
   zh: 'cn', // Chinese
 };
 
-export function localeFlag(countryCode: string): string {
-  const parts = countryCode.toLowerCase().split('_');
-  const region = (parts[0] != null ? REGION_OVERRIDES[parts[0]] : undefined) ?? parts[parts.length - 1];
-  if (region == null || !/^[a-z]{2}$/.test(region)) return '🏳️';
+export function localeFlag(code: string): string {
+  const parts = code.toLowerCase().split(/[_-]/);
+  // An explicit region part ("en_ca", "en-CA", "zh-Hant-TW") always wins
+  // over the language overrides: "ca" alone is Catalan, but "en-CA" is
+  // Canada. Scan from the end to skip script/variant subtags.
+  let region: string | undefined;
+  for (let i = parts.length - 1; i > 0; i -= 1) {
+    const part = parts[i];
+    if (part != null && /^[a-z]{2}$/.test(part)) {
+      region = part;
+      break;
+    }
+  }
+  const language = parts[0] ?? '';
+  region ??= REGION_OVERRIDES[language] ?? language;
+  if (!/^[a-z]{2}$/.test(region)) return '🏳️';
   return String.fromCodePoint(
     ...[...region.toUpperCase()].map((char) => 0x1f1e6 + char.charCodeAt(0) - 65),
   );

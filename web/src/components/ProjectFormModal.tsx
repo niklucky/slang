@@ -225,11 +225,7 @@ function ProjectForm({ mode, projectId, isOwner = false, initialProject, attache
             <div className="flex flex-wrap items-center gap-2">
               {stagedLocales.map((locale) => (
                 <Badge key={locale.id} className="py-1">
-                  <LocaleFlag
-                    code={locale.code}
-                    name={locale.name}
-                    countryCode={locale.countryCode}
-                  />
+                  <LocaleFlag code={locale.code} name={locale.name} />
                 </Badge>
               ))}
               {stagedLocales.length === 0 && (

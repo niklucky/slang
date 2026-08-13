@@ -201,6 +201,19 @@ describe('POST /api/translations/push', () => {
     expect(await fetched.json()).toEqual({ xx: { a: 'b' } });
   });
 
+  it('keeps the region of a dashed locale so its flag resolves', async () => {
+    const project = await makeProject();
+    const response = await push(project, { locale: 'en-CA', translations: { a: 'b' } });
+    expect(response.status).toBe(200);
+
+    const [locale] = await handle.db
+      .select()
+      .from(locales)
+      .where(eq(locales.code, 'en-CA'))
+      .limit(1);
+    expect(locale).toMatchObject({ code: 'en-CA', countryCode: 'en_ca' });
+  });
+
   it('rejects malformed bodies', async () => {
     const project = await makeProject();
     const response = await push(project, { locale: 'en' });

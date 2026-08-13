@@ -307,7 +307,9 @@ export async function pushTranslations(
 /**
  * Resolves a locale by code, adding it to the global catalog when missing.
  * Codes outside the seeded catalog (e.g. `en-PT`) carry no display name, so
- * the code itself stands in until someone renames it in the UI.
+ * the code itself stands in until someone renames it in the UI. countryCode
+ * keeps the whole code (normalized to the catalog's `en_pt` style) so the
+ * region survives: a bare `ca` would be indistinguishable from Catalan.
  */
 async function findOrCreateLocale(
   tx: Tx,
@@ -319,12 +321,11 @@ async function findOrCreateLocale(
     .where(eq(locales.code, code))
     .limit(1);
   if (existing) return existing;
-  const region = code.split("-")[1] ?? code;
   const inserted = await tx
     .insert(locales)
     .values({
       code,
-      countryCode: region.toLowerCase(),
+      countryCode: code.toLowerCase().replace(/-/g, "_"),
       name: code,
       title: code,
     })

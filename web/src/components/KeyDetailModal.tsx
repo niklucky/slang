@@ -126,11 +126,7 @@ export function KeyDetailModal({
                 <div key={locale.id}>
                   <div className="mb-1.5 flex items-center justify-between gap-2">
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-2">
-                      <LocaleFlag
-                        code={locale.code}
-                        name={locale.name}
-                        countryCode={locale.countryCode}
-                      />
+                      <LocaleFlag code={locale.code} name={locale.name} />
                       {locale.name}
                     </span>
                     <IconButton

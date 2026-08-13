@@ -27,6 +27,7 @@ import { LocaleFlag } from "../components/ui/locale-flag.js";
 import { MemberStack } from "../components/ui/member-stack.js";
 import { Modal } from "../components/ui/modal.js";
 import { MultiSelect } from "../components/ui/multi-select.js";
+import { useProjectFilters } from "../lib/project-filters.js";
 import { trpc } from "../trpc.js";
 
 function useDebounced<T>(value: T, ms: number): T {
@@ -50,12 +51,9 @@ export function ProjectPage() {
 
   const details = trpc.projects.get.useQuery({ projectId: id });
 
-  const [search, setSearch] = useState("");
+  const [{ search, missingOnly, showDeleted, excludedLocaleIds }, setFilters] =
+    useProjectFilters(id);
   const debouncedSearch = useDebounced(search, 300);
-  const [showDeleted, setShowDeleted] = useState(false);
-  // Locales removed from this set are hidden from the table; new locales default to visible.
-  const [excludedLocaleIds, setExcludedLocaleIds] = useState<number[]>([]);
-  const [missingOnly, setMissingOnly] = useState(false);
 
   const visibleLocales = (details.data?.locales ?? []).filter(
     (locale) => !excludedLocaleIds.includes(locale.id),
@@ -332,7 +330,9 @@ export function ProjectPage() {
           <Input
             size="sm"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) =>
+              setFilters((prev) => ({ ...prev, search: event.target.value }))
+            }
             placeholder="Search keys and values…"
             className="max-w-sm"
           />
@@ -344,11 +344,7 @@ export function ProjectPage() {
             options={locales.map((locale) => ({
               value: String(locale.id),
               label: (
-                <LocaleFlag
-                  code={locale.code}
-                  name={locale.name}
-                  countryCode={locale.countryCode}
-                />
+                <LocaleFlag code={locale.code} name={locale.name} />
               ),
               triggerLabel: locale.code,
               hint: `${locale.code} — ${locale.name}`,
@@ -356,11 +352,12 @@ export function ProjectPage() {
             selected={visibleLocales.map((locale) => String(locale.id))}
             onChange={(next) => {
               const selectedIds = new Set(next.map(Number));
-              setExcludedLocaleIds(
-                locales
+              setFilters((prev) => ({
+                ...prev,
+                excludedLocaleIds: locales
                   .filter((locale) => !selectedIds.has(locale.id))
                   .map((locale) => locale.id),
-              );
+              }));
             }}
           />
           <label
@@ -371,7 +368,9 @@ export function ProjectPage() {
               type="checkbox"
               className="accent-accent"
               checked={missingOnly}
-              onChange={() => setMissingOnly((prev) => !prev)}
+              onChange={() =>
+                setFilters((prev) => ({ ...prev, missingOnly: !prev.missingOnly }))
+              }
             />
             Missing only
           </label>
@@ -383,7 +382,9 @@ export function ProjectPage() {
               type="checkbox"
               className="accent-accent"
               checked={showDeleted}
-              onChange={() => setShowDeleted((prev) => !prev)}
+              onChange={() =>
+                setFilters((prev) => ({ ...prev, showDeleted: !prev.showDeleted }))
+              }
             />
             Show deleted
           </label>
@@ -477,7 +478,6 @@ export function ProjectPage() {
                       <LocaleFlag
                         code={locale.code}
                         name={locale.name}
-                        countryCode={locale.countryCode}
                         placement="bottom"
                       />
                       <span className="normal-case">{locale.name}</span>

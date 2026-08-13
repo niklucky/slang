@@ -3,17 +3,16 @@ import { localeFlag } from '../../lib/locale-flag.js';
 export interface LocaleFlagProps {
   code: string;
   name: string;
-  countryCode: string;
   /** Where the popover appears; use "bottom" where content above is clipped (e.g. table headers). */
   placement?: 'top' | 'bottom';
 }
 
 /** Flag emoji with a hover popover showing "code — name". */
-export function LocaleFlag({ code, name, countryCode, placement = 'top' }: LocaleFlagProps) {
+export function LocaleFlag({ code, name, placement = 'top' }: LocaleFlagProps) {
   return (
     <span className="group/locale-flag relative inline-flex items-center" tabIndex={0}>
       <span aria-hidden className="text-2xl leading-none">
-        {localeFlag(countryCode)}
+        {localeFlag(code)}
       </span>
       <span className="sr-only">{`${code} — ${name}`}</span>
       <span
