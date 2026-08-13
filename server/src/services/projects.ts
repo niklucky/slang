@@ -72,6 +72,8 @@ export interface ProjectSummary extends Project {
   wordCount: number;
   localeCount: number;
   untranslatedCount: number;
+  /** Locales enabled for the project, ordered by code. */
+  locales: Array<{ id: number; code: string; name: string }>;
   /** Member display names, owner first, then by join order. */
   members: Array<{ name: string }>;
   /** Newest key/translation activity; falls back to the project's own update time. */
@@ -107,17 +109,23 @@ export async function findProjectsForUser(
   if (rows.length === 0) return [];
 
   const ids = rows.map((row) => row.project.id);
-  const [wordCounts, localeCounts, untranslatedCounts, memberRows, translationActivity, wordActivity] = await Promise.all([
+  const [wordCounts, localeRows, untranslatedCounts, memberRows, translationActivity, wordActivity] = await Promise.all([
     db
       .select({ projectId: words.projectId, value: count() })
       .from(words)
       .where(and(isNull(words.deletedAt), inArray(words.projectId, ids)))
       .groupBy(words.projectId),
     db
-      .select({ projectId: projectsToLocales.projectId, value: count() })
+      .select({
+        projectId: projectsToLocales.projectId,
+        id: locales.id,
+        code: locales.code,
+        name: locales.name,
+      })
       .from(projectsToLocales)
+      .innerJoin(locales, eq(projectsToLocales.localeId, locales.id))
       .where(inArray(projectsToLocales.projectId, ids))
-      .groupBy(projectsToLocales.projectId),
+      .orderBy(projectsToLocales.projectId, locales.code),
     // Words missing a translation for at least one of the project's locales.
     db
       .select({ projectId: words.projectId, value: count() })
@@ -178,7 +186,12 @@ export async function findProjectsForUser(
   ]);
 
   const wordsByProject = new Map(wordCounts.map((row) => [row.projectId, row.value]));
-  const localesByProject = new Map(localeCounts.map((row) => [row.projectId, row.value]));
+  const localesByProject = new Map<number, Array<{ id: number; code: string; name: string }>>();
+  for (const row of localeRows) {
+    const list = localesByProject.get(row.projectId) ?? [];
+    list.push({ id: row.id, code: row.code, name: row.name });
+    localesByProject.set(row.projectId, list);
+  }
   const untranslatedByProject = new Map(
     untranslatedCounts.map((row) => [row.projectId, row.value]),
   );
@@ -235,11 +248,13 @@ export async function findProjectsForUser(
       (a, b) =>
         Number(b.isOwner) - Number(a.isOwner) || a.assignedAt.getTime() - b.assignedAt.getTime(),
     );
+    const projectLocales = localesByProject.get(project.id) ?? [];
     return {
       ...project,
       wordCount: wordsByProject.get(project.id) ?? 0,
-      localeCount: localesByProject.get(project.id) ?? 0,
+      localeCount: projectLocales.length,
       untranslatedCount: untranslatedByProject.get(project.id) ?? 0,
+      locales: projectLocales,
       members: members.map(({ name }) => ({ name })),
       lastActivityAt: activityByProject.get(project.id) ?? project.updatedAt,
     };

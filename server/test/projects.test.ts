@@ -39,6 +39,7 @@ interface ProjectListItem extends Project {
   wordCount: number;
   localeCount: number;
   untranslatedCount: number;
+  locales: Array<{ id: number; code: string; name: string }>;
   members: Array<{ name: string }>;
   /** Dates travel as ISO strings over the plain-JSON tRPC link. */
   lastActivityAt: string | Date;
@@ -574,6 +575,33 @@ describe('projects', () => {
       'bob',
       'carol',
     ]);
+  });
+
+  it('list exposes each project\'s locales so the UI can render flags', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Flags', url: null },
+      token: accessToken,
+    });
+    const catalog = await trpc<Array<{ id: number; code: string }>>(app, 'locales.catalog', {
+      kind: 'query',
+      token: accessToken,
+    });
+    for (const code of ['en', 'fr']) {
+      const locale = catalog.find((entry) => entry.code === code)!;
+      await trpc(app, 'locales.add', {
+        input: { projectId: project.id, localeId: locale.id },
+        token: accessToken,
+      });
+    }
+
+    const projects = await trpc<ProjectListItem[]>(app, 'projects.list', {
+      kind: 'query',
+      token: accessToken,
+    });
+    const listed = projects.find(({ id }) => id === project.id)!;
+    expect(listed.locales.map((locale) => locale.code).sort()).toEqual(['en', 'fr']);
+    expect(listed.localeCount).toBe(2);
   });
 
   it('list lastActivityAt moves forward when a key is added', async () => {

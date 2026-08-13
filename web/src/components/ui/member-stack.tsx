@@ -9,14 +9,19 @@ const chipSizes = {
   sm: 'h-6 w-6 text-[10px]',
 } as const;
 
-/** Overlapping member initials: first few avatars, then a +N overflow chip. */
+/**
+ * Member initials: the first few avatars, then a +N overflow chip. By default
+ * the avatars overlap; pass `stacked={false}` for a spaced-out row.
+ */
 export function MemberStack({
   names,
   size = 'sm',
+  stacked = true,
   className,
 }: {
   names: string[];
   size?: keyof typeof chipSizes;
+  stacked?: boolean;
   className?: string;
 }) {
   const visible = names.slice(0, MAX_VISIBLE);
@@ -24,7 +29,11 @@ export function MemberStack({
   if (names.length === 0) return null;
   return (
     <div
-      className={cx('flex shrink-0 items-center -space-x-1.5', className)}
+      className={cx(
+        'flex shrink-0 items-center',
+        stacked ? '-space-x-1.5' : 'gap-1',
+        className,
+      )}
       title={names.join(', ')}
     >
       {visible.map((name, index) => (
