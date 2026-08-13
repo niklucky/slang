@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { trpc } from '../trpc.js';
 import { Badge } from './ui/badge.js';
@@ -20,6 +21,8 @@ interface ProjectSnapshot {
   url: string | null;
   description: string | null;
   apiKey: string;
+  /** Dates travel as ISO strings over the plain-JSON tRPC link. */
+  deletedAt: string | null;
 }
 
 export interface ProjectFormModalProps {
@@ -45,12 +48,22 @@ export function ProjectFormModal({ mode, projectId, open, onClose }: ProjectForm
     body = <p className="text-sm text-ink-3">Loading…</p>;
   } else if (!details.data) {
     body = <p className="text-sm text-danger">Project not found.</p>;
+  } else if (details.data.project.deletedAt !== null && projectId != null) {
+    body = (
+      <DeletedProjectPanel
+        key={`deleted-${projectId}`}
+        projectId={projectId}
+        project={details.data.project}
+        onClose={onClose}
+      />
+    );
   } else {
     body = (
       <ProjectForm
         key={`edit-${projectId}`}
         mode="edit"
         projectId={projectId}
+        isOwner={details.data.isOwner}
         initialProject={details.data.project}
         attached={details.data.locales}
         catalog={catalog.data ?? []}
@@ -69,14 +82,16 @@ export function ProjectFormModal({ mode, projectId, open, onClose }: ProjectForm
 interface ProjectFormProps {
   mode: 'create' | 'edit';
   projectId?: number;
+  isOwner?: boolean;
   initialProject?: ProjectSnapshot;
   attached: CatalogLocale[];
   catalog: CatalogLocale[];
   onClose: () => void;
 }
 
-function ProjectForm({ mode, projectId, initialProject, attached, catalog, onClose }: ProjectFormProps) {
+function ProjectForm({ mode, projectId, isOwner = false, initialProject, attached, catalog, onClose }: ProjectFormProps) {
   const utils = trpc.useUtils();
+  const navigate = useNavigate();
   const isEdit = mode === 'edit';
 
   const [name, setName] = useState(initialProject?.name ?? '');
@@ -90,11 +105,13 @@ function ProjectForm({ mode, projectId, initialProject, attached, catalog, onClo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const create = trpc.projects.create.useMutation();
   const update = trpc.projects.update.useMutation();
   const addLocale = trpc.locales.add.useMutation();
   const regenerate = trpc.projects.regenerateApiKey.useMutation();
+  const remove = trpc.projects.delete.useMutation();
 
   const catalogById = new Map(catalog.map((locale) => [locale.id, locale]));
   const stagedLocales = stagedLocaleIds
@@ -159,6 +176,20 @@ function ProjectForm({ mode, projectId, initialProject, attached, catalog, onClo
       await utils.projects.get.invalidate({ projectId });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not regenerate the API key');
+    }
+  }
+
+  async function handleDelete() {
+    if (projectId == null) return;
+    setError(null);
+    try {
+      await remove.mutateAsync({ projectId });
+      await utils.projects.list.invalidate();
+      onClose();
+      navigate('/projects');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete the project');
+      setConfirmingDelete(false);
     }
   }
 
@@ -262,20 +293,153 @@ function ProjectForm({ mode, projectId, initialProject, attached, catalog, onClo
 
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
-      <div className="-mx-5 -mb-4 mt-5 flex justify-end gap-2 rounded-b-xl border-t border-line px-5 py-4">
-        <Button variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={saving}>
-          {saving
-            ? isEdit
-              ? 'Saving…'
-              : 'Creating…'
-            : isEdit
-              ? 'Save changes'
-              : 'Create project'}
-        </Button>
+      <div className="-mx-5 -mb-4 mt-5 flex items-center gap-2 rounded-b-xl border-t border-line px-5 py-4">
+        {isEdit && isOwner && (
+          <Button
+            variant="danger"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={saving || remove.isPending}
+          >
+            Delete project
+          </Button>
+        )}
+        <div className="ml-auto flex gap-2">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving
+              ? isEdit
+                ? 'Saving…'
+                : 'Creating…'
+              : isEdit
+                ? 'Save changes'
+                : 'Create project'}
+          </Button>
+        </div>
       </div>
+
+      {isEdit && isOwner && (
+        <Modal
+          open={confirmingDelete}
+          onClose={() => setConfirmingDelete(false)}
+          title={`Delete "${initialProject?.name ?? 'project'}"?`}
+          description="The project disappears from the dashboard and its API key stops working."
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setConfirmingDelete(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                disabled={remove.isPending}
+                onClick={() => void handleDelete()}
+              >
+                {remove.isPending ? 'Deleting…' : 'Delete'}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm text-ink-2">
+            You can bring it back later from the “Show deleted” list on the dashboard.
+          </p>
+        </Modal>
+      )}
     </form>
+  );
+}
+
+/** Shown instead of the form when the project is soft-deleted; owner only. */
+function DeletedProjectPanel({
+  projectId,
+  project,
+  onClose,
+}: {
+  projectId: number;
+  project: ProjectSnapshot;
+  onClose: () => void;
+}) {
+  const utils = trpc.useUtils();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const restore = trpc.projects.restore.useMutation();
+  const destroy = trpc.projects.deletePermanently.useMutation();
+  const busy = restore.isPending || destroy.isPending;
+
+  async function handleRestore() {
+    setError(null);
+    try {
+      await restore.mutateAsync({ projectId });
+      await utils.projects.get.invalidate({ projectId });
+      await utils.projects.list.invalidate();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not restore the project');
+    }
+  }
+
+  async function handleDeletePermanently() {
+    setError(null);
+    try {
+      await destroy.mutateAsync({ projectId });
+      await utils.projects.list.invalidate();
+      onClose();
+      navigate('/projects');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete the project');
+      setConfirming(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="rounded-lg border border-danger/30 bg-danger-soft/50 px-4 py-3 text-sm text-ink-2">
+        This project was deleted
+        {project.deletedAt ? ` on ${new Date(project.deletedAt).toLocaleDateString()}` : ''}. Its
+        API key no longer works and members can no longer see it. Restore it to bring it back, or
+        delete it permanently to erase all of its data.
+      </div>
+
+      {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+
+      <div className="-mx-5 -mb-4 mt-5 flex items-center gap-2 rounded-b-xl border-t border-line px-5 py-4">
+        <Button variant="secondary" onClick={onClose}>
+          Close
+        </Button>
+        <div className="ml-auto flex gap-2">
+          <Button variant="danger" disabled={busy} onClick={() => setConfirming(true)}>
+            Delete permanently
+          </Button>
+          <Button disabled={busy} onClick={() => void handleRestore()}>
+            {restore.isPending ? 'Restoring…' : 'Restore'}
+          </Button>
+        </div>
+      </div>
+
+      <Modal
+        open={confirming}
+        onClose={() => setConfirming(false)}
+        title={`Permanently delete "${project.name}"?`}
+        description="Keys, translations, members and history will be removed for good."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirming(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              disabled={destroy.isPending}
+              onClick={() => void handleDeletePermanently()}
+            >
+              {destroy.isPending ? 'Deleting…' : 'Delete permanently'}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink-2">This cannot be undone.</p>
+      </Modal>
+    </div>
   );
 }

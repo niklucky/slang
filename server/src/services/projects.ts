@@ -1,9 +1,22 @@
-import { and, count, desc, eq, exists, inArray, isNull, max, notExists, or } from 'drizzle-orm';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  isNull,
+  max,
+  notExists,
+  or,
+} from 'drizzle-orm';
 
 import type { Database } from '../db/client.js';
 import {
   channels,
   DEFAULT_CHANNEL,
+  invitations,
   locales,
   namespaces,
   projects,
@@ -15,6 +28,7 @@ import {
   usersToProjects,
   wordVersions,
   words,
+  wordsToNamespaces,
   type Project,
 } from '../db/schema.js';
 import { generateApiKey } from '../lib/ids.js';
@@ -64,16 +78,28 @@ export interface ProjectSummary extends Project {
   lastActivityAt: Date;
 }
 
-export async function findProjectsForUser(db: Database, userId: number): Promise<ProjectSummary[]> {
+/**
+ * Projects the user owns or is a member of. With `includeDeleted`, the
+ * caller's soft-deleted projects are added — only owners ever see those,
+ * since only owners can restore or permanently delete them.
+ */
+export async function findProjectsForUser(
+  db: Database,
+  userId: number,
+  options: { includeDeleted?: boolean } = {},
+): Promise<ProjectSummary[]> {
+  const membership = or(eq(projects.ownerId, userId), eq(usersToProjects.userId, userId));
   const rows = await db
     .select({ project: projects })
     .from(projects)
     .leftJoin(usersToProjects, eq(usersToProjects.projectId, projects.id))
     .where(
-      and(
-        isNull(projects.deletedAt),
-        or(eq(projects.ownerId, userId), eq(usersToProjects.userId, userId)),
-      ),
+      options.includeDeleted
+        ? or(
+            and(isNull(projects.deletedAt), membership),
+            and(isNotNull(projects.deletedAt), eq(projects.ownerId, userId)),
+          )
+        : and(isNull(projects.deletedAt), membership),
     )
     .groupBy(projects.id)
     .orderBy(desc(projects.id));
@@ -325,4 +351,49 @@ export async function softDeleteProject(db: Database, projectId: number): Promis
     .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
     .returning({ id: projects.id });
   return rows.length > 0;
+}
+
+/** Reverse of softDeleteProject; returns false when the project is not deleted. */
+export async function restoreProject(db: Database, projectId: number): Promise<boolean> {
+  const rows = await db
+    .update(projects)
+    .set({ deletedAt: null, updatedAt: new Date() })
+    .where(and(eq(projects.id, projectId), isNotNull(projects.deletedAt)))
+    .returning({ id: projects.id });
+  return rows.length > 0;
+}
+
+/**
+ * Hard-delete a project and every row that belongs to it. Only soft-deleted
+ * projects may leave the lifecycle. Irreversible.
+ */
+export async function deleteProjectPermanently(db: Database, projectId: number): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const [project] = await tx
+      .select({ id: projects.id, deletedAt: projects.deletedAt })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+      .for('update');
+    if (!project || project.deletedAt === null) return false;
+
+    const wordIds = tx
+      .select({ id: words.id })
+      .from(words)
+      .where(eq(words.projectId, projectId));
+    await tx.delete(translationVersions).where(inArray(translationVersions.wordId, wordIds));
+    await tx.delete(wordVersions).where(inArray(wordVersions.wordId, wordIds));
+    await tx.delete(wordsToNamespaces).where(inArray(wordsToNamespaces.wordId, wordIds));
+    await tx.delete(translations).where(inArray(translations.wordId, wordIds));
+    await tx.delete(words).where(eq(words.projectId, projectId));
+    await tx.delete(channels).where(eq(channels.projectId, projectId));
+    await tx.delete(namespaces).where(eq(namespaces.projectId, projectId));
+    await tx.delete(projectsToLocales).where(eq(projectsToLocales.projectId, projectId));
+    await tx.delete(invitations).where(eq(invitations.projectId, projectId));
+    await tx.delete(usersToProjects).where(eq(usersToProjects.projectId, projectId));
+    const deleted = await tx
+      .delete(projects)
+      .where(eq(projects.id, projectId))
+      .returning({ id: projects.id });
+    return deleted.length > 0;
+  });
 }

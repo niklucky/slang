@@ -17,14 +17,21 @@ const OWNER_PERMISSIONS: MemberPermissions = {
   canDeleteKeys: true,
 };
 
+export interface RequireProjectOptions {
+  /** Also resolve soft-deleted projects (owner-only restore/purge flows). */
+  includeDeleted?: boolean;
+}
+
 /**
  * Resolves the project together with the caller's membership. Users who are
  * neither owner nor member get NOT_FOUND so project ids stay unenumerable.
+ * Soft-deleted projects are NOT_FOUND unless `includeDeleted` is set.
  */
 export async function requireProjectMembership(
   db: Database,
   projectId: number,
   userId: number,
+  options: RequireProjectOptions = {},
 ): Promise<ProjectMembership> {
   const [row] = await db
     .select({ project: projects, membership: usersToProjects })
@@ -33,7 +40,12 @@ export async function requireProjectMembership(
       usersToProjects,
       and(eq(usersToProjects.projectId, projects.id), eq(usersToProjects.userId, userId)),
     )
-    .where(and(eq(projects.id, projectId), isNull(projects.deletedAt)))
+    .where(
+      and(
+        eq(projects.id, projectId),
+        options.includeDeleted ? undefined : isNull(projects.deletedAt),
+      ),
+    )
     .limit(1);
 
   if (!row) {

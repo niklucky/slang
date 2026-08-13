@@ -10,13 +10,15 @@ import {
 import { listMembers, setMemberPermissions } from '../../services/members.js';
 import {
   createProject,
+  deleteProjectPermanently,
   findProjectDetails,
   findProjectsForUser,
   regenerateApiKey,
+  restoreProject,
   softDeleteProject,
   updateProject,
 } from '../../services/projects.js';
-import { requireOwner, requireProject } from '../guards.js';
+import { requireOwner, requireProject, requireProjectMembership } from '../guards.js';
 import { protectedProcedure, router } from '../init.js';
 
 /**
@@ -46,13 +48,30 @@ const projectFields = {
 };
 
 export const projectsRouter = router({
-  list: protectedProcedure.query(({ ctx }) => findProjectsForUser(ctx.db, ctx.user.id)),
+  /** With `includeDeleted`, the caller's soft-deleted projects are included. */
+  list: protectedProcedure
+    .input(z.object({ includeDeleted: z.boolean().optional() }).optional())
+    .query(({ ctx, input }) =>
+      findProjectsForUser(ctx.db, ctx.user.id, {
+        includeDeleted: input?.includeDeleted ?? false,
+      }),
+    ),
 
   get: protectedProcedure
     .input(z.object({ projectId: z.number().int() }))
     .query(async ({ ctx, input }) => {
-      const project = await requireProject(ctx.db, input.projectId, ctx.user.id);
-      return findProjectDetails(ctx.db, project);
+      const { project, isOwner } = await requireProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.user.id,
+        { includeDeleted: true },
+      );
+      // Deleted projects stay visible only to their owner.
+      if (project.deletedAt !== null && !isOwner) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'project_not_found' });
+      }
+      const details = await findProjectDetails(ctx.db, project);
+      return { ...details, isOwner };
     }),
 
   create: protectedProcedure
@@ -83,12 +102,40 @@ export const projectsRouter = router({
       return updated;
     }),
 
+  /** Soft-delete: hides the project and its API key; the owner can restore it. */
   delete: protectedProcedure
     .input(z.object({ projectId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       const project = await requireProject(ctx.db, input.projectId, ctx.user.id);
       requireOwner(project, ctx.user.id);
-      await softDeleteProject(ctx.db, input.projectId);
+      const deleted = await softDeleteProject(ctx.db, input.projectId);
+      if (!deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'project_not_found' });
+      return { ok: true };
+    }),
+
+  /** Brings back a soft-deleted project. Owner only. */
+  restore: protectedProcedure
+    .input(z.object({ projectId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const { project } = await requireProjectMembership(ctx.db, input.projectId, ctx.user.id, {
+        includeDeleted: true,
+      });
+      requireOwner(project, ctx.user.id);
+      const restored = await restoreProject(ctx.db, input.projectId);
+      if (!restored) throw new TRPCError({ code: 'NOT_FOUND', message: 'project_not_found' });
+      return { ok: true };
+    }),
+
+  /** Irreversibly removes the project and all of its data. Owner only. */
+  deletePermanently: protectedProcedure
+    .input(z.object({ projectId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const { project } = await requireProjectMembership(ctx.db, input.projectId, ctx.user.id, {
+        includeDeleted: true,
+      });
+      requireOwner(project, ctx.user.id);
+      const deleted = await deleteProjectPermanently(ctx.db, input.projectId);
+      if (!deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'project_not_found' });
       return { ok: true };
     }),
 

@@ -19,6 +19,7 @@ import {
 } from "../components/KeyDetailModal.js";
 import { MembersModal } from "../components/MembersModal.js";
 import { ProjectFormModal } from "../components/ProjectFormModal.js";
+import { Badge } from "../components/ui/badge.js";
 import { Button } from "../components/ui/button.js";
 import { IconButton } from "../components/ui/icon-button.js";
 import { Input, Textarea } from "../components/ui/input.js";
@@ -151,6 +152,47 @@ export function ProjectPage() {
     return <p className="text-sm text-danger">Project not found.</p>;
 
   const { project, locales, channels, members } = details.data;
+
+  // Only owners ever see a deleted project here; they restore or purge it
+  // through the settings modal.
+  if (project.deletedAt !== null) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold tracking-tight">
+                {project.name}
+              </h1>
+              <Badge tone="danger">Deleted</Badge>
+            </div>
+            {project.description && (
+              <p className="mt-1 text-sm text-ink-2">{project.description}</p>
+            )}
+          </div>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings size={14} />
+            Settings
+          </Button>
+        </div>
+        <div className="rounded-xl border border-danger/30 bg-danger-soft/50 p-4 text-sm text-ink-2">
+          This project is deleted: its API key no longer works and members can
+          no longer see it. Open Settings to restore it or delete it
+          permanently.
+        </div>
+        <ProjectFormModal
+          mode="edit"
+          projectId={id}
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+        />
+      </div>
+    );
+  }
   const defaultChannel = channels[0];
   const loadedWords = words.data?.pages.flatMap((page) => page.items) ?? [];
   const totalKeys = words.data?.pages[0]?.total ?? 0;

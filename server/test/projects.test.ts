@@ -1,7 +1,18 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
-import { Role, translations, usersToProjects, words, type Project } from '../src/db/schema.js';
+import {
+  channels,
+  projects,
+  projectsToLocales,
+  Role,
+  translationVersions,
+  translations,
+  usersToProjects,
+  wordVersions,
+  words,
+  type Project,
+} from '../src/db/schema.js';
 import { openTestDb, resetDb, seedUser, trpc } from './helpers.js';
 
 const handle = openTestDb();
@@ -169,6 +180,245 @@ describe('projects', () => {
       token: alice.accessToken,
     });
     expect(projects).toHaveLength(0);
+  });
+
+  it('delete hides the project and its API key; restore brings both back', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Demo', url: 'https://demo.dev' },
+      token: accessToken,
+    });
+
+    await trpc(app, 'projects.delete', {
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+
+    const live = await trpc<ProjectListItem[]>(app, 'projects.list', {
+      kind: 'query',
+      token: accessToken,
+    });
+    expect(live).toHaveLength(0);
+
+    // A deleted project's API key stops working.
+    const blocked = await app.request('/api/translations', {
+      headers: { 'x-api-key': project.apiKey },
+    });
+    expect(blocked.status).toBe(401);
+
+    const withDeleted = await trpc<ProjectListItem[]>(app, 'projects.list', {
+      kind: 'query',
+      input: { includeDeleted: true },
+      token: accessToken,
+    });
+    expect(withDeleted).toHaveLength(1);
+    expect(withDeleted[0]!.deletedAt).not.toBeNull();
+
+    await trpc(app, 'projects.restore', {
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+
+    const restored = await trpc<ProjectListItem[]>(app, 'projects.list', {
+      kind: 'query',
+      token: accessToken,
+    });
+    expect(restored).toHaveLength(1);
+    expect(restored[0]!.deletedAt).toBeNull();
+    const ok = await app.request('/api/translations', {
+      headers: { 'x-api-key': project.apiKey },
+    });
+    expect(ok.status).toBe(200);
+
+    // Restoring a live project is a NOT_FOUND, not a silent no-op.
+    await expect(
+      trpc(app, 'projects.restore', {
+        input: { projectId: project.id },
+        token: accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('delete, restore and deletePermanently are owner-only', async () => {
+    const alice = await login('alice@example.com');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Team', url: null },
+      token: alice.accessToken,
+    });
+    const bob = await login('bob@example.com');
+    await handle.db.insert(usersToProjects).values({
+      projectId: project.id,
+      userId: bob.user.id,
+      assignedById: alice.user.id,
+      roleId: Role.EDITOR,
+    });
+
+    await expect(
+      trpc(app, 'projects.delete', {
+        input: { projectId: project.id },
+        token: bob.accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+    await trpc(app, 'projects.delete', {
+      input: { projectId: project.id },
+      token: alice.accessToken,
+    });
+
+    // Members keep their membership row but cannot restore or purge.
+    await expect(
+      trpc(app, 'projects.restore', {
+        input: { projectId: project.id },
+        token: bob.accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+    await expect(
+      trpc(app, 'projects.deletePermanently', {
+        input: { projectId: project.id },
+        token: bob.accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+    // Strangers cannot even tell the project exists.
+    const carol = await login('carol@example.com');
+    await expect(
+      trpc(app, 'projects.restore', {
+        input: { projectId: project.id },
+        token: carol.accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('deletePermanently removes the project and all of its data', async () => {
+    const { accessToken } = await login('alice@example.com');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Doomed', url: null },
+      token: accessToken,
+    });
+    const details = await trpc<ProjectDetails>(app, 'projects.get', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    const channelId = details.channels[0]!.id;
+    const catalog = await trpc<Array<{ id: number; code: string }>>(app, 'locales.catalog', {
+      kind: 'query',
+      token: accessToken,
+    });
+    const en = catalog.find((locale) => locale.code === 'en')!;
+    await trpc(app, 'locales.add', {
+      input: { projectId: project.id, localeId: en.id },
+      token: accessToken,
+    });
+    await trpc(app, 'words.upsert', {
+      input: {
+        projectId: project.id,
+        key: 'greeting',
+        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+      },
+      token: accessToken,
+    });
+
+    // Live projects cannot be purged directly.
+    await expect(
+      trpc(app, 'projects.deletePermanently', {
+        input: { projectId: project.id },
+        token: accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+    await trpc(app, 'projects.delete', {
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+    await trpc(app, 'projects.deletePermanently', {
+      input: { projectId: project.id },
+      token: accessToken,
+    });
+
+    expect(await handle.db.select().from(projects)).toHaveLength(0);
+    expect(await handle.db.select().from(usersToProjects)).toHaveLength(0);
+    expect(await handle.db.select().from(projectsToLocales)).toHaveLength(0);
+    expect(await handle.db.select().from(channels)).toHaveLength(0);
+    expect(await handle.db.select().from(words)).toHaveLength(0);
+    expect(await handle.db.select().from(translations)).toHaveLength(0);
+    expect(await handle.db.select().from(translationVersions)).toHaveLength(0);
+    expect(await handle.db.select().from(wordVersions)).toHaveLength(0);
+
+    await expect(
+      trpc(app, 'projects.deletePermanently', {
+        input: { projectId: project.id },
+        token: accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('list with includeDeleted returns deleted projects only to their owner', async () => {
+    const alice = await login('alice@example.com');
+    const bob = await login('bob@example.com');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Mine', url: null },
+      token: alice.accessToken,
+    });
+    await handle.db.insert(usersToProjects).values({
+      projectId: project.id,
+      userId: bob.user.id,
+      assignedById: alice.user.id,
+      roleId: Role.EDITOR,
+    });
+    await trpc(app, 'projects.delete', {
+      input: { projectId: project.id },
+      token: alice.accessToken,
+    });
+
+    const aliceList = await trpc<ProjectListItem[]>(app, 'projects.list', {
+      kind: 'query',
+      input: { includeDeleted: true },
+      token: alice.accessToken,
+    });
+    expect(aliceList).toHaveLength(1);
+    expect(aliceList[0]!.deletedAt).not.toBeNull();
+
+    const bobList = await trpc<ProjectListItem[]>(app, 'projects.list', {
+      kind: 'query',
+      input: { includeDeleted: true },
+      token: bob.accessToken,
+    });
+    expect(bobList).toHaveLength(0);
+  });
+
+  it('get on a deleted project works for the owner; members get NOT_FOUND', async () => {
+    const alice = await login('alice@example.com');
+    const bob = await login('bob@example.com');
+    const project = await trpc<Project>(app, 'projects.create', {
+      input: { name: 'Hidden', url: null },
+      token: alice.accessToken,
+    });
+    await handle.db.insert(usersToProjects).values({
+      projectId: project.id,
+      userId: bob.user.id,
+      assignedById: alice.user.id,
+      roleId: Role.EDITOR,
+    });
+    await trpc(app, 'projects.delete', {
+      input: { projectId: project.id },
+      token: alice.accessToken,
+    });
+
+    const details = await trpc<ProjectDetails>(app, 'projects.get', {
+      kind: 'query',
+      input: { projectId: project.id },
+      token: alice.accessToken,
+    });
+    expect(details.project.deletedAt).not.toBeNull();
+
+    await expect(
+      trpc(app, 'projects.get', {
+        kind: 'query',
+        input: { projectId: project.id },
+        token: bob.accessToken,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
   });
 
   it('removing a locale soft-deletes only that locale and only in this project', async () => {
