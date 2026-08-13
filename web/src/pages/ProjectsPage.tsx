@@ -90,10 +90,10 @@ export function ProjectsPage() {
               const isDeleted = project.deletedAt !== null;
               const rowClass = cx(
                 GRID,
-                "w-full rounded-md text-left text-sm shadow-md transition",
+                "w-full rounded-lg text-left shadow-sm transition p-2",
                 isDeleted
                   ? "bg-danger-soft/40 hover:bg-danger-soft/60"
-                  : "bg-surface hover:shadow-lg",
+                  : "bg-surface hover:shadow-md",
               );
 
               const cells = (
@@ -104,16 +104,14 @@ export function ProjectsPage() {
                       "px-3 py-2.5 text-xs tabular-nums text-ink-3",
                     )}
                   >
-                    #{project.id}
+                    {project.id}
                   </div>
 
                   <div className={cx(spans.name, "min-w-0 px-3 py-2.5")}>
                     <div className="flex items-center gap-2">
-                      <span
-                        className="truncate font-medium text-ink"
-                        title={project.name}
-                      >
+                      <span className="truncate text-ink" title={project.name}>
                         {project.name}
+                        <div className="text-ink-3">{project.description}</div>
                       </span>
                       {isDeleted && <Badge tone="danger">Deleted</Badge>}
                     </div>
