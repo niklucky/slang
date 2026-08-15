@@ -23,9 +23,6 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
       PUBLIC_URL: ${PUBLIC_URL:-}
-    volumes:
-      # Project favicons (re-fetchable, but persisted to avoid re-downloads).
-      - icons-data:/app/data/icons
 
   db:
     image: postgres:17-alpine
@@ -46,4 +43,3 @@ services:
 
 volumes:
   db-data:
-  icons-data:

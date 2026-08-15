@@ -7,7 +7,6 @@ import { Badge } from "../components/ui/badge.js";
 import { Button } from "../components/ui/button.js";
 import { LocaleFlag } from "../components/ui/locale-flag.js";
 import { MemberStack } from "../components/ui/member-stack.js";
-import { ProjectIcon } from "../components/ui/project-icon.js";
 import { cx } from "../lib/cx.js";
 import { formatRelativeTime } from "../lib/time.js";
 import { trpc } from "../trpc.js";
@@ -110,11 +109,6 @@ export function ProjectsPage() {
 
                   <div className={cx(spans.name, "min-w-0 px-3 py-2.5")}>
                     <div className="flex items-center gap-2">
-                      <ProjectIcon
-                        projectId={project.id}
-                        name={project.name}
-                        hasIcon={project.iconMimeType !== null}
-                      />
                       <span className="truncate text-ink" title={project.name}>
                         {project.name}
                         <div className="text-ink-3">{project.description}</div>

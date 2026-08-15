@@ -11,8 +11,6 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().optional(),
   /** Base URL used in emailed links. */
   PUBLIC_URL: z.string().optional(),
-  /** Directory where project favicon files are stored. */
-  ICONS_DIR: z.string().default('./data/icons'),
 });
 
 export const env = envSchema.parse(process.env);

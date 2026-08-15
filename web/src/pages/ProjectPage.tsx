@@ -27,7 +27,6 @@ import { LocaleFlag } from "../components/ui/locale-flag.js";
 import { MemberStack } from "../components/ui/member-stack.js";
 import { Modal } from "../components/ui/modal.js";
 import { MultiSelect } from "../components/ui/multi-select.js";
-import { ProjectIcon } from "../components/ui/project-icon.js";
 import { useProjectFilters } from "../lib/project-filters.js";
 import { trpc } from "../trpc.js";
 
@@ -160,12 +159,6 @@ export function ProjectPage() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <ProjectIcon
-                projectId={project.id}
-                name={project.name}
-                hasIcon={project.iconMimeType !== null}
-                size="md"
-              />
               <h1 className="text-lg font-semibold tracking-tight">
                 {project.name}
               </h1>
@@ -296,17 +289,9 @@ export function ProjectPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <ProjectIcon
-              projectId={project.id}
-              name={project.name}
-              hasIcon={project.iconMimeType !== null}
-              size="md"
-            />
-            <h1 className="text-lg font-semibold tracking-tight">
-              {project.name}
-            </h1>
-          </div>
+          <h1 className="text-lg font-semibold tracking-tight">
+            {project.name}
+          </h1>
           {project.description && (
             <p className="mt-1 text-sm text-ink-2">{project.description}</p>
           )}

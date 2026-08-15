@@ -1,15 +1,11 @@
 import { serveStatic } from '@hono/node-server/serve-static';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
-import { eq } from 'drizzle-orm';
 import { existsSync, readFileSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Hono } from 'hono';
 
 import { externalApi } from './api/external.js';
 import type { Database } from './db/client.js';
-import { projects } from './db/schema.js';
-import { env } from './env.js';
 import { appRouter, createContext } from './trpc/index.js';
 
 export function createApp(db: Database, webDist?: string): Hono {
@@ -25,29 +21,6 @@ export function createApp(db: Database, webDist?: string): Hono {
   );
 
   app.route('/', externalApi(db));
-
-  // Stored project favicons. Public: favicons are non-sensitive and the
-  // management UI embeds them by project id.
-  app.get('/api/projects/:id/icon', async (c) => {
-    const projectId = Number(c.req.param('id'));
-    if (!Number.isInteger(projectId)) return c.notFound();
-    const [project] = await db
-      .select({ iconMimeType: projects.iconMimeType })
-      .from(projects)
-      .where(eq(projects.id, projectId))
-      .limit(1);
-    if (!project?.iconMimeType) return c.notFound();
-    try {
-      const bytes = await readFile(join(env.ICONS_DIR, String(projectId)));
-      // Icons are replaced in place on refresh, so always revalidate.
-      return c.body(bytes, 200, {
-        'content-type': project.iconMimeType,
-        'cache-control': 'no-cache',
-      });
-    } catch {
-      return c.notFound();
-    }
-  });
 
   if (webDist && existsSync(join(webDist, 'index.html'))) {
     app.get('*', serveStatic({ root: webDist }));

@@ -111,7 +111,6 @@ function ProjectForm({ mode, projectId, isOwner = false, initialProject, attache
   const update = trpc.projects.update.useMutation();
   const addLocale = trpc.locales.add.useMutation();
   const regenerate = trpc.projects.regenerateApiKey.useMutation();
-  const refreshIcon = trpc.projects.refreshIcon.useMutation();
   const remove = trpc.projects.delete.useMutation();
 
   const catalogById = new Map(catalog.map((locale) => [locale.id, locale]));
@@ -166,19 +165,8 @@ function ProjectForm({ mode, projectId, isOwner = false, initialProject, attache
     }
   }
 
-  async function handleRefreshIcon() {
+  async function handleRegenerate() {
     if (projectId == null) return;
-    setError(null);
-    try {
-      await refreshIcon.mutateAsync({ projectId });
-      await utils.projects.get.invalidate({ projectId });
-      await utils.projects.list.invalidate();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not refresh the icon');
-    }
-  }
-
-  async function handleRegenerate() {    if (projectId == null) return;
     if (!window.confirm('Regenerate the API key? The current key stops working immediately.')) {
       return;
     }
@@ -217,30 +205,11 @@ function ProjectForm({ mode, projectId, isOwner = false, initialProject, attache
           />
         </Field>
         <Field label="URL">
-          <div className="flex items-center gap-2">
-            <Input
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              placeholder="https://… (optional)"
-            />
-            {isEdit && isOwner && (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => void handleRefreshIcon()}
-                disabled={
-                  refreshIcon.isPending ||
-                  url.trim() === '' ||
-                  // refreshIcon fetches the *saved* URL — a dirty field would
-                  // refresh (or clear) the wrong icon.
-                  url.trim() !== (initialProject?.url ?? '')
-                }
-                title="Re-fetch the favicon from the project's URL"
-              >
-                {refreshIcon.isPending ? 'Refreshing…' : 'Refresh icon'}
-              </Button>
-            )}
-          </div>
+          <Input
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            placeholder="https://… (optional)"
+          />
         </Field>
         <Field label="Description">
           <Textarea

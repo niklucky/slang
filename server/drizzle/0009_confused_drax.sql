@@ -1,1 +1,0 @@
-ALTER TABLE "projects" ADD COLUMN "icon_mime_type" text;
