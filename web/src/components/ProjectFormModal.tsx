@@ -228,7 +228,13 @@ function ProjectForm({ mode, projectId, isOwner = false, initialProject, attache
                 size="sm"
                 variant="secondary"
                 onClick={() => void handleRefreshIcon()}
-                disabled={refreshIcon.isPending || url.trim() === ''}
+                disabled={
+                  refreshIcon.isPending ||
+                  url.trim() === '' ||
+                  // refreshIcon fetches the *saved* URL — a dirty field would
+                  // refresh (or clear) the wrong icon.
+                  url.trim() !== (initialProject?.url ?? '')
+                }
                 title="Re-fetch the favicon from the project's URL"
               >
                 {refreshIcon.isPending ? 'Refreshing…' : 'Refresh icon'}

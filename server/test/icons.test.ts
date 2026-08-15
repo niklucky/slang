@@ -45,6 +45,15 @@ beforeAll(async () => {
       case '/plain':
         res.end('<html><head></head><body></body></html>');
         break;
+      case '/svgpage':
+        res.end(
+          '<html><head><link rel="icon" type="image/svg+xml" href="/icon.svg"></head><body></body></html>',
+        );
+        break;
+      case '/icon.svg':
+        res.setHeader('content-type', 'image/svg+xml');
+        res.end('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+        break;
       case '/favicon.ico':
         res.setHeader('content-type', 'image/x-icon');
         res.end(ICO);
@@ -80,7 +89,7 @@ describe('project icons', () => {
     const project = await seedProject(handle, user);
     await handle.db.update(projects).set({ url: baseUrl }).where(eq(projects.id, project.id));
 
-    const mime = await fetchAndStoreIcon(handle.db, project.id, baseUrl, iconsDir);
+    const mime = await fetchAndStoreIcon(handle.db, project.id, baseUrl, iconsDir, true);
     expect(mime).toBe('image/png');
     expect(await iconMimeOf(project.id)).toBe('image/png');
 
@@ -98,7 +107,7 @@ describe('project icons', () => {
       .set({ url: `${baseUrl}/plain` })
       .where(eq(projects.id, project.id));
 
-    const mime = await fetchAndStoreIcon(handle.db, project.id, `${baseUrl}/plain`, iconsDir);
+    const mime = await fetchAndStoreIcon(handle.db, project.id, `${baseUrl}/plain`, iconsDir, true);
     expect(mime).toBe('image/x-icon');
     expect(await iconMimeOf(project.id)).toBe('image/x-icon');
   });
@@ -107,11 +116,29 @@ describe('project icons', () => {
     const user = await seedUser(handle, 'carol@example.com');
     const project = await seedProject(handle, user, 'Empty');
 
-    const mime = await fetchAndStoreIcon(handle.db, project.id, 'http://127.0.0.1:1/', iconsDir);
+    const mime = await fetchAndStoreIcon(handle.db, project.id, 'http://127.0.0.1:1/', iconsDir, true);
     expect(mime).toBeNull();
     expect(await iconMimeOf(project.id)).toBeNull();
 
     const res = await app.request(`/api/projects/${project.id}/icon`);
     expect(res.status).toBe(404);
+  });
+
+  it('rejects SVG icons and falls back to /favicon.ico', async () => {
+    const user = await seedUser(handle, 'dave@example.com');
+    const project = await seedProject(handle, user, 'Svg');
+
+    const mime = await fetchAndStoreIcon(handle.db, project.id, `${baseUrl}/svgpage`, iconsDir, true);
+    expect(mime).toBe('image/x-icon');
+  });
+
+  it('blocks loopback and private addresses by default', async () => {
+    const user = await seedUser(handle, 'erin@example.com');
+    const project = await seedProject(handle, user, 'Internal');
+
+    // No allowPrivateHosts: the fixture on 127.0.0.1 must be refused.
+    const mime = await fetchAndStoreIcon(handle.db, project.id, baseUrl, iconsDir);
+    expect(mime).toBeNull();
+    expect(await iconMimeOf(project.id)).toBeNull();
   });
 });

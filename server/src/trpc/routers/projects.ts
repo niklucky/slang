@@ -162,6 +162,7 @@ export const projectsRouter = router({
       requireOwner(project, ctx.user.id);
       const deleted = await deleteProjectPermanently(ctx.db, input.projectId);
       if (!deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'project_not_found' });
+      await clearIcon(ctx.db, input.projectId);
       return { ok: true };
     }),
 

@@ -39,9 +39,10 @@ export function createApp(db: Database, webDist?: string): Hono {
     if (!project?.iconMimeType) return c.notFound();
     try {
       const bytes = await readFile(join(env.ICONS_DIR, String(projectId)));
+      // Icons are replaced in place on refresh, so always revalidate.
       return c.body(bytes, 200, {
         'content-type': project.iconMimeType,
-        'cache-control': 'public, max-age=300',
+        'cache-control': 'no-cache',
       });
     } catch {
       return c.notFound();
