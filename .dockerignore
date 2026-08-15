@@ -8,8 +8,6 @@
 **/.env
 **/.env.*
 
-server/data
-
 deploy/
 compose.local.yml
 *.md

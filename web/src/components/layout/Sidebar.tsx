@@ -9,7 +9,6 @@ import { Avatar } from "../ui/avatar.js";
 import { IconButton } from "../ui/icon-button.js";
 import { Logo } from "../ui/logo.js";
 import { MemberStack } from "../ui/member-stack.js";
-import { ProjectIcon } from "../ui/project-icon.js";
 import { ThemeToggle } from "../ui/theme-toggle.js";
 
 export function Sidebar() {
@@ -51,12 +50,7 @@ export function Sidebar() {
               >
                 {({ isActive }) => (
                   <>
-                    <div className="flex items-center gap-1.5">
-                      <ProjectIcon
-                        projectId={project.id}
-                        name={project.name}
-                        hasIcon={project.iconMimeType !== null}
-                      />
+                    <div className="flex items-baseline gap-1.5">
                       <span className="shrink-0 text-[11px] font-medium tabular-nums text-ink-3">
                         #{project.id}
                       </span>
