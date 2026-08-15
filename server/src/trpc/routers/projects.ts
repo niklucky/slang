@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { sendInvitationEmail } from '../../lib/email.js';
+import { fetchAndStoreIcon, clearIcon } from '../../services/icons.js';
 import {
   createInvitation,
   listInvitationsForProject,
@@ -76,7 +77,12 @@ export const projectsRouter = router({
 
   create: protectedProcedure
     .input(z.object(projectFields))
-    .mutation(({ ctx, input }) => createProject(ctx.db, ctx.user.id, input)),
+    .mutation(async ({ ctx, input }) => {
+      const project = await createProject(ctx.db, ctx.user.id, input);
+      if (!input.url) return project;
+      const iconMimeType = await fetchAndStoreIcon(ctx.db, project.id, input.url);
+      return { ...project, iconMimeType };
+    }),
 
   update: protectedProcedure
     .input(z.object({ projectId: z.number().int(), ...projectFields }).partial({ name: true, url: true }))
@@ -89,7 +95,27 @@ export const projectsRouter = router({
       requireOwner(project, ctx.user.id);
       const updated = await updateProject(ctx.db, projectId, fields);
       if (!updated) throw new TRPCError({ code: 'NOT_FOUND', message: 'project_not_found' });
+      const urlChanged = fields.url !== undefined && fields.url !== project.url;
+      if (fields.url === null && urlChanged && project.iconMimeType !== null) {
+        await clearIcon(ctx.db, projectId);
+        return { ...updated, iconMimeType: null };
+      }
+      // Also (re)fetch when the URL is unchanged but no icon was ever fetched.
+      if (fields.url && (urlChanged || project.iconMimeType === null)) {
+        const iconMimeType = await fetchAndStoreIcon(ctx.db, projectId, fields.url);
+        return { ...updated, iconMimeType };
+      }
       return updated;
+    }),
+
+  /** Re-fetches the project's favicon from its URL. Owner only. */
+  refreshIcon: protectedProcedure
+    .input(z.object({ projectId: z.number().int() }))
+    .mutation(async ({ ctx, input }) => {
+      const project = await requireProject(ctx.db, input.projectId, ctx.user.id);
+      requireOwner(project, ctx.user.id);
+      const iconMimeType = await fetchAndStoreIcon(ctx.db, input.projectId, project.url);
+      return { iconMimeType };
     }),
 
   regenerateApiKey: protectedProcedure
@@ -136,6 +162,7 @@ export const projectsRouter = router({
       requireOwner(project, ctx.user.id);
       const deleted = await deleteProjectPermanently(ctx.db, input.projectId);
       if (!deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'project_not_found' });
+      await clearIcon(ctx.db, input.projectId);
       return { ok: true };
     }),
 

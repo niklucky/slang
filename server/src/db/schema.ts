@@ -36,6 +36,8 @@ export const projects = pgTable('projects', {
   name: text('name').notNull(),
   url: text('url'),
   description: text('description'),
+  /** Mime type of the favicon stored on disk; null when none was fetched. */
+  iconMimeType: text('icon_mime_type'),
   apiKey: text('api_key').notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
