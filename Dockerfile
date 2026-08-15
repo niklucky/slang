@@ -26,10 +26,13 @@ RUN pnpm --filter slang-server deploy --prod --legacy /app/deploy \
 FROM node:24-alpine
 ENV NODE_ENV=production \
   PORT=5800 \
-  WEB_DIST=/app/web/dist
+  WEB_DIST=/app/web/dist \
+  ICONS_DIR=/app/data/icons
 WORKDIR /app/server
 COPY --from=build /app/deploy/ ./
 COPY --from=build /app/web/dist /app/web/dist
+# Writable by the runtime `node` user; mount a volume here to persist icons.
+RUN mkdir -p /app/data/icons && chown node:node /app/data/icons
 EXPOSE 5800
 USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
