@@ -265,19 +265,25 @@ export async function pushTranslations(
       .values({ projectId, localeId: locale.id })
       .onConflictDoNothing();
 
-    const channelName = input.channel ?? DEFAULT_CHANNEL_NAME;
-    const [channel] = await tx
-      .select()
-      .from(channels)
-      .where(
-        and(
-          eq(channels.projectId, projectId),
-          eq(channels.name, channelName),
-          isNull(channels.deletedAt),
-        ),
-      )
-      .limit(1);
-    if (!channel) throw new ExternalApiError(400, "channel_not_found");
+    let channelId: number | undefined;
+    if (input.channel) {
+      const [channel] = await tx
+        .select()
+        .from(channels)
+        .where(
+          and(
+            eq(channels.projectId, projectId),
+            eq(channels.name, channelName),
+            isNull(channels.deletedAt),
+          ),
+        )
+        .limit(1);
+
+      if (!channel) {
+        throw new ExternalApiError(400, "channel_not_found");
+      }
+      channelId = channel.id;
+    }
 
     let namespaceId: number | undefined;
     if (input.namespace) {
