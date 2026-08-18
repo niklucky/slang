@@ -12,14 +12,6 @@ import {
 } from "../db/schema.js";
 import { upsertWordCore, type Tx } from "./words.js";
 
-/**
- * Translations requested without an explicit `channel` resolve to the
- * project's default channel. Every project gets one at creation, and the old
- * server's write paths only ever produced channel-less translations, so this
- * matches what live clients observe.
- */
-const DEFAULT_CHANNEL_NAME = "default";
-
 export type ExternalApiStatus = 400 | 401 | 404 | 500;
 
 export class ExternalApiError extends Error {
@@ -195,24 +187,29 @@ export function prepareI18Next(
   return result;
 }
 
-/** Most recent `updatedAt` among matching translations, or null. */
+/**
+ * Most recent `updatedAt` among matching translations, or null. Like
+ * `fetchTranslations`, a request without a `channel` sees every channel
+ * (including channel-less rows), matching the old server's probe.
+ */
 export async function fetchTranslationsState(
   db: Database,
   options: FetchTranslationsOptions,
 ): Promise<Date | null> {
-  const channelName = options.channel ?? DEFAULT_CHANNEL_NAME;
   const conditions: (SQL | undefined)[] = [
     eq(words.projectId, options.projectId),
     isNull(translations.deletedAt),
-    eq(channels.name, channelName),
     options.locale ? eq(locales.code, options.locale) : undefined,
   ];
+  if (options.channel) {
+    conditions.push(eq(channels.name, options.channel));
+  }
 
   let query = db
     .select({ updatedAt: translations.updatedAt })
     .from(translations)
     .innerJoin(words, eq(translations.wordId, words.id))
-    .innerJoin(channels, eq(translations.channelId, channels.id))
+    .leftJoin(channels, eq(translations.channelId, channels.id))
     .leftJoin(locales, eq(translations.localeId, locales.id));
 
   if (options.namespace) {
@@ -223,10 +220,6 @@ export async function fetchTranslationsState(
       eq(namespaces.name, options.namespace),
       isNull(namespaces.deletedAt),
     );
-  }
-  if (options.locale) {
-    // locales is left-joined above; filter only when asked.
-    conditions.push(eq(locales.code, options.locale));
   }
 
   const rows = await query
@@ -251,7 +244,8 @@ export interface PushResult {
  * Batch upsert used by the CLI push. Runs as one transaction; empty values
  * are skipped, mirroring the old write path. Missing locales are created and
  * attached to the project so a push never fails on a locale the project has
- * not enabled yet.
+ * not enabled yet. Pushes without a `channel` store channel-less
+ * translations, exactly what the old server's write path produced.
  */
 export async function pushTranslations(
   db: Database,
