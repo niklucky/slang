@@ -296,7 +296,7 @@ export async function pushTranslations(
       const word = await upsertWordCore(tx, {
         projectId,
         key,
-        translations: [{ localeId: locale.id, channelId: channel.id, value }],
+        translations: [{ localeId: locale.id, channelId, value }],
       });
       if (namespaceId !== undefined) {
         await tx
