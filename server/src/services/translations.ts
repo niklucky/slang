@@ -273,7 +273,7 @@ export async function pushTranslations(
         .where(
           and(
             eq(channels.projectId, projectId),
-            eq(channels.name, channelName),
+            eq(channels.name, input.channel),
             isNull(channels.deletedAt),
           ),
         )
