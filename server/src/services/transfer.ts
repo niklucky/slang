@@ -146,19 +146,6 @@ export async function importWordsCsv(
         .onConflictDoNothing();
     }
 
-    const [defaultChannel] = await tx
-      .select({ id: channels.id })
-      .from(channels)
-      .where(
-        and(
-          eq(channels.projectId, projectId),
-          eq(channels.name, DEFAULT_CHANNEL_NAME),
-          isNull(channels.deletedAt),
-        ),
-      )
-      .limit(1);
-    const channelId = defaultChannel?.id ?? null;
-
     let keys = 0;
     for (const row of rows.slice(1)) {
       const key = (row[0] ?? '').trim();
@@ -169,7 +156,6 @@ export async function importWordsCsv(
         changedById,
         translations: codes.map((code, index) => ({
           localeId: idsByCode.get(code)!,
-          channelId,
           value: row[index + 1] ?? '',
         })),
       });
