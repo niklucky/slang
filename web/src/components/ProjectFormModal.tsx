@@ -228,7 +228,9 @@ function ProjectForm({ mode, projectId, isOwner = false, initialProject, attache
               <Button
                 size="sm"
                 variant="secondary"
-                aria-label="Refresh icon"
+                aria-label={
+                  refreshIcon.isPending ? 'Refreshing favicon…' : 'Refresh favicon'
+                }
                 title="Re-fetch the favicon from the project's URL"
                 onClick={() => void handleRefreshIcon()}
                 disabled={

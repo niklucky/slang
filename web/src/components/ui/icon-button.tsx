@@ -1,15 +1,17 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, Ref } from 'react';
 
 import { cx } from '../../lib/cx.js';
 
 export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label: string;
   size?: 'sm' | 'md';
+  ref?: Ref<HTMLButtonElement>;
 }
 
-export function IconButton({ label, size = 'md', className, type = 'button', ...rest }: IconButtonProps) {
+export function IconButton({ label, size = 'md', className, type = 'button', ref, ...rest }: IconButtonProps) {
   return (
     <button
+      ref={ref}
       type={type}
       aria-label={label}
       title={label}

@@ -1,5 +1,5 @@
 import { Menu } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 
 import { cx } from '../../lib/cx.js';
@@ -8,9 +8,15 @@ import { IconButton } from '../ui/icon-button.js';
 import { Logo } from '../ui/logo.js';
 import { Sidebar } from './Sidebar.js';
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -20,14 +26,48 @@ export function AppLayout() {
     if (!menuOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMenuOpen(false);
-    };
-    window.addEventListener('keydown', onKey);
+    drawerRef.current?.focus();
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const panel = drawerRef.current;
+      if (!panel) return;
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === panel)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown, true);
     return () => {
       document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('keydown', onKeyDown, true);
     };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (menuOpen) {
+      wasOpenRef.current = true;
+      return;
+    }
+    if (wasOpenRef.current) {
+      wasOpenRef.current = false;
+      triggerRef.current?.focus();
+    }
   }, [menuOpen]);
 
   return (
@@ -37,7 +77,11 @@ export function AppLayout() {
           <Logo size="sm" />
           <span className="text-[15px] font-semibold tracking-tight">Slang</span>
         </Link>
-        <IconButton label="Open menu" onClick={() => setMenuOpen(true)}>
+        <IconButton
+          ref={triggerRef}
+          label="Open menu"
+          onClick={() => setMenuOpen(true)}
+        >
           <Menu size={18} />
         </IconButton>
       </header>
@@ -50,6 +94,7 @@ export function AppLayout() {
         <div
           className={cx('fixed inset-0 z-40 md:hidden', !menuOpen && 'pointer-events-none')}
           aria-hidden={!menuOpen}
+          inert={!menuOpen}
         >
           <div
             className={cx(
@@ -59,11 +104,13 @@ export function AppLayout() {
             onClick={() => setMenuOpen(false)}
           />
           <div
+            ref={drawerRef}
             role="dialog"
             aria-modal="true"
             aria-label="Menu"
+            tabIndex={-1}
             className={cx(
-              'absolute inset-y-0 left-0 w-72 max-w-[85vw] transform bg-bg shadow-xl transition-transform duration-200 ease-out',
+              'absolute inset-y-0 left-0 w-72 max-w-[85vw] transform bg-bg shadow-xl transition-transform duration-200 ease-out focus:outline-none',
               menuOpen ? 'translate-x-0' : '-translate-x-full',
             )}
           >
