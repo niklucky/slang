@@ -5,6 +5,9 @@ React and React Native client for the [Slang](https://slang.warpunit.com) transl
 **No runtime dependencies.** React is a peer. Works in the browser, in React Native and in
 Node (the CLI), because it imports nothing platform-specific.
 
+> **AI agents:** a compact integration guide is served at
+> <https://slang.warpunit.com/llms.txt> (source: `docs/integration.md` in the repo).
+
 ```bash
 pnpm add @warpunit/slang-react
 ```
