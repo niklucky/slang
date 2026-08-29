@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RefreshCw } from 'lucide-react';
 
 import { trpc } from '../trpc.js';
 import { Badge } from './ui/badge.js';
@@ -227,6 +228,10 @@ function ProjectForm({ mode, projectId, isOwner = false, initialProject, attache
               <Button
                 size="sm"
                 variant="secondary"
+                aria-label={
+                  refreshIcon.isPending ? 'Refreshing favicon…' : 'Refresh favicon'
+                }
+                title="Re-fetch the favicon from the project's URL"
                 onClick={() => void handleRefreshIcon()}
                 disabled={
                   refreshIcon.isPending ||
@@ -235,9 +240,11 @@ function ProjectForm({ mode, projectId, isOwner = false, initialProject, attache
                   // refresh (or clear) the wrong icon.
                   url.trim() !== (initialProject?.url ?? '')
                 }
-                title="Re-fetch the favicon from the project's URL"
               >
-                {refreshIcon.isPending ? 'Refreshing…' : 'Refresh icon'}
+                <RefreshCw
+                  size={14}
+                  className={refreshIcon.isPending ? 'animate-spin' : undefined}
+                />
               </Button>
             )}
           </div>
@@ -320,30 +327,29 @@ function ProjectForm({ mode, projectId, isOwner = false, initialProject, attache
 
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
-      <div className="-mx-5 -mb-4 mt-5 flex items-center gap-2 rounded-b-xl border-t border-line px-5 py-4">
+      <div className="-mx-5 -mb-4 mt-5 flex flex-col gap-4 rounded-b-xl border-t border-line px-5 py-4">
         {isEdit && isOwner && (
           <Button
             variant="danger"
+            className="w-full"
             onClick={() => setConfirmingDelete(true)}
             disabled={saving || remove.isPending}
           >
             Delete project
           </Button>
         )}
-        <div className="ml-auto flex gap-2">
-          <Button variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={saving}>
-            {saving
-              ? isEdit
-                ? 'Saving…'
-                : 'Creating…'
-              : isEdit
-                ? 'Save changes'
-                : 'Create project'}
-          </Button>
-        </div>
+        <Button variant="secondary" className="w-full" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" className="w-full" disabled={saving}>
+          {saving
+            ? isEdit
+              ? 'Saving…'
+              : 'Creating…'
+            : isEdit
+              ? 'Save changes'
+              : 'Create project'}
+        </Button>
       </div>
 
       {isEdit && isOwner && (
@@ -431,18 +437,21 @@ function DeletedProjectPanel({
 
       {error && <p className="mt-3 text-sm text-danger">{error}</p>}
 
-      <div className="-mx-5 -mb-4 mt-5 flex items-center gap-2 rounded-b-xl border-t border-line px-5 py-4">
-        <Button variant="secondary" onClick={onClose}>
+      <div className="-mx-5 -mb-4 mt-5 flex flex-col gap-4 rounded-b-xl border-t border-line px-5 py-4">
+        <Button variant="secondary" className="w-full" onClick={onClose}>
           Close
         </Button>
-        <div className="ml-auto flex gap-2">
-          <Button variant="danger" disabled={busy} onClick={() => setConfirming(true)}>
-            Delete permanently
-          </Button>
-          <Button disabled={busy} onClick={() => void handleRestore()}>
-            {restore.isPending ? 'Restoring…' : 'Restore'}
-          </Button>
-        </div>
+        <Button
+          variant="danger"
+          className="w-full"
+          disabled={busy}
+          onClick={() => setConfirming(true)}
+        >
+          Delete permanently
+        </Button>
+        <Button className="w-full" disabled={busy} onClick={() => void handleRestore()}>
+          {restore.isPending ? 'Restoring…' : 'Restore'}
+        </Button>
       </div>
 
       <Modal

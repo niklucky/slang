@@ -1,4 +1,4 @@
-import { LogOut, Plus } from "lucide-react";
+import { LogOut, Plus, X } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
 
 import { cx } from "../../lib/cx.js";
@@ -12,18 +12,25 @@ import { MemberStack } from "../ui/member-stack.js";
 import { ProjectIcon } from "../ui/project-icon.js";
 import { ThemeToggle } from "../ui/theme-toggle.js";
 
-export function Sidebar() {
+export function Sidebar({ onClose }: { onClose?: () => void }) {
   const projects = trpc.projects.list.useQuery();
   const me = trpc.auth.me.useQuery();
   const logout = useLogout();
   const user = me.data;
 
   return (
-    <aside className="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r border-line">
-      <Link className="flex items-center gap-2.5 px-4 pb-4 pt-5" to="/">
-        <Logo size="sm" />
-        <span className="text-[15px] font-semibold tracking-tight">Slang</span>
-      </Link>
+    <aside className="sticky top-0 flex h-screen w-full flex-col border-r border-line md:w-64 md:shrink-0">
+      <div className="flex items-center justify-between pr-3">
+        <Link className="flex items-center gap-2.5 px-4 pb-4 pt-5" to="/">
+          <Logo size="sm" />
+          <span className="text-[15px] font-semibold tracking-tight">Slang</span>
+        </Link>
+        {onClose && (
+          <IconButton label="Close menu" onClick={onClose}>
+            <X size={18} />
+          </IconButton>
+        )}
+      </div>
 
       <nav className="flex-1 overflow-y-auto px-2.5 pb-4">
         <div className="flex items-center justify-between px-1.5 pb-1.5 pt-3">

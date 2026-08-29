@@ -1,4 +1,5 @@
 import {
+  ChevronDown,
   Download,
   MoreHorizontal,
   Plus,
@@ -28,6 +29,7 @@ import { MemberStack } from "../components/ui/member-stack.js";
 import { Modal } from "../components/ui/modal.js";
 import { MultiSelect } from "../components/ui/multi-select.js";
 import { ProjectIcon } from "../components/ui/project-icon.js";
+import { cx } from "../lib/cx.js";
 import { useProjectFilters } from "../lib/project-filters.js";
 import { trpc } from "../trpc.js";
 
@@ -139,6 +141,7 @@ export function ProjectPage() {
   const [draft, setDraft] = useState("");
   const [editingKeyId, setEditingKeyId] = useState<number | null>(null);
   const [keyDraft, setKeyDraft] = useState("");
+  const [toolbarOpen, setToolbarOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
   const [addKeyOpen, setAddKeyOpen] = useState(false);
@@ -157,7 +160,7 @@ export function ProjectPage() {
   if (project.deletedAt !== null) {
     return (
       <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <ProjectIcon
@@ -289,7 +292,7 @@ export function ProjectPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <ProjectIcon
@@ -306,7 +309,7 @@ export function ProjectPage() {
             <p className="mt-1 text-sm text-ink-2">{project.description}</p>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
           <MemberStack names={members.map((member) => member.name)} />
           <Button
             variant="secondary"
@@ -336,137 +339,169 @@ export function ProjectPage() {
       </div>
 
       <section className="rounded-xl border border-line bg-surface">
-        <div className="flex flex-wrap items-center gap-2 border-b border-line p-3">
-          <Input
-            size="sm"
-            value={search}
-            onChange={(event) =>
-              setFilters((prev) => ({ ...prev, search: event.target.value }))
-            }
-            placeholder="Search keys and values…"
-            className="max-w-sm"
-          />
-          <span className="text-sm text-ink-3">Total: {totalKeys} keys</span>
-          <MultiSelect
-            size="sm"
-            className="w-48"
-            allLabel="All locales"
-            options={locales.map((locale) => ({
-              value: String(locale.id),
-              label: (
-                <LocaleFlag code={locale.code} name={locale.name} />
-              ),
-              triggerLabel: locale.code,
-              hint: `${locale.code} — ${locale.name}`,
-            }))}
-            selected={visibleLocales.map((locale) => String(locale.id))}
-            onChange={(next) => {
-              const selectedIds = new Set(next.map(Number));
-              setFilters((prev) => ({
-                ...prev,
-                excludedLocaleIds: locales
-                  .filter((locale) => !selectedIds.has(locale.id))
-                  .map((locale) => locale.id),
-              }));
-            }}
-          />
-          <label
-            className="flex h-8 cursor-pointer items-center gap-2 rounded-lg bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
-            title="Show only keys missing a translation in the selected locales"
-          >
-            <input
-              type="checkbox"
-              className="accent-accent"
-              checked={missingOnly}
-              onChange={() =>
-                setFilters((prev) => ({ ...prev, missingOnly: !prev.missingOnly }))
-              }
-            />
-            Missing only
-          </label>
-          <label
-            className="flex h-8 cursor-pointer items-center gap-2 rounded-lg bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
-            title="Show deleted keys instead of live ones"
-          >
-            <input
-              type="checkbox"
-              className="accent-accent"
-              checked={showDeleted}
-              onChange={() =>
-                setFilters((prev) => ({ ...prev, showDeleted: !prev.showDeleted }))
-              }
-            />
-            Show deleted
-          </label>
-          <div className="ml-auto flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setImportOpen(true)}
+        <div className="border-b border-line p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:flex-none">
+              <Input
+                size="sm"
+                value={search}
+                onChange={(event) =>
+                  setFilters((prev) => ({ ...prev, search: event.target.value }))
+                }
+                placeholder="Search keys and values…"
+                className="min-w-0 flex-1 sm:w-auto sm:max-w-sm sm:flex-none"
+              />
+              <IconButton
+                label={toolbarOpen ? "Hide toolbar" : "Show toolbar"}
+                onClick={() => setToolbarOpen((previous) => !previous)}
+                className="shrink-0 sm:hidden"
+              >
+                <ChevronDown
+                  size={16}
+                  className={cx(
+                    "transition-transform",
+                    toolbarOpen && "rotate-180",
+                  )}
+                />
+              </IconButton>
+            </div>
+            <div
+              className={cx(
+                "w-full flex-col gap-2 sm:flex sm:w-auto sm:flex-1 sm:flex-row sm:flex-wrap sm:items-center",
+                toolbarOpen ? "flex" : "hidden",
+              )}
             >
-              <Upload size={14} />
-              Import
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setExportOpen(true)}
-              disabled={locales.length === 0}
-            >
-              <Download size={14} />
-              Export
-            </Button>
-            {showDeleted ? (
-              <>
+              <span className="text-sm text-ink-3">
+                Total: {totalKeys} keys
+              </span>
+              <MultiSelect
+                size="sm"
+                className="w-full sm:w-48"
+                allLabel="All locales"
+                options={locales.map((locale) => ({
+                  value: String(locale.id),
+                  label: (
+                    <LocaleFlag code={locale.code} name={locale.name} />
+                  ),
+                  triggerLabel: locale.code,
+                  hint: `${locale.code} — ${locale.name}`,
+                }))}
+                selected={visibleLocales.map((locale) => String(locale.id))}
+                onChange={(next) => {
+                  const selectedIds = new Set(next.map(Number));
+                  setFilters((prev) => ({
+                    ...prev,
+                    excludedLocaleIds: locales
+                      .filter((locale) => !selectedIds.has(locale.id))
+                      .map((locale) => locale.id),
+                  }));
+                }}
+              />
+              <label
+                className="flex h-8 cursor-pointer items-center gap-2 rounded-lg bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
+                title="Show only keys missing a translation in the selected locales"
+              >
+                <input
+                  type="checkbox"
+                  className="accent-accent"
+                  checked={missingOnly}
+                  onChange={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      missingOnly: !prev.missingOnly,
+                    }))
+                  }
+                />
+                Missing only
+              </label>
+              <label
+                className="flex h-8 cursor-pointer items-center gap-2 rounded-lg bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
+                title="Show deleted keys instead of live ones"
+              >
+                <input
+                  type="checkbox"
+                  className="accent-accent"
+                  checked={showDeleted}
+                  onChange={() =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      showDeleted: !prev.showDeleted,
+                    }))
+                  }
+                />
+                Show deleted
+              </label>
+              <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
                 <Button
                   variant="secondary"
-                  size="md"
-                  disabled={selectedCount === 0}
-                  onClick={() => setConfirmAction("restore")}
+                  size="sm"
+                  onClick={() => setImportOpen(true)}
                 >
-                  Restore{selectedCount > 0 ? ` (${selectedCount})` : ""}
+                  <Upload size={14} />
+                  Import
                 </Button>
-                <Button
-                  variant="danger"
-                  size="md"
-                  disabled={selectedCount === 0}
-                  onClick={() => setConfirmAction("deletePermanently")}
-                >
-                  Delete permanently
-                  {selectedCount > 0 ? ` (${selectedCount})` : ""}
-                </Button>
-              </>
-            ) : (
-              <>
                 <Button
                   variant="secondary"
-                  size="md"
-                  disabled
-                  title="Coming soon"
+                  size="sm"
+                  onClick={() => setExportOpen(true)}
+                  disabled={locales.length === 0}
                 >
-                  <Wand2 size={14} />
-                  Auto translate
+                  <Download size={14} />
+                  Export
                 </Button>
-                <Button
-                  variant="danger"
-                  size="md"
-                  disabled={selectedCount === 0}
-                  onClick={() => setConfirmAction("delete")}
-                >
-                  Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
-                </Button>
-              </>
-            )}
+                {showDeleted ? (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      disabled={selectedCount === 0}
+                      onClick={() => setConfirmAction("restore")}
+                    >
+                      Restore{selectedCount > 0 ? ` (${selectedCount})` : ""}
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="md"
+                      disabled={selectedCount === 0}
+                      onClick={() => setConfirmAction("deletePermanently")}
+                    >
+                      Delete permanently
+                      {selectedCount > 0 ? ` (${selectedCount})` : ""}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      disabled
+                      title="Coming soon"
+                    >
+                      <Wand2 size={14} />
+                      Auto translate
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="md"
+                      disabled={selectedCount === 0}
+                      onClick={() => setConfirmAction("delete")}
+                    >
+                      Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full border-separate border-spacing-0 text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-ink-3">
-                <th className="sticky left-0 z-20 w-12 min-w-12 border-b border-r border-line bg-surface px-3 py-2 text-right font-medium">
+                <th className="sticky left-0 z-20 hidden w-12 min-w-12 border-b border-r border-line bg-surface px-3 py-2 text-right font-medium sm:table-cell">
                   #
                 </th>
-                <th className="sticky left-12 z-20 min-w-48 border-b border-r border-line bg-surface px-3 py-2 font-medium">
+                <th className="sticky left-0 z-20 min-w-36 border-b border-r border-line bg-surface px-3 py-2 font-medium sm:left-12 sm:min-w-48">
                   <label className="flex items-center gap-2">
                     <input
                       ref={selectAllRef}
@@ -482,7 +517,7 @@ export function ProjectPage() {
                 {visibleLocales.map((locale) => (
                   <th
                     key={locale.id}
-                    className="min-w-40 border-b border-line bg-surface px-3 py-2 font-medium"
+                    className="min-w-36 border-b border-line bg-surface px-3 py-2 font-medium sm:min-w-40"
                   >
                     <span className="flex items-center gap-2">
                       <LocaleFlag
@@ -494,7 +529,7 @@ export function ProjectPage() {
                     </span>
                   </th>
                 ))}
-                <th className="sticky right-0 z-20 border-b border-l border-line bg-surface px-3 py-2" />
+                <th className="sticky right-0 z-20 hidden border-b border-l border-line bg-surface px-2 py-2 sm:table-cell sm:px-3" />
               </tr>
             </thead>
             <tbody>
@@ -510,7 +545,7 @@ export function ProjectPage() {
                     }`}
                   >
                     <td
-                      className={`sticky left-0 z-10 w-12 min-w-12 border-b border-r border-line px-3 py-2 text-right text-xs ${
+                      className={`sticky left-0 z-10 hidden w-12 min-w-12 border-b border-r border-line px-3 py-2 text-right text-xs sm:table-cell ${
                         isDeleted
                           ? "bg-danger-soft text-danger"
                           : "bg-surface text-ink-3 group-hover:bg-fill"
@@ -519,7 +554,7 @@ export function ProjectPage() {
                       {index + 1}
                     </td>
                     <td
-                      className={`sticky left-12 z-10 border-b border-r border-line px-3 py-2 font-mono text-xs ${
+                      className={`sticky left-0 z-10 border-b border-r border-line px-3 py-2 font-mono text-xs sm:left-12 ${
                         isDeleted
                           ? "bg-danger-soft text-danger"
                           : "bg-surface text-ink-2 group-hover:bg-fill"
@@ -572,7 +607,7 @@ export function ProjectPage() {
                         <IconButton
                           label={`Details for ${word.key}`}
                           size="sm"
-                          className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+                          className="opacity-100 transition-opacity focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                           onClick={() => setDetailWord(word)}
                         >
                           <MoreHorizontal size={14} />
@@ -642,7 +677,7 @@ export function ProjectPage() {
                       );
                     })}
                     <td
-                      className={`sticky right-0 z-10 border-b border-l border-line px-3 py-2 text-right ${
+                      className={`sticky right-0 z-10 hidden border-b border-l border-line px-2 py-2 text-right sm:table-cell sm:px-3 ${
                         isDeleted
                           ? "bg-danger-soft"
                           : "bg-surface group-hover:bg-fill"
