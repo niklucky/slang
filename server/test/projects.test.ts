@@ -2,7 +2,6 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
 import {
-  channels,
   projects,
   projectsToLocales,
   Role,
@@ -29,7 +28,6 @@ interface AuthResult {
 interface ProjectDetails {
   project: Project;
   locales: Array<{ id: number; code: string }>;
-  channels: Array<{ id: number; name: string }>;
   namespaces: Array<{ id: number; name: string }>;
   wordCount: number;
   members: Array<{ name: string }>;
@@ -49,7 +47,7 @@ interface WordRow {
   id: number;
   key: string;
   deletedAt: string | null;
-  translations: Array<{ value: string; localeCode: string; channelId: number }>;
+  translations: Array<{ value: string; localeCode: string }>;
 }
 
 interface WordsPage {
@@ -67,7 +65,7 @@ async function login(email: string): Promise<AuthResult> {
 }
 
 describe('projects', () => {
-  it('create returns a project with a 64-char api key; get shows a default channel', async () => {
+  it('create returns a project with a 64-char api key; get shows the fresh state', async () => {
     const { accessToken } = await login('alice@example.com');
     const project = await trpc<Project>(app, 'projects.create', {
       input: { name: 'Demo', url: 'https://demo.dev' },
@@ -80,7 +78,6 @@ describe('projects', () => {
       input: { projectId: project.id },
       token: accessToken,
     });
-    expect(details.channels.map((channel) => channel.name)).toEqual(['default']);
     expect(details.locales).toEqual([]);
     expect(details.wordCount).toBe(0);
     expect(details.members).toEqual([{ name: 'alice' }]);
@@ -296,12 +293,6 @@ describe('projects', () => {
       input: { name: 'Doomed', url: null },
       token: accessToken,
     });
-    const details = await trpc<ProjectDetails>(app, 'projects.get', {
-      kind: 'query',
-      input: { projectId: project.id },
-      token: accessToken,
-    });
-    const channelId = details.channels[0]!.id;
     const catalog = await trpc<Array<{ id: number; code: string }>>(app, 'locales.catalog', {
       kind: 'query',
       token: accessToken,
@@ -315,7 +306,7 @@ describe('projects', () => {
       input: {
         projectId: project.id,
         key: 'greeting',
-        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+        translations: [{ localeId: en.id, value: 'Hello' }],
       },
       token: accessToken,
     });
@@ -340,7 +331,6 @@ describe('projects', () => {
     expect(await handle.db.select().from(projects)).toHaveLength(0);
     expect(await handle.db.select().from(usersToProjects)).toHaveLength(0);
     expect(await handle.db.select().from(projectsToLocales)).toHaveLength(0);
-    expect(await handle.db.select().from(channels)).toHaveLength(0);
     expect(await handle.db.select().from(words)).toHaveLength(0);
     expect(await handle.db.select().from(translations)).toHaveLength(0);
     expect(await handle.db.select().from(translationVersions)).toHaveLength(0);
@@ -470,12 +460,6 @@ describe('projects', () => {
       input: { name: 'Demo', url: 'https://demo.dev' },
       token: accessToken,
     });
-    const details = await trpc<ProjectDetails>(app, 'projects.get', {
-      kind: 'query',
-      input: { projectId: project.id },
-      token: accessToken,
-    });
-    const channelId = details.channels[0]!.id;
 
     const catalog = await trpc<Array<{ id: number; code: string }>>(app, 'locales.catalog', {
       kind: 'query',
@@ -496,8 +480,8 @@ describe('projects', () => {
         projectId: project.id,
         key: 'full',
         translations: [
-          { localeId: en.id, channelId, value: 'Full' },
-          { localeId: de.id, channelId, value: 'Voll' },
+          { localeId: en.id, value: 'Full' },
+          { localeId: de.id, value: 'Voll' },
         ],
       },
       token: accessToken,
@@ -507,7 +491,7 @@ describe('projects', () => {
       input: {
         projectId: project.id,
         key: 'partial',
-        translations: [{ localeId: en.id, channelId, value: 'Partial' }],
+        translations: [{ localeId: en.id, value: 'Partial' }],
       },
       token: accessToken,
     });
@@ -610,12 +594,6 @@ describe('projects', () => {
       input: { name: 'Active', url: null },
       token: accessToken,
     });
-    const details = await trpc<ProjectDetails>(app, 'projects.get', {
-      kind: 'query',
-      input: { projectId: project.id },
-      token: accessToken,
-    });
-    const channelId = details.channels[0]!.id;
     const catalog = await trpc<Array<{ id: number; code: string }>>(app, 'locales.catalog', {
       kind: 'query',
       token: accessToken,
@@ -639,7 +617,7 @@ describe('projects', () => {
       input: {
         projectId: project.id,
         key: 'greeting',
-        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+        translations: [{ localeId: en.id, value: 'Hello' }],
       },
       token: accessToken,
     });
@@ -655,11 +633,6 @@ describe('words', () => {
       input: { name: 'Demo', url: 'https://demo.dev' },
       token: session.accessToken,
     });
-    const details = await trpc<ProjectDetails>(app, 'projects.get', {
-      kind: 'query',
-      input: { projectId: project.id },
-      token: session.accessToken,
-    });
     const catalog = await trpc<Array<{ id: number; code: string }>>(app, 'locales.catalog', {
       kind: 'query',
       token: session.accessToken,
@@ -669,18 +642,17 @@ describe('words', () => {
       input: { projectId: project.id, localeId: en.id },
       token: session.accessToken,
     });
-    const channelId = details.channels[0]!.id;
-    return { ...session, project, en, channelId };
+    return { ...session, project, en };
   }
 
   it('upsert creates the key and translations; list returns them', async () => {
-    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    const { accessToken, project, en } = await createProjectWithLocale('alice@example.com');
 
     await trpc(app, 'words.upsert', {
       input: {
         projectId: project.id,
         key: 'greeting',
-        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+        translations: [{ localeId: en.id, value: 'Hello' }],
       },
       token: accessToken,
     });
@@ -706,12 +678,12 @@ describe('words', () => {
   });
 
   it('remove soft-deletes the word', async () => {
-    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    const { accessToken, project, en } = await createProjectWithLocale('alice@example.com');
     await trpc(app, 'words.upsert', {
       input: {
         projectId: project.id,
         key: 'greeting',
-        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+        translations: [{ localeId: en.id, value: 'Hello' }],
       },
       token: accessToken,
     });
@@ -734,13 +706,13 @@ describe('words', () => {
   });
 
   it('list with deleted: true returns only soft-deleted words', async () => {
-    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    const { accessToken, project, en } = await createProjectWithLocale('alice@example.com');
     for (const key of ['greeting', 'farewell']) {
       await trpc(app, 'words.upsert', {
         input: {
           projectId: project.id,
           key,
-          translations: [{ localeId: en.id, channelId, value: key }],
+          translations: [{ localeId: en.id, value: key }],
         },
         token: accessToken,
       });
@@ -779,12 +751,12 @@ describe('words', () => {
   });
 
   it('removePermanently rejects a live word and leaves it unchanged', async () => {
-    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    const { accessToken, project, en } = await createProjectWithLocale('alice@example.com');
     await trpc(app, 'words.upsert', {
       input: {
         projectId: project.id,
         key: 'greeting',
-        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+        translations: [{ localeId: en.id, value: 'Hello' }],
       },
       token: accessToken,
     });
@@ -816,12 +788,12 @@ describe('words', () => {
   });
 
   it('removePermanently deletes the word and its translations from the db', async () => {
-    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    const { accessToken, project, en } = await createProjectWithLocale('alice@example.com');
     await trpc(app, 'words.upsert', {
       input: {
         projectId: project.id,
         key: 'greeting',
-        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+        translations: [{ localeId: en.id, value: 'Hello' }],
       },
       token: accessToken,
     });
@@ -852,12 +824,12 @@ describe('words', () => {
   });
 
   it('restore brings back a soft-deleted word with its translations', async () => {
-    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    const { accessToken, project, en } = await createProjectWithLocale('alice@example.com');
     await trpc(app, 'words.upsert', {
       input: {
         projectId: project.id,
         key: 'greeting',
-        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+        translations: [{ localeId: en.id, value: 'Hello' }],
       },
       token: accessToken,
     });
@@ -910,13 +882,13 @@ describe('words', () => {
   });
 
   it('list paginates with limit/cursor and total reflects the search filter', async () => {
-    const { accessToken, project, en, channelId } = await createProjectWithLocale('alice@example.com');
+    const { accessToken, project, en } = await createProjectWithLocale('alice@example.com');
     for (const key of ['alpha', 'beta', 'gamma']) {
       await trpc(app, 'words.upsert', {
         input: {
           projectId: project.id,
           key,
-          translations: [{ localeId: en.id, channelId, value: key }],
+          translations: [{ localeId: en.id, value: key }],
         },
         token: accessToken,
       });

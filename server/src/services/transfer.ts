@@ -1,27 +1,10 @@
 import { TRPCError } from '@trpc/server';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 
 import type { Database } from '../db/client.js';
-import { channels, locales, projectsToLocales } from '../db/schema.js';
+import { locales, projectsToLocales } from '../db/schema.js';
 import { parseCsv, serializeCsv, CsvParseError } from '../lib/csv.js';
 import { listWords, upsertWordCore } from './words.js';
-
-const DEFAULT_CHANNEL_NAME = 'default';
-
-async function findDefaultChannel(db: Database, projectId: number) {
-  const [channel] = await db
-    .select({ id: channels.id })
-    .from(channels)
-    .where(
-      and(
-        eq(channels.projectId, projectId),
-        eq(channels.name, DEFAULT_CHANNEL_NAME),
-        isNull(channels.deletedAt),
-      ),
-    )
-    .limit(1);
-  return channel ?? null;
-}
 
 export interface ExportWordsOptions {
   projectId: number;
@@ -36,8 +19,7 @@ export interface ExportWordsOptions {
 
 /**
  * Builds a CSV with a `key` column followed by one column per selected
- * locale code. Translations resolve to the project's default channel (falling
- * back to a channel-less one), matching what the UI edits.
+ * locale code.
  */
 export async function exportWordsCsv(db: Database, options: ExportWordsOptions): Promise<string> {
   const rows = await db
@@ -60,7 +42,6 @@ export async function exportWordsCsv(db: Database, options: ExportWordsOptions):
   // Keep the caller's locale order.
   const selected = options.localeIds.map((id) => ({ id, code: codesById.get(id)! }));
 
-  const defaultChannel = await findDefaultChannel(db, options.projectId);
   // Export covers every key; page through the listing.
   const list: Awaited<ReturnType<typeof listWords>>['items'] = [];
   let cursor: number | null = 0;
@@ -75,11 +56,7 @@ export async function exportWordsCsv(db: Database, options: ExportWordsOptions):
   for (const word of list) {
     if (wordIds && !wordIds.has(word.id)) continue;
     const values = selected.map((locale) => {
-      const candidates = word.translations.filter((t) => t.localeId === locale.id);
-      const match =
-        candidates.find((t) => t.channelId === defaultChannel?.id) ??
-        candidates.find((t) => t.channelId === null) ??
-        candidates[0];
+      const match = word.translations.find((t) => t.localeId === locale.id);
       return match?.value ?? '';
     });
     if (options.missingOnly && values.every((value) => value !== '')) continue;

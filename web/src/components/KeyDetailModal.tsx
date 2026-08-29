@@ -20,7 +20,6 @@ export interface KeyDetailModalProps {
   projectId: number;
   word: KeyDetailWord;
   locales: CatalogLocale[];
-  channelId: number | undefined;
   open: boolean;
   onClose: () => void;
 }
@@ -34,7 +33,6 @@ export function KeyDetailModal({
   projectId,
   word,
   locales,
-  channelId,
   open,
   onClose,
 }: KeyDetailModalProps) {
@@ -76,7 +74,6 @@ export function KeyDetailModal({
         key: nextKey || word.key,
         translations: locales.map((locale) => ({
           localeId: locale.id,
-          channelId: channelId ?? null,
           value: values[locale.id] ?? "",
         })),
       },

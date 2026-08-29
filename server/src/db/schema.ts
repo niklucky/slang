@@ -100,28 +100,6 @@ export const projectsToLocales = pgTable(
   (t) => [primaryKey({ columns: [t.projectId, t.localeId] })],
 );
 
-/**
- * Environments. Projects created through the app get a `default` channel, but
- * `translations.channelId` stays nullable so saves work for projects without one.
- */
-export const channels = pgTable(
-  'channels',
-  {
-    id: serial('id').primaryKey(),
-    projectId: integer('project_id')
-      .notNull()
-      .references(() => projects.id),
-    name: text('name').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    deletedAt: timestamp('deleted_at', { withTimezone: true }),
-  },
-  (t) => [
-    uniqueIndex('channels_project_name_unique')
-      .on(t.projectId, t.name)
-      .where(sql`deleted_at IS NULL`),
-  ],
-);
-
 export const namespaces = pgTable(
   'namespaces',
   {
@@ -185,15 +163,14 @@ export const translations = pgTable(
     localeId: integer('locale_id')
       .notNull()
       .references(() => locales.id),
-    channelId: integer('channel_id').references(() => channels.id),
     value: text('value').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp('deleted_at', { withTimezone: true }),
   },
   (t) => [
-    uniqueIndex('translations_word_locale_channel_unique')
-      .on(t.wordId, t.localeId, t.channelId)
+    uniqueIndex('translations_word_locale_unique')
+      .on(t.wordId, t.localeId)
       .where(sql`deleted_at IS NULL`),
   ],
 );
@@ -211,7 +188,6 @@ export const translationVersions = pgTable('translation_versions', {
   localeId: integer('locale_id')
     .notNull()
     .references(() => locales.id),
-  channelId: integer('channel_id').references(() => channels.id),
   oldValue: text('old_value'),
   newValue: text('new_value'),
   changedById: integer('changed_by_id').references(() => users.id),
@@ -238,7 +214,6 @@ export const wordVersions = pgTable('word_versions', {
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Locale = typeof locales.$inferSelect;
-export type Channel = typeof channels.$inferSelect;
 export type Namespace = typeof namespaces.$inferSelect;
 export type Word = typeof words.$inferSelect;
 export type Translation = typeof translations.$inferSelect;
@@ -253,5 +228,3 @@ export const Role = {
   EDITOR: 2,
   TRANSLATOR: 3,
 } as const;
-
-export const DEFAULT_CHANNEL = 'default';

@@ -36,7 +36,6 @@ export interface WordWithTranslations {
     value: string;
     localeId: number;
     localeCode: string;
-    channelId: number | null;
   }>;
 }
 
@@ -123,7 +122,6 @@ export async function listWords(
       translationId: translations.id,
       value: translations.value,
       localeId: translations.localeId,
-      channelId: translations.channelId,
     })
     .from(translations)
     .where(and(...translationConditions));
@@ -136,7 +134,6 @@ export async function listWords(
       value: row.value ?? '',
       localeId: row.localeId,
       localeCode: '', // filled below
-      channelId: row.channelId,
     });
     translationsByWord.set(row.wordId, bucket);
   }
@@ -191,7 +188,7 @@ async function attachLocaleCodes(db: Database, list: WordWithTranslations[]): Pr
 export interface UpsertWordInput {
   projectId: number;
   key: string;
-  translations: Array<{ localeId: number; channelId?: number | null; value: string }>;
+  translations: Array<{ localeId: number; value: string }>;
   /** User behind the change, recorded in translation_versions; null for API pushes. */
   changedById?: number | null;
 }
@@ -243,9 +240,6 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
         and(
           eq(translations.wordId, word.id),
           eq(translations.localeId, entry.localeId),
-          entry.channelId == null
-            ? isNull(translations.channelId)
-            : eq(translations.channelId, entry.channelId),
         ),
       )
       .limit(1);
@@ -259,7 +253,6 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
         await tx.insert(translationVersions).values({
           wordId: word.id,
           localeId: entry.localeId,
-          channelId: entry.channelId ?? null,
           oldValue: existingTranslation.value,
           newValue: entry.value,
           changedById: input.changedById ?? null,
@@ -269,13 +262,11 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
       await tx.insert(translations).values({
         wordId: word.id,
         localeId: entry.localeId,
-        channelId: entry.channelId ?? null,
         value: entry.value,
       });
       await tx.insert(translationVersions).values({
         wordId: word.id,
         localeId: entry.localeId,
-        channelId: entry.channelId ?? null,
         oldValue: null,
         newValue: entry.value,
         changedById: input.changedById ?? null,
@@ -350,7 +341,6 @@ export interface TranslationVersionEntry {
   localeId: number;
   localeCode: string;
   localeName: string;
-  channelId: number | null;
   oldValue: string | null;
   newValue: string | null;
   changedBy: { id: number; name: string; email: string } | null;
@@ -389,7 +379,6 @@ export async function listTranslationVersions(
       localeId: translationVersions.localeId,
       localeCode: locales.code,
       localeName: locales.name,
-      channelId: translationVersions.channelId,
       oldValue: translationVersions.oldValue,
       newValue: translationVersions.newValue,
       changedById: users.id,
@@ -409,7 +398,6 @@ export async function listTranslationVersions(
     localeId: row.localeId,
     localeCode: row.localeCode,
     localeName: row.localeName,
-    channelId: row.channelId,
     oldValue: row.oldValue,
     newValue: row.newValue,
     changedBy:

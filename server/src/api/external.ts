@@ -16,14 +16,21 @@ import {
 
 const pushSchema = z.object({
   locale: z.string().min(1),
-  channel: z.string().min(1).optional(),
   namespace: z.string().min(1).optional(),
   translations: z.record(z.string(), z.string()),
 });
 
 /**
  * The client-facing API. Everything here is contract surface used by
- * already-shipped clients — response shapes must not change.
+ * already-shipped clients — these shapes must not change again.
+ *
+ * Channels were removed on 2026-08-29: responses carry no `channel` field
+ * and the `channel` query param no longer exists. Legacy clients stay
+ * compatible anyway: unknown query params are simply unused, and the push
+ * schema silently strips unknown body fields (zod is non-strict), so old
+ * payloads that still send `channel` are accepted and the field is dropped.
+ * Consequently `channel_not_found` is gone with the feature, and
+ * `invalid_body` only fires for genuinely malformed required fields.
  */
 export function externalApi(db: Database): Hono {
   const app = new Hono();
@@ -54,14 +61,12 @@ export function externalApi(db: Database): Hono {
   app.get('/api/translations', async (c) => {
     const project = await projectByApiKey(c.req.header('x-api-key'));
     const locale = c.req.query('locale');
-    const channel = c.req.query('channel');
     const namespace = c.req.query('namespace');
     const format = c.req.query('format');
 
     const rows = await fetchTranslations(db, {
       projectId: project.id,
       ...(locale ? { locale } : {}),
-      ...(channel ? { channel } : {}),
       ...(namespace ? { namespace } : {}),
     });
     const namespacesByWord = await fetchNamespacesForWords(
@@ -84,12 +89,10 @@ export function externalApi(db: Database): Hono {
     try {
       const project = await projectByApiKey(c.req.header('x-api-key'));
       const locale = c.req.query('locale');
-      const channel = c.req.query('channel');
       const namespace = c.req.query('namespace');
       const updatedAt = await fetchTranslationsState(db, {
         projectId: project.id,
         ...(locale ? { locale } : {}),
-        ...(channel ? { channel } : {}),
         ...(namespace ? { namespace } : {}),
       });
       if (!updatedAt) throw new ExternalApiError(404, 'state_not_found');
@@ -100,7 +103,11 @@ export function externalApi(db: Database): Hono {
     }
   });
 
-  /** Batch upsert for the CLI. Additive — old clients never call it. */
+  /**
+   * Batch upsert for the CLI: `{ locale, namespace?, translations }`.
+   * Unknown body fields — a legacy `channel` included — are stripped by
+   * pushSchema rather than rejected.
+   */
   app.post('/api/translations/push', async (c) => {
     const project = await projectByApiKey(c.req.header('x-api-key'));
     let body: unknown;

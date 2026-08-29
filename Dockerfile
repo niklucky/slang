@@ -14,6 +14,7 @@ RUN pnpm install --frozen-lockfile
 COPY react/ react/
 COPY server/ server/
 COPY web/ web/
+COPY docs/ docs/
 RUN pnpm build
 
 # Self-contained server bundle with production dependencies only.

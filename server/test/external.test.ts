@@ -66,16 +66,12 @@ describe('GET /api/translations (client contract)', () => {
       value: string;
       word: { key: string; namespaces: Array<{ name: string }> };
       locale: { id: number; code: string };
-      channel: { id: number; name: string } | null;
     }>;
     expect(rows).toHaveLength(1);
     const row = rows[0]!;
     expect(row.value).toBe('Hello!');
     expect(row.word).toEqual({ key: 'hello', namespaces: [] });
     expect(row.locale.code).toBe('en');
-    // A push without a channel stores a channel-less translation, like the
-    // old server's write path did.
-    expect(row.channel).toBeNull();
   });
 
   it('groups namespaced words under their namespace, flattens under a namespace filter', async () => {
@@ -144,34 +140,6 @@ describe('GET /api/translations/state', () => {
 });
 
 describe('POST /api/translations/push', () => {
-  it('rejects unknown channels', async () => {
-    const project = await makeProject();
-
-    const badChannel = await push(project, {
-      locale: 'en',
-      channel: 'staging',
-      translations: { a: 'b' },
-    });
-    expect(badChannel.status).toBe(400);
-    expect(await badChannel.json()).toEqual({ data: null, error: { message: 'channel_not_found' } });
-  });
-
-  it('attaches an explicit channel when one is given', async () => {
-    const project = await makeProject();
-    const response = await push(project, {
-      locale: 'en',
-      channel: 'default',
-      translations: { a: 'b' },
-    });
-    expect(response.status).toBe(200);
-
-    const raw = (await (
-      await get('/api/translations?locale=en', project.apiKey)
-    ).json()) as Array<{ channel: { name: string } | null }>;
-    expect(raw).toHaveLength(1);
-    expect(raw[0]!.channel).toMatchObject({ name: 'default' });
-  });
-
   it('attaches a catalog locale to the project on first push', async () => {
     const project = await makeProject();
     const response = await push(project, { locale: 'de', translations: { hello: 'Hallo!' } });

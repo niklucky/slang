@@ -14,8 +14,6 @@ import {
 
 import type { Database } from '../db/client.js';
 import {
-  channels,
-  DEFAULT_CHANNEL,
   invitations,
   locales,
   namespaces,
@@ -57,7 +55,6 @@ export async function createProject(
       })
       .returning();
     if (!project) throw new Error('project_insert_failed');
-    await tx.insert(channels).values({ projectId: project.id, name: DEFAULT_CHANNEL });
     await tx.insert(usersToProjects).values({
       projectId: project.id,
       userId: ownerId,
@@ -285,7 +282,6 @@ export async function findProjectForUser(
 export interface ProjectDetails {
   project: Project;
   locales: Array<{ id: number; code: string; name: string; title: string; countryCode: string }>;
-  channels: Array<{ id: number; name: string }>;
   namespaces: Array<{ id: number; name: string }>;
   wordCount: number;
   /** Member display names, owner first. */
@@ -293,7 +289,7 @@ export interface ProjectDetails {
 }
 
 export async function findProjectDetails(db: Database, project: Project): Promise<ProjectDetails> {
-  const [projectLocales, projectChannels, projectNamespaces, wordCountRows, projectMembers] =
+  const [projectLocales, projectNamespaces, wordCountRows, projectMembers] =
     await Promise.all([
       db
         .select({
@@ -307,11 +303,6 @@ export async function findProjectDetails(db: Database, project: Project): Promis
         .innerJoin(locales, eq(projectsToLocales.localeId, locales.id))
         .where(eq(projectsToLocales.projectId, project.id))
         .orderBy(locales.code),
-      db
-        .select({ id: channels.id, name: channels.name })
-        .from(channels)
-        .where(and(eq(channels.projectId, project.id), isNull(channels.deletedAt)))
-        .orderBy(channels.id),
       db
         .select({ id: namespaces.id, name: namespaces.name })
         .from(namespaces)
@@ -327,7 +318,6 @@ export async function findProjectDetails(db: Database, project: Project): Promis
   return {
     project,
     locales: projectLocales,
-    channels: projectChannels,
     namespaces: projectNamespaces,
     wordCount: wordCountRows[0]?.value ?? 0,
     members: projectMembers.map(({ name }) => ({ name })),
@@ -400,7 +390,6 @@ export async function deleteProjectPermanently(db: Database, projectId: number):
     await tx.delete(wordsToNamespaces).where(inArray(wordsToNamespaces.wordId, wordIds));
     await tx.delete(translations).where(inArray(translations.wordId, wordIds));
     await tx.delete(words).where(eq(words.projectId, projectId));
-    await tx.delete(channels).where(eq(channels.projectId, projectId));
     await tx.delete(namespaces).where(eq(namespaces.projectId, projectId));
     await tx.delete(projectsToLocales).where(eq(projectsToLocales.projectId, projectId));
     await tx.delete(invitations).where(eq(invitations.projectId, projectId));

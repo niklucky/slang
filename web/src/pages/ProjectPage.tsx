@@ -150,7 +150,7 @@ export function ProjectPage() {
   if (!details.data)
     return <p className="text-sm text-danger">Project not found.</p>;
 
-  const { project, locales, channels, members } = details.data;
+  const { project, locales, members } = details.data;
 
   // Only owners ever see a deleted project here; they restore or purge it
   // through the settings modal.
@@ -198,7 +198,6 @@ export function ProjectPage() {
       </div>
     );
   }
-  const defaultChannel = channels[0];
   const loadedWords = words.data?.pages.flatMap((page) => page.items) ?? [];
   const totalKeys = words.data?.pages[0]?.total ?? 0;
   const visibleWords = loadedWords;
@@ -271,16 +270,12 @@ export function ProjectPage() {
       .filter((translation) => translation.localeId !== localeId)
       .map((translation) => ({
         localeId: translation.localeId,
-        channelId: translation.channelId,
         value: translation.value,
       }));
     upsert.mutate({
       projectId: id,
       key,
-      translations: [
-        ...untouched,
-        { localeId, channelId: defaultChannel?.id ?? null, value },
-      ],
+      translations: [...untouched, { localeId, value }],
     });
   }
 
@@ -780,7 +775,6 @@ export function ProjectPage() {
       <AddKeyModal
         projectId={id}
         locales={locales}
-        channelId={defaultChannel?.id}
         open={addKeyOpen}
         onClose={() => setAddKeyOpen(false)}
       />
@@ -818,7 +812,6 @@ export function ProjectPage() {
           projectId={id}
           word={detailWord}
           locales={locales}
-          channelId={defaultChannel?.id}
           open={detailWord !== null}
           onClose={() => setDetailWord(null)}
         />
