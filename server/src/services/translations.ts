@@ -106,7 +106,12 @@ export async function fetchNamespacesForWords(
   return result;
 }
 
-/** Raw-list format: the shape the old server returned without `format=i18next`. */
+/**
+ * Raw-list format for GET /api/translations without `format=i18next`: one
+ * entry per translation —
+ * `{ id, value, word: { key, namespaces: [{ name }] }, locale: { id, code } }`.
+ * Channels were removed, so the entries carry no `channel` field.
+ */
 export function prepareRaw(
   rows: FetchedTranslation[],
   namespacesByWord: Map<number, string[]>,
@@ -196,10 +201,13 @@ export interface PushResult {
 }
 
 /**
- * Batch upsert used by the CLI push. Runs as one transaction; empty values
- * are skipped, mirroring the old write path. Missing locales are created and
- * attached to the project so a push never fails on a locale the project has
- * not enabled yet.
+ * Batch upsert used by the CLI push. Accepts `{ locale, namespace?,
+ * translations }` — channels were removed, so there is no channel field; the
+ * route's zod schema strips unknown fields, which keeps legacy payloads that
+ * still carry `channel` working (the field is dropped, never an error). Runs
+ * as one transaction; empty values are skipped, mirroring the old write path.
+ * Missing locales are created and attached to the project so a push never
+ * fails on a locale the project has not enabled yet.
  */
 export async function pushTranslations(
   db: Database,
