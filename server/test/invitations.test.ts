@@ -428,12 +428,6 @@ describe('member permissions', () => {
     const alice = await login('alice@example.com');
     const bob = await login('bob@example.com');
     const project = await createProject(alice.accessToken);
-    const details = await trpc<{ channels: Array<{ id: number; name: string }> }>(
-      app,
-      'projects.get',
-      { kind: 'query', input: { projectId: project.id }, token: alice.accessToken },
-    );
-    const channelId = details.channels[0]!.id;
     const catalog = await trpc<Array<{ id: number; code: string }>>(app, 'locales.catalog', {
       kind: 'query',
       token: alice.accessToken,
@@ -453,11 +447,11 @@ describe('member permissions', () => {
       input: { invitationId: members.invitations[0]!.id },
       token: bob.accessToken,
     });
-    return { alice, bob, project, channelId, en };
+    return { alice, bob, project, en };
   }
 
   it('new members get all permissions; owner can revoke them individually', async () => {
-    const { alice, bob, project, channelId, en } = await setupMember();
+    const { alice, bob, project, en } = await setupMember();
 
     const members = await trpc<MembersResult>(app, 'projects.members', {
       kind: 'query',
@@ -476,7 +470,7 @@ describe('member permissions', () => {
       input: {
         projectId: project.id,
         key: 'greeting',
-        translations: [{ localeId: en.id, channelId, value: 'Hello' }],
+        translations: [{ localeId: en.id, value: 'Hello' }],
       },
       token: bob.accessToken,
     });
@@ -497,7 +491,7 @@ describe('member permissions', () => {
       input: {
         projectId: project.id,
         key: 'greeting',
-        translations: [{ localeId: en.id, channelId, value: 'Hi!' }],
+        translations: [{ localeId: en.id, value: 'Hi!' }],
       },
       token: bob.accessToken,
     });
@@ -508,7 +502,7 @@ describe('member permissions', () => {
         input: {
           projectId: project.id,
           key: 'another',
-          translations: [{ localeId: en.id, channelId, value: 'x' }],
+          translations: [{ localeId: en.id, value: 'x' }],
         },
         token: bob.accessToken,
       }),

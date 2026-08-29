@@ -2,7 +2,6 @@ import { and, desc, eq, inArray, isNull, type SQL } from "drizzle-orm";
 
 import type { Database } from "../db/client.js";
 import {
-  channels,
   locales,
   namespaces,
   projectsToLocales,
@@ -30,14 +29,11 @@ interface FetchedTranslation {
   key: string;
   localeId: number;
   localeCode: string;
-  channelId: number | null;
-  channelName: string | null;
 }
 
 export interface FetchTranslationsOptions {
   projectId: number;
   locale?: string;
-  channel?: string;
   namespace?: string;
 }
 
@@ -51,37 +47,22 @@ export async function fetchTranslations(
     isNull(translations.deletedAt),
     options.locale ? eq(locales.code, options.locale) : undefined,
   ];
-  if (options.channel) {
-    baseWhere.push(eq(channels.name, options.channel));
-  }
 
-  let rows: Array<{
-    id: number;
-    value: string;
-    wordId: number;
-    key: string;
-    localeId: number;
-    localeCode: string;
-    channelId: number | null;
-    channelName: string | null;
-  }>;
+  const fields = {
+    id: translations.id,
+    value: translations.value,
+    wordId: words.id,
+    key: words.key,
+    localeId: locales.id,
+    localeCode: locales.code,
+  };
 
   if (options.namespace) {
-    rows = await db
-      .select({
-        id: translations.id,
-        value: translations.value,
-        wordId: words.id,
-        key: words.key,
-        localeId: locales.id,
-        localeCode: locales.code,
-        channelId: channels.id,
-        channelName: channels.name,
-      })
+    return db
+      .select(fields)
       .from(translations)
       .innerJoin(words, eq(translations.wordId, words.id))
       .innerJoin(locales, eq(translations.localeId, locales.id))
-      .leftJoin(channels, eq(translations.channelId, channels.id))
       .innerJoin(wordsToNamespaces, eq(words.id, wordsToNamespaces.wordId))
       .innerJoin(namespaces, eq(wordsToNamespaces.namespaceId, namespaces.id))
       .where(
@@ -91,26 +72,13 @@ export async function fetchTranslations(
           isNull(namespaces.deletedAt),
         ),
       );
-  } else {
-    rows = await db
-      .select({
-        id: translations.id,
-        value: translations.value,
-        wordId: words.id,
-        key: words.key,
-        localeId: locales.id,
-        localeCode: locales.code,
-        channelId: channels.id,
-        channelName: channels.name,
-      })
-      .from(translations)
-      .innerJoin(words, eq(translations.wordId, words.id))
-      .innerJoin(locales, eq(translations.localeId, locales.id))
-      .leftJoin(channels, eq(translations.channelId, channels.id))
-      .where(and(...baseWhere));
   }
-
-  return rows;
+  return db
+    .select(fields)
+    .from(translations)
+    .innerJoin(words, eq(translations.wordId, words.id))
+    .innerJoin(locales, eq(translations.localeId, locales.id))
+    .where(and(...baseWhere));
 }
 
 /** Namespace names per word, needed by both response formats. */
@@ -153,10 +121,6 @@ export function prepareRaw(
       })),
     },
     locale: { id: row.localeId, code: row.localeCode },
-    channel:
-      row.channelId === null
-        ? null
-        : { id: row.channelId, name: row.channelName },
   }));
 }
 
@@ -187,11 +151,7 @@ export function prepareI18Next(
   return result;
 }
 
-/**
- * Most recent `updatedAt` among matching translations, or null. Like
- * `fetchTranslations`, a request without a `channel` sees every channel
- * (including channel-less rows), matching the old server's probe.
- */
+/** Most recent `updatedAt` among matching translations, or null. */
 export async function fetchTranslationsState(
   db: Database,
   options: FetchTranslationsOptions,
@@ -201,15 +161,11 @@ export async function fetchTranslationsState(
     isNull(translations.deletedAt),
     options.locale ? eq(locales.code, options.locale) : undefined,
   ];
-  if (options.channel) {
-    conditions.push(eq(channels.name, options.channel));
-  }
 
   let query = db
     .select({ updatedAt: translations.updatedAt })
     .from(translations)
     .innerJoin(words, eq(translations.wordId, words.id))
-    .leftJoin(channels, eq(translations.channelId, channels.id))
     .leftJoin(locales, eq(translations.localeId, locales.id));
 
   if (options.namespace) {
@@ -231,7 +187,6 @@ export async function fetchTranslationsState(
 
 export interface PushInput {
   locale: string;
-  channel?: string;
   namespace?: string;
   translations: Record<string, string>;
 }
@@ -244,8 +199,7 @@ export interface PushResult {
  * Batch upsert used by the CLI push. Runs as one transaction; empty values
  * are skipped, mirroring the old write path. Missing locales are created and
  * attached to the project so a push never fails on a locale the project has
- * not enabled yet. Pushes without a `channel` store channel-less
- * translations, exactly what the old server's write path produced.
+ * not enabled yet.
  */
 export async function pushTranslations(
   db: Database,
@@ -259,26 +213,6 @@ export async function pushTranslations(
       .values({ projectId, localeId: locale.id })
       .onConflictDoNothing();
 
-    let channelId: number | undefined;
-    if (input.channel) {
-      const [channel] = await tx
-        .select()
-        .from(channels)
-        .where(
-          and(
-            eq(channels.projectId, projectId),
-            eq(channels.name, input.channel),
-            isNull(channels.deletedAt),
-          ),
-        )
-        .limit(1);
-
-      if (!channel) {
-        throw new ExternalApiError(400, "channel_not_found");
-      }
-      channelId = channel.id;
-    }
-
     let namespaceId: number | undefined;
     if (input.namespace) {
       namespaceId = await findOrCreateNamespace(tx, projectId, input.namespace);
@@ -290,7 +224,7 @@ export async function pushTranslations(
       const word = await upsertWordCore(tx, {
         projectId,
         key,
-        translations: [{ localeId: locale.id, channelId, value }],
+        translations: [{ localeId: locale.id, value }],
       });
       if (namespaceId !== undefined) {
         await tx

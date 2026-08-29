@@ -16,9 +16,8 @@ export interface RequestOptions {
   signal?: AbortSignal;
 }
 
-/** Extra targeting for a push; both default server-side ("default" channel, no namespace). */
+/** Extra targeting for a push. */
 export interface PushLocaleOptions extends RequestOptions {
-  channel?: string;
   namespace?: string;
 }
 
@@ -218,7 +217,6 @@ export function createClient(options: ClientOptions = {}): SlangClient {
         body: {
           locale,
           translations,
-          ...(options?.channel ? { channel: options.channel } : {}),
           ...(options?.namespace ? { namespace: options.namespace } : {}),
         },
       });

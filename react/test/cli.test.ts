@@ -193,16 +193,15 @@ describe('slang push', () => {
     expect(JSON.parse(String(pushCall(fetchImpl).init.body)).locale).toBe('fr');
   });
 
-  it('forwards --channel and --namespace', async () => {
+  it('forwards --namespace', async () => {
     const fetchImpl = stubServer({ data: { keys: 1 }, error: null });
     const file = await writeLocaleFile('en', { a: 'b' });
 
-    expect(
-      await main(['push', file, '--key', 'k', '--channel', 'staging', '--namespace', 'common']),
-    ).toBe(0);
-    expect(JSON.parse(String(pushCall(fetchImpl).init.body))).toMatchObject({
-      channel: 'staging',
+    expect(await main(['push', file, '--key', 'k', '--namespace', 'common'])).toBe(0);
+    expect(JSON.parse(String(pushCall(fetchImpl).init.body))).toEqual({
+      locale: 'en',
       namespace: 'common',
+      translations: { a: 'b' },
     });
   });
 
@@ -277,28 +276,16 @@ describe('slang push --in', () => {
     expect(stdout).not.toContain('notes');
   });
 
-  it('forwards --channel and --namespace for every file', async () => {
+  it('forwards --namespace for every file', async () => {
     const dir = join(out, 'locales');
     await mkdir(dir);
     await writeFile(join(dir, 'en.json'), JSON.stringify({ a: '1' }), 'utf8');
     await writeFile(join(dir, 'ru.json'), JSON.stringify({ a: '2' }), 'utf8');
 
     const fetchImpl = stubServer({ data: { keys: 1 }, error: null });
-    expect(
-      await main([
-        'push',
-        '--in',
-        dir,
-        '--key',
-        'k',
-        '--channel',
-        'staging',
-        '--namespace',
-        'app',
-      ]),
-    ).toBe(0);
+    expect(await main(['push', '--in', dir, '--key', 'k', '--namespace', 'app'])).toBe(0);
     for (const body of pushBodies(fetchImpl)) {
-      expect(body).toMatchObject({ channel: 'staging', namespace: 'app' });
+      expect(body).toMatchObject({ namespace: 'app' });
     }
   });
 

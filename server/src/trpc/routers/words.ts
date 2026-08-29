@@ -58,7 +58,6 @@ export const wordsRouter = router({
         translations: z.array(
           z.object({
             localeId: z.number().int(),
-            channelId: z.number().int().nullable().optional(),
             value: z.string(),
           }),
         ),

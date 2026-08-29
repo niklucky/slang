@@ -16,7 +16,6 @@ const TABLES = [
   'words_to_namespaces',
   'words',
   'namespaces',
-  'channels',
   'invitations',
   'projects_to_locales',
   'users_to_projects',

@@ -16,7 +16,6 @@ import {
 
 const pushSchema = z.object({
   locale: z.string().min(1),
-  channel: z.string().min(1).optional(),
   namespace: z.string().min(1).optional(),
   translations: z.record(z.string(), z.string()),
 });
@@ -54,14 +53,12 @@ export function externalApi(db: Database): Hono {
   app.get('/api/translations', async (c) => {
     const project = await projectByApiKey(c.req.header('x-api-key'));
     const locale = c.req.query('locale');
-    const channel = c.req.query('channel');
     const namespace = c.req.query('namespace');
     const format = c.req.query('format');
 
     const rows = await fetchTranslations(db, {
       projectId: project.id,
       ...(locale ? { locale } : {}),
-      ...(channel ? { channel } : {}),
       ...(namespace ? { namespace } : {}),
     });
     const namespacesByWord = await fetchNamespacesForWords(
@@ -84,12 +81,10 @@ export function externalApi(db: Database): Hono {
     try {
       const project = await projectByApiKey(c.req.header('x-api-key'));
       const locale = c.req.query('locale');
-      const channel = c.req.query('channel');
       const namespace = c.req.query('namespace');
       const updatedAt = await fetchTranslationsState(db, {
         projectId: project.id,
         ...(locale ? { locale } : {}),
-        ...(channel ? { channel } : {}),
         ...(namespace ? { namespace } : {}),
       });
       if (!updatedAt) throw new ExternalApiError(404, 'state_not_found');

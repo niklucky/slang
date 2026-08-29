@@ -10,7 +10,6 @@ import { Modal } from "./ui/modal.js";
 export interface AddKeyModalProps {
   projectId: number;
   locales: CatalogLocale[];
-  channelId: number | undefined;
   open: boolean;
   onClose: () => void;
 }
@@ -18,7 +17,6 @@ export interface AddKeyModalProps {
 export function AddKeyModal({
   projectId,
   locales,
-  channelId,
   open,
   onClose,
 }: AddKeyModalProps) {
@@ -42,7 +40,6 @@ export function AddKeyModal({
         key,
         translations: locales.map((locale) => ({
           localeId: locale.id,
-          channelId: channelId ?? null,
           value: values[locale.code] ?? "",
         })),
       },

@@ -206,7 +206,7 @@ describe('createClient', () => {
     });
   });
 
-  it('pushLocale only includes channel and namespace when given', async () => {
+  it('pushLocale only includes namespace when given', async () => {
     const fetchImpl = stubFetch(() => jsonResponse({ data: { keys: 1 }, error: null }));
     const client = createClient({ fetchImpl });
 
@@ -216,9 +216,10 @@ describe('createClient', () => {
       translations: { a: 'b' },
     });
 
-    await client.pushLocale('en', { a: 'b' }, { channel: 'staging', namespace: 'common' });
-    expect(JSON.parse(String(callArgs(fetchImpl, 1)[1].body))).toMatchObject({
-      channel: 'staging',
+    await client.pushLocale('en', { a: 'b' }, { namespace: 'common' });
+    expect(JSON.parse(String(callArgs(fetchImpl, 1)[1].body))).toEqual({
+      locale: 'en',
+      translations: { a: 'b' },
       namespace: 'common',
     });
   });

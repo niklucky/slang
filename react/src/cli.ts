@@ -23,7 +23,6 @@ Options:
   --out <dir>      Directory to write <locale>.json into       (pull; default ./src/locales)
   --in <dir>       Directory to read every <locale>.json from  (push; default ./src/locales)
   --locale <code>  Locale code for every pushed file           (push; default: <code>.json filename)
-  --channel <name> Channel/environment to push to              (push)
   --namespace <ns> Namespace to attach the pushed keys to      (push)
   --url <url>      API origin        (default $SLANG_API_URL || ${DEFAULT_API_URL})
   --key <key>      API key, sent as x-api-key    (default $SLANG_API_KEY)
@@ -46,7 +45,6 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
         out: { type: 'string', default: './src/locales' },
         in: { type: 'string' },
         locale: { type: 'string' },
-        channel: { type: 'string' },
         namespace: { type: 'string' },
         url: { type: 'string' },
         key: { type: 'string' },
@@ -146,7 +144,6 @@ async function pull(
 interface PushValues {
   in?: string;
   locale?: string;
-  channel?: string;
   namespace?: string;
 }
 
@@ -210,7 +207,6 @@ async function push(
     }
 
     await client.pushLocale(locale, dictionary, {
-      ...(values.channel ? { channel: values.channel } : {}),
       ...(values.namespace ? { namespace: values.namespace } : {}),
     });
     process.stdout.write(`Locale ${locale} pushed to server\n`);
