@@ -9,6 +9,7 @@ import {
   words,
   wordsToNamespaces,
 } from "../db/schema.js";
+import { addWordTags, normalizeTagNames, wordHasTagNamed } from "./tags.js";
 import { upsertWordCore, type Tx } from "./words.js";
 
 export type ExternalApiStatus = 400 | 401 | 404 | 500;
@@ -35,6 +36,8 @@ export interface FetchTranslationsOptions {
   projectId: number;
   locale?: string;
   namespace?: string;
+  /** Only words carrying this tag. Does not change the response shape. */
+  tag?: string;
 }
 
 export async function fetchTranslations(
@@ -46,6 +49,7 @@ export async function fetchTranslations(
     isNull(words.deletedAt),
     isNull(translations.deletedAt),
     options.locale ? eq(locales.code, options.locale) : undefined,
+    options.tag ? wordHasTagNamed(options.projectId, options.tag) : undefined,
   ];
 
   const fields = {
@@ -109,12 +113,14 @@ export async function fetchNamespacesForWords(
 /**
  * Raw-list format for GET /api/translations without `format=i18next`: one
  * entry per translation —
- * `{ id, value, word: { key, namespaces: [{ name }] }, locale: { id, code } }`.
- * Channels were removed, so the entries carry no `channel` field.
+ * `{ id, value, word: { key, namespaces: [{ name }], tags: [{ name }] }, locale: { id, code } }`.
+ * Channels were removed, so the entries carry no `channel` field. `tags` was
+ * added later; clients that predate it ignore the extra field.
  */
 export function prepareRaw(
   rows: FetchedTranslation[],
   namespacesByWord: Map<number, string[]>,
+  tagsByWord: Map<number, Array<{ name: string }>> = new Map(),
 ): unknown[] {
   return rows.map((row) => ({
     id: row.id,
@@ -124,6 +130,7 @@ export function prepareRaw(
       namespaces: (namespacesByWord.get(row.wordId) ?? []).map((name) => ({
         name,
       })),
+      tags: (tagsByWord.get(row.wordId) ?? []).map(({ name }) => ({ name })),
     },
     locale: { id: row.localeId, code: row.localeCode },
   }));
@@ -165,6 +172,7 @@ export async function fetchTranslationsState(
     eq(words.projectId, options.projectId),
     isNull(translations.deletedAt),
     options.locale ? eq(locales.code, options.locale) : undefined,
+    options.tag ? wordHasTagNamed(options.projectId, options.tag) : undefined,
   ];
 
   let query = db
@@ -193,6 +201,8 @@ export async function fetchTranslationsState(
 export interface PushInput {
   locale: string;
   namespace?: string;
+  /** Attached to every pushed key, on top of the tags it already has. */
+  tags?: string[];
   translations: Record<string, string>;
 }
 
@@ -201,7 +211,7 @@ export interface PushResult {
 }
 
 /**
- * Batch upsert used by the CLI push. Accepts `{ locale, namespace?,
+ * Batch upsert used by the CLI push. Accepts `{ locale, namespace?, tags?,
  * translations }` — channels were removed, so there is no channel field; the
  * route's zod schema strips unknown fields, which keeps legacy payloads that
  * still carry `channel` working (the field is dropped, never an error). Runs
@@ -225,6 +235,7 @@ export async function pushTranslations(
     if (input.namespace) {
       namespaceId = await findOrCreateNamespace(tx, projectId, input.namespace);
     }
+    const tagNames = normalizeTagNames(input.tags ?? []);
 
     let keys = 0;
     for (const [key, value] of Object.entries(input.translations)) {
@@ -239,6 +250,9 @@ export async function pushTranslations(
           .insert(wordsToNamespaces)
           .values({ wordId: word.id, namespaceId })
           .onConflictDoNothing();
+      }
+      if (tagNames.length > 0) {
+        await addWordTags(tx, projectId, word.id, tagNames);
       }
       keys += 1;
     }

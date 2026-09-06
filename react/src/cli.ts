@@ -24,6 +24,7 @@ Options:
   --in <dir>       Directory to read every <locale>.json from  (push; default ./src/locales)
   --locale <code>  Locale code for every pushed file           (push; default: <code>.json filename)
   --namespace <ns> Namespace to attach the pushed keys to      (push)
+  --tag <name>     Tag to attach to the pushed keys; repeatable (push)
   --url <url>      API origin        (default $SLANG_API_URL || ${DEFAULT_API_URL})
   --key <key>      API key, sent as x-api-key    (default $SLANG_API_KEY)
   --all            Every locale the project has, one file each (pull)
@@ -46,6 +47,7 @@ export async function main(argv: string[] = process.argv.slice(2)): Promise<numb
         in: { type: 'string' },
         locale: { type: 'string' },
         namespace: { type: 'string' },
+        tag: { type: 'string', multiple: true },
         url: { type: 'string' },
         key: { type: 'string' },
         all: { type: 'boolean', default: false },
@@ -145,6 +147,7 @@ interface PushValues {
   in?: string;
   locale?: string;
   namespace?: string;
+  tag?: string[];
 }
 
 async function push(
@@ -208,6 +211,7 @@ async function push(
 
     await client.pushLocale(locale, dictionary, {
       ...(values.namespace ? { namespace: values.namespace } : {}),
+      ...(values.tag && values.tag.length > 0 ? { tags: values.tag } : {}),
     });
     process.stdout.write(`Locale ${locale} pushed to server\n`);
   }

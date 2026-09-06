@@ -4,6 +4,7 @@ import {
   MoreHorizontal,
   Plus,
   Settings,
+  Tag,
   Upload,
   Users,
   Wand2,
@@ -54,9 +55,19 @@ export function ProjectPage() {
 
   const details = trpc.projects.get.useQuery({ projectId: id });
 
-  const [{ search, missingOnly, showDeleted, excludedLocaleIds }, setFilters] =
-    useProjectFilters(id);
+  const [
+    { search, missingOnly, showDeleted, excludedLocaleIds, tagIds },
+    setFilters,
+  ] = useProjectFilters(id);
   const debouncedSearch = useDebounced(search, 300);
+
+  const projectTags = trpc.tags.list.useQuery({ projectId: id });
+  const tagOptions = projectTags.data ?? [];
+  // A tag vanishes with its last key; drop it from the filter too, or the
+  // list would silently show nothing.
+  const activeTagIds = tagIds.filter((tagId) =>
+    tagOptions.some((tag) => tag.id === tagId),
+  );
 
   const visibleLocales = (details.data?.locales ?? []).filter(
     (locale) => !excludedLocaleIds.includes(locale.id),
@@ -71,6 +82,7 @@ export function ProjectPage() {
       ...(missingOnly
         ? { missingLocaleIds: visibleLocales.map((locale) => locale.id) }
         : {}),
+      ...(activeTagIds.length > 0 ? { tagIds: activeTagIds } : {}),
     },
     { getNextPageParam: (lastPage) => lastPage.nextCursor },
   );
@@ -93,6 +105,7 @@ export function ProjectPage() {
   const invalidateWords = () => {
     void utils.words.list.invalidate({ projectId: id });
     void utils.words.history.invalidate();
+    void utils.tags.list.invalidate({ projectId: id });
   };
   const upsert = trpc.words.upsert.useMutation({ onSuccess: invalidateWords });
   const removeWord = trpc.words.remove.useMutation({
@@ -133,9 +146,10 @@ export function ProjectPage() {
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   // Selection is tied to the current listing; reset it when it changes.
+  const tagFilterKey = activeTagIds.join(",");
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [id, search, showDeleted, missingOnly]);
+  }, [id, search, showDeleted, missingOnly, tagFilterKey]);
 
   const [editing, setEditing] = useState<CellRef | null>(null);
   const [draft, setDraft] = useState("");
@@ -397,6 +411,39 @@ export function ProjectPage() {
                   }));
                 }}
               />
+              {tagOptions.length > 0 && (
+                <MultiSelect
+                  size="sm"
+                  className="w-full sm:w-44"
+                  allLabel="All tags"
+                  options={tagOptions.map((tag) => ({
+                    value: String(tag.id),
+                    label: (
+                      <span className="inline-flex items-center gap-1.5">
+                        <Tag size={12} />
+                        {tag.name}
+                      </span>
+                    ),
+                    hint: `${tag.wordCount} ${tag.wordCount === 1 ? "key" : "keys"}`,
+                    triggerLabel: tag.name,
+                  }))}
+                  selected={
+                    activeTagIds.length === 0
+                      ? tagOptions.map((tag) => String(tag.id))
+                      : activeTagIds.map(String)
+                  }
+                  onChange={(next) => {
+                    // Everything selected is the same as no filter; store it
+                    // as empty so a tag added later is not excluded.
+                    const selected = next.map(Number);
+                    setFilters((prev) => ({
+                      ...prev,
+                      tagIds:
+                        selected.length === tagOptions.length ? [] : selected,
+                    }));
+                  }}
+                />
+              )}
               <label
                 className="flex h-8 cursor-pointer items-center gap-2 rounded-lg bg-surface px-2.5 text-sm text-ink transition-colors hover:bg-fill"
                 title="Show only keys missing a translation in the selected locales"
@@ -613,6 +660,26 @@ export function ProjectPage() {
                           <MoreHorizontal size={14} />
                         </IconButton>
                       </div>
+                      {word.tags.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1 pl-5.5 font-sans">
+                          {word.tags.map((tag) => (
+                            <Badge
+                              key={tag.id}
+                              tone={isDeleted ? "danger" : "accent"}
+                              className="cursor-pointer"
+                              title={`Show keys tagged ${tag.name}`}
+                              onClick={() =>
+                                setFilters((prev) => ({
+                                  ...prev,
+                                  tagIds: [tag.id],
+                                }))
+                              }
+                            >
+                              {tag.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     {visibleLocales.map((locale) => {
                       const translation = word.translations.find(
@@ -743,7 +810,9 @@ export function ProjectPage() {
             <p className="p-4 text-sm text-ink-3">
               {missingOnly
                 ? "No missing translations for the selected locales."
-                : "No keys yet."}
+                : activeTagIds.length > 0
+                  ? "No keys with the selected tags."
+                  : "No keys yet."}
             </p>
           )}
         </div>
@@ -810,6 +879,7 @@ export function ProjectPage() {
       <AddKeyModal
         projectId={id}
         locales={locales}
+        tagSuggestions={tagOptions.map((tag) => tag.name)}
         open={addKeyOpen}
         onClose={() => setAddKeyOpen(false)}
       />
@@ -847,6 +917,7 @@ export function ProjectPage() {
           projectId={id}
           word={detailWord}
           locales={locales}
+          tagSuggestions={tagOptions.map((tag) => tag.name)}
           open={detailWord !== null}
           onClose={() => setDetailWord(null)}
         />

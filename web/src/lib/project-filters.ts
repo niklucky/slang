@@ -6,6 +6,8 @@ export interface ProjectFilters {
   showDeleted: boolean;
   // Hidden locale columns; new locales default to visible.
   excludedLocaleIds: number[];
+  // Tag filter; empty means every key.
+  tagIds: number[];
 }
 
 const STORAGE_KEY = 'slang_project_filters';
@@ -15,7 +17,13 @@ const DEFAULT_FILTERS: ProjectFilters = {
   missingOnly: false,
   showDeleted: false,
   excludedLocaleIds: [],
+  tagIds: [],
 };
+
+const numberList = (value: unknown): number[] =>
+  Array.isArray(value)
+    ? value.filter((entry): entry is number => typeof entry === 'number' && Number.isFinite(entry))
+    : [];
 
 function loadFilters(projectId: number): ProjectFilters {
   try {
@@ -28,11 +36,8 @@ function loadFilters(projectId: number): ProjectFilters {
       search: typeof entry?.search === 'string' ? entry.search : '',
       missingOnly: entry?.missingOnly === true,
       showDeleted: entry?.showDeleted === true,
-      excludedLocaleIds: Array.isArray(entry?.excludedLocaleIds)
-        ? entry.excludedLocaleIds.filter(
-            (value): value is number => typeof value === 'number' && Number.isFinite(value),
-          )
-        : [],
+      excludedLocaleIds: numberList(entry?.excludedLocaleIds),
+      tagIds: numberList(entry?.tagIds),
     };
   } catch {
     return DEFAULT_FILTERS;

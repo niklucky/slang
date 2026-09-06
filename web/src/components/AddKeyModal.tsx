@@ -6,10 +6,13 @@ import { Button } from "./ui/button.js";
 import { Field, Input, Textarea } from "./ui/input.js";
 import { LocaleFlag } from "./ui/locale-flag.js";
 import { Modal } from "./ui/modal.js";
+import { TagsInput } from "./ui/tags-input.js";
 
 export interface AddKeyModalProps {
   projectId: number;
   locales: CatalogLocale[];
+  /** Names of the project's existing tags, offered as completions. */
+  tagSuggestions?: string[];
   open: boolean;
   onClose: () => void;
 }
@@ -17,18 +20,21 @@ export interface AddKeyModalProps {
 export function AddKeyModal({
   projectId,
   locales,
+  tagSuggestions = [],
   open,
   onClose,
 }: AddKeyModalProps) {
   const utils = trpc.useUtils();
 
   const [key, setKey] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [values, setValues] = useState<Record<string, string>>({});
   const upsert = trpc.words.upsert.useMutation();
 
   useEffect(() => {
     if (!open) return;
     setKey("");
+    setTags([]);
     setValues({});
   }, [open]);
 
@@ -42,11 +48,13 @@ export function AddKeyModal({
           localeId: locale.id,
           value: values[locale.code] ?? "",
         })),
+        tags,
       },
       {
         onSuccess: () => {
           void utils.words.list.invalidate({ projectId });
           void utils.words.history.invalidate();
+          void utils.tags.list.invalidate({ projectId });
           onClose();
         },
       },
@@ -70,6 +78,14 @@ export function AddKeyModal({
               placeholder="key.name"
               required
               autoFocus
+            />
+          </Field>
+          <Field label="Tags">
+            <TagsInput
+              value={tags}
+              onChange={setTags}
+              suggestions={tagSuggestions}
+              placeholder="email, ios, paywall…"
             />
           </Field>
           <div className="space-y-4 max-h-[70vh] overflow-y-auto">

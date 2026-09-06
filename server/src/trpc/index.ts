@@ -2,6 +2,7 @@ import { authRouter } from './routers/auth.js';
 import { invitationsRouter } from './routers/invitations.js';
 import { localesRouter } from './routers/locales.js';
 import { projectsRouter } from './routers/projects.js';
+import { tagsRouter } from './routers/tags.js';
 import { usersRouter } from './routers/users.js';
 import { wordsRouter } from './routers/words.js';
 import { router } from './init.js';
@@ -11,6 +12,7 @@ export const appRouter = router({
   projects: projectsRouter,
   locales: localesRouter,
   words: wordsRouter,
+  tags: tagsRouter,
   invitations: invitationsRouter,
   users: usersRouter,
 });

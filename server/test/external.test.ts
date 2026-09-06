@@ -70,7 +70,7 @@ describe('GET /api/translations (client contract)', () => {
     expect(rows).toHaveLength(1);
     const row = rows[0]!;
     expect(row.value).toBe('Hello!');
-    expect(row.word).toEqual({ key: 'hello', namespaces: [] });
+    expect(row.word).toEqual({ key: 'hello', namespaces: [], tags: [] });
     expect(row.locale.code).toBe('en');
   });
 
@@ -93,6 +93,58 @@ describe('GET /api/translations (client contract)', () => {
       project.apiKey,
     );
     expect(await flat.json()).toEqual({ en: { hello: 'Hello!' } });
+  });
+});
+
+describe('GET /api/translations?tag=', () => {
+  it('returns only tagged words, flat, without reshaping the payload', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', tags: ['Email'], translations: { subject: 'Hello' } });
+    await push(project, { locale: 'en', translations: { other: 'Other' } });
+    await push(project, { locale: 'de', tags: ['email'], translations: { subject: 'Hallo' } });
+
+    const response = await get('/api/translations?format=i18next&tag=email', project.apiKey);
+    expect(await response.json()).toEqual({ en: { subject: 'Hello' }, de: { subject: 'Hallo' } });
+
+    // The filter is normalized the way tag names are.
+    const upper = await get('/api/translations?format=i18next&tag=%20EMAIL', project.apiKey);
+    expect(await upper.json()).toEqual({ en: { subject: 'Hello' }, de: { subject: 'Hallo' } });
+
+    const none = await get('/api/translations?format=i18next&tag=missing', project.apiKey);
+    expect(await none.json()).toEqual({});
+  });
+
+  it('push adds tags on top of the ones a key already has', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', tags: ['email'], translations: { k: 'v' } });
+    await push(project, { locale: 'en', tags: ['push'], translations: { k: 'v' } });
+
+    const raw = (await (await get('/api/translations?locale=en', project.apiKey)).json()) as Array<{
+      word: { key: string; tags: Array<{ name: string }> };
+    }>;
+    expect(raw[0]!.word.tags).toEqual([{ name: 'email' }, { name: 'push' }]);
+
+    const byTag = await get('/api/translations?format=i18next&tag=push', project.apiKey);
+    expect(await byTag.json()).toEqual({ en: { k: 'v' } });
+  });
+
+  it('state honours the tag filter', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', tags: ['email'], translations: { k: 'v' } });
+
+    const hit = await get('/api/translations/state?tag=email', project.apiKey);
+    expect(hit.status).toBe(200);
+    const miss = await get('/api/translations/state?tag=other', project.apiKey);
+    expect(miss.status).toBe(404);
+  });
+
+  it('untagged words carry an empty tags array in the raw shape', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', translations: { k: 'v' } });
+    const raw = (await (await get('/api/translations?locale=en', project.apiKey)).json()) as Array<{
+      word: { tags: unknown[] };
+    }>;
+    expect(raw[0]!.word.tags).toEqual([]);
   });
 });
 

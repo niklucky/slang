@@ -127,6 +127,10 @@ GET  {apiUrl}/api/translations?locale=<locale>&format=i18next
 GET  {apiUrl}/api/translations/state?locale=<locale>
 ```
 
+Both accept `&tag=<name>` to return only the keys carrying that tag (a server that
+localises its emails asks for `tag=email`, an app for `tag=ios`). Tags never change the
+shape of the response; they only narrow it.
+
 ## CLI
 
 ```bash
@@ -135,6 +139,7 @@ slang pull --all --out ./src/locales     # every locale the project has
 
 slang push en.json ru.json               # push specific <locale>.json files
 slang push --in ./src/locales            # push every <locale>.json in a directory
+slang push en.json --tag email --tag web # tag every pushed key (added to existing tags)
 ```
 
 Reads `SLANG_API_URL` and `SLANG_API_KEY` from the environment; `--url` and `--key` override.

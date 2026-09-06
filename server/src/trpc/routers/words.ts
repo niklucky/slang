@@ -4,6 +4,7 @@ import type { Database } from '../../db/client.js';
 import { z } from 'zod';
 
 import { words } from '../../db/schema.js';
+import { normalizeTagNames, setWordTags } from '../../services/tags.js';
 import { exportWordsCsv, importWordsCsv } from '../../services/transfer.js';
 import { deleteWordPermanently, deleteWordsPermanently, listTranslationVersions, listWords, renameWord, restoreWord, restoreWords, softDeleteWord, softDeleteWords, upsertWord } from '../../services/words.js';
 import { requirePermission, requireProject, requireProjectMembership } from '../guards.js';
@@ -42,6 +43,8 @@ export const wordsRouter = router({
         cursor: z.number().int().min(0).nullish(),
         limit: z.number().int().min(1).max(1000).default(100),
         missingLocaleIds: z.array(z.number().int()).optional(),
+        /** Only keys carrying at least one of these tags. */
+        tagIds: z.array(z.number().int()).optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -61,6 +64,8 @@ export const wordsRouter = router({
             value: z.string(),
           }),
         ),
+        /** Exact tag set for the key; omit to leave its tags alone. */
+        tags: z.array(z.string().trim().min(1).max(64)).max(20).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -107,6 +112,35 @@ export const wordsRouter = router({
       // Renaming reshapes the key itself, like creating one.
       requirePermission(permissions, 'canCreateKeys', 'rename_keys_forbidden');
       return renameWord(ctx.db, { ...input, changedById: ctx.user.id });
+    }),
+
+  /** Replaces the key's tags. Tags shape the key like its name does, so this follows rename. */
+  setTags: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.number().int(),
+        wordId: z.number().int(),
+        tags: z.array(z.string().trim().min(1).max(64)).max(20),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { permissions } = await requireProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.user.id,
+      );
+      requirePermission(permissions, 'canCreateKeys', 'tag_keys_forbidden');
+      const [word] = await ctx.db
+        .select({ id: words.id, projectId: words.projectId })
+        .from(words)
+        .where(and(eq(words.id, input.wordId), isNull(words.deletedAt)))
+        .limit(1);
+      if (!word || word.projectId !== input.projectId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'word_not_found' });
+      }
+      const names = normalizeTagNames(input.tags);
+      await ctx.db.transaction((tx) => setWordTags(tx, input.projectId, input.wordId, names));
+      return { tags: names };
     }),
 
   history: protectedProcedure
