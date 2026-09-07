@@ -19,7 +19,7 @@ export interface RequestOptions {
 /** Extra targeting for a push. */
 export interface PushLocaleOptions extends RequestOptions {
   namespace?: string;
-  /** Attached to every pushed key, on top of the tags it already carries. */
+  /** Attached to the keys the push creates; existing keys keep their tags. */
   tags?: string[];
 }
 

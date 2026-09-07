@@ -18,6 +18,7 @@ import {
 const pushSchema = z.object({
   locale: z.string().min(1),
   namespace: z.string().min(1).optional(),
+  /** Applied to the keys the push creates, not to ones that already exist. */
   tags: z.array(z.string().min(1).max(64)).max(20).optional(),
   translations: z.record(z.string(), z.string()),
 });

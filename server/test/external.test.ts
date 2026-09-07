@@ -114,17 +114,36 @@ describe('GET /api/translations?tag=', () => {
     expect(await none.json()).toEqual({});
   });
 
-  it('push adds tags on top of the ones a key already has', async () => {
+  it('push tags only the keys it creates; existing keys keep their tags', async () => {
     const project = await makeProject();
-    await push(project, { locale: 'en', tags: ['email'], translations: { k: 'v' } });
-    await push(project, { locale: 'en', tags: ['push'], translations: { k: 'v' } });
+    await push(project, { locale: 'en', tags: ['email'], translations: { old: 'v' } });
+    // A later push of the whole dictionary with a tag must not relabel `old`.
+    await push(project, { locale: 'en', tags: ['push'], translations: { old: 'v2', fresh: 'f' } });
 
     const raw = (await (await get('/api/translations?locale=en', project.apiKey)).json()) as Array<{
       word: { key: string; tags: Array<{ name: string }> };
     }>;
-    expect(raw[0]!.word.tags).toEqual([{ name: 'email' }, { name: 'push' }]);
+    const tagsOf = (key: string) => raw.find((row) => row.word.key === key)!.word.tags;
+    expect(tagsOf('old')).toEqual([{ name: 'email' }]);
+    expect(tagsOf('fresh')).toEqual([{ name: 'push' }]);
 
     const byTag = await get('/api/translations?format=i18next&tag=push', project.apiKey);
+    expect(await byTag.json()).toEqual({ en: { fresh: 'f' } });
+  });
+
+  it('push tags a key it revives from soft-deletion, since it was not live', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', translations: { k: 'v' } });
+    const raw = (await (await get('/api/translations?locale=en', project.apiKey)).json()) as Array<{
+      word: { key: string };
+    }>;
+    expect(raw).toHaveLength(1);
+    const { words } = await import('../src/db/schema.js');
+    const { eq } = await import('drizzle-orm');
+    await handle.db.update(words).set({ deletedAt: new Date() }).where(eq(words.key, 'k'));
+
+    await push(project, { locale: 'en', tags: ['email'], translations: { k: 'v' } });
+    const byTag = await get('/api/translations?format=i18next&tag=email', project.apiKey);
     expect(await byTag.json()).toEqual({ en: { k: 'v' } });
   });
 

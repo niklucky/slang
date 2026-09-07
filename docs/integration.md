@@ -110,7 +110,8 @@ GET {apiUrl}/api/translations/state?locale=<locale>
 ```
 
 Both take an optional `&tag=<name>` that narrows the result to the keys carrying that tag
-(tags are set per key in the Slang UI, or with `slang push --tag <name>`). Use it when one
+(tags are set per key in the Slang UI, or with `slang push --tag <name>`, which tags only the keys
+that push creates). Use it when one
 project serves several consumers — a backend fetching `tag=email` does not download the
 whole app's copy. The shape of the response is unchanged.
 

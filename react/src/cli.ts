@@ -24,7 +24,7 @@ Options:
   --in <dir>       Directory to read every <locale>.json from  (push; default ./src/locales)
   --locale <code>  Locale code for every pushed file           (push; default: <code>.json filename)
   --namespace <ns> Namespace to attach the pushed keys to      (push)
-  --tag <name>     Tag to attach to the pushed keys; repeatable (push)
+  --tag <name>     Tag for keys this push creates; repeatable  (push)
   --url <url>      API origin        (default $SLANG_API_URL || ${DEFAULT_API_URL})
   --key <key>      API key, sent as x-api-key    (default $SLANG_API_KEY)
   --all            Every locale the project has, one file each (pull)

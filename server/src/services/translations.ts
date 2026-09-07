@@ -201,7 +201,11 @@ export async function fetchTranslationsState(
 export interface PushInput {
   locale: string;
   namespace?: string;
-  /** Attached to every pushed key, on top of the tags it already has. */
+  /**
+   * Attached to the keys this push creates. Keys that already exist keep
+   * their tags untouched: a `--tag email` on a full-dictionary push must not
+   * label the whole project by mistake.
+   */
   tags?: string[];
   translations: Record<string, string>;
 }
@@ -236,6 +240,17 @@ export async function pushTranslations(
       namespaceId = await findOrCreateNamespace(tx, projectId, input.namespace);
     }
     const tagNames = normalizeTagNames(input.tags ?? []);
+    // Which keys are live before the push; only the others get the tags.
+    const existing = new Set(
+      tagNames.length > 0
+        ? (
+            await tx
+              .select({ key: words.key })
+              .from(words)
+              .where(and(eq(words.projectId, projectId), isNull(words.deletedAt)))
+          ).map((row) => row.key)
+        : [],
+    );
 
     let keys = 0;
     for (const [key, value] of Object.entries(input.translations)) {
@@ -251,7 +266,7 @@ export async function pushTranslations(
           .values({ wordId: word.id, namespaceId })
           .onConflictDoNothing();
       }
-      if (tagNames.length > 0) {
+      if (tagNames.length > 0 && !existing.has(key)) {
         await addWordTags(tx, projectId, word.id, tagNames);
       }
       keys += 1;
