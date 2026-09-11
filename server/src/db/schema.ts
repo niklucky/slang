@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  index,
   integer,
   pgTable,
   primaryKey,
@@ -153,6 +154,44 @@ export const wordsToNamespaces = pgTable(
   (t) => [primaryKey({ columns: [t.wordId, t.namespaceId] })],
 );
 
+/**
+ * Free-form labels on words (`email`, `ios`, `paywall`). A word can carry any
+ * number of them. Unlike namespaces, tags never change the shape of the
+ * translations payload — they only filter it, so `?tag=email` returns the
+ * same flat `{ locale: { key: value } }` a client already understands.
+ * Tags exist only while some word carries them; the last unlink deletes one.
+ */
+export const tags = pgTable(
+  'tags',
+  {
+    id: serial('id').primaryKey(),
+    projectId: integer('project_id')
+      .notNull()
+      .references(() => projects.id),
+    name: text('name').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('tags_project_name_unique').on(t.projectId, t.name)],
+);
+
+export const wordsToTags = pgTable(
+  'words_to_tags',
+  {
+    wordId: integer('word_id')
+      .notNull()
+      .references(() => words.id),
+    tagId: integer('tag_id')
+      .notNull()
+      .references(() => tags.id),
+  },
+  (t) => [
+    primaryKey({ columns: [t.wordId, t.tagId] }),
+    // The primary key leads with word_id; the tag filter and the per-tag
+    // counts lead with tag_id.
+    index('words_to_tags_tag_id_idx').on(t.tagId),
+  ],
+);
+
 export const translations = pgTable(
   'translations',
   {
@@ -216,6 +255,7 @@ export type Project = typeof projects.$inferSelect;
 export type Locale = typeof locales.$inferSelect;
 export type Namespace = typeof namespaces.$inferSelect;
 export type Word = typeof words.$inferSelect;
+export type Tag = typeof tags.$inferSelect;
 export type Translation = typeof translations.$inferSelect;
 export type TranslationVersion = typeof translationVersions.$inferSelect;
 export type WordVersion = typeof wordVersions.$inferSelect;

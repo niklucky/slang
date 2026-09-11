@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import type { Database } from '../db/client.js';
 import { projects } from '../db/schema.js';
+import { fetchTagsForWords, normalizeTagName } from '../services/tags.js';
 import {
   ExternalApiError,
   fetchNamespacesForWords,
@@ -17,6 +18,8 @@ import {
 const pushSchema = z.object({
   locale: z.string().min(1),
   namespace: z.string().min(1).optional(),
+  /** Applied to the keys the push creates or revives, never to ones already live. */
+  tags: z.array(z.string().min(1).max(64)).max(20).optional(),
   translations: z.record(z.string(), z.string()),
 });
 
@@ -62,22 +65,25 @@ export function externalApi(db: Database): Hono {
     const project = await projectByApiKey(c.req.header('x-api-key'));
     const locale = c.req.query('locale');
     const namespace = c.req.query('namespace');
+    // `tag` narrows to words carrying that label. Unlike `namespace` it never
+    // reshapes the payload, so a client can fetch just its slice of a project.
+    // Normalised the way names are stored, so "Email " finds "email".
+    const tag = normalizeTagName(c.req.query('tag') ?? '');
     const format = c.req.query('format');
 
     const rows = await fetchTranslations(db, {
       projectId: project.id,
       ...(locale ? { locale } : {}),
       ...(namespace ? { namespace } : {}),
+      ...(tag ? { tag } : {}),
     });
-    const namespacesByWord = await fetchNamespacesForWords(
-      db,
-      [...new Set(rows.map((row) => row.wordId))],
-    );
+    const wordIds = [...new Set(rows.map((row) => row.wordId))];
+    const namespacesByWord = await fetchNamespacesForWords(db, wordIds);
 
     if (format === 'i18next') {
       return c.json(prepareI18Next(rows, namespacesByWord, namespace));
     }
-    return c.json(prepareRaw(rows, namespacesByWord));
+    return c.json(prepareRaw(rows, namespacesByWord, await fetchTagsForWords(db, wordIds)));
   });
 
   /**
@@ -90,10 +96,12 @@ export function externalApi(db: Database): Hono {
       const project = await projectByApiKey(c.req.header('x-api-key'));
       const locale = c.req.query('locale');
       const namespace = c.req.query('namespace');
+      const tag = normalizeTagName(c.req.query('tag') ?? '');
       const updatedAt = await fetchTranslationsState(db, {
         projectId: project.id,
         ...(locale ? { locale } : {}),
         ...(namespace ? { namespace } : {}),
+        ...(tag ? { tag } : {}),
       });
       if (!updatedAt) throw new ExternalApiError(404, 'state_not_found');
       return c.json({ data: updatedAt.toISOString(), error: null });
@@ -104,7 +112,7 @@ export function externalApi(db: Database): Hono {
   });
 
   /**
-   * Batch upsert for the CLI: `{ locale, namespace?, translations }`.
+   * Batch upsert for the CLI: `{ locale, namespace?, tags?, translations }`.
    * Unknown body fields — a legacy `channel` included — are stripped by
    * pushSchema rather than rejected.
    */

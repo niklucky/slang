@@ -19,6 +19,12 @@ export interface RequestOptions {
 /** Extra targeting for a push. */
 export interface PushLocaleOptions extends RequestOptions {
   namespace?: string;
+  /**
+   * Attached to the keys the push creates or revives from soft-deletion (a
+   * revived key keeps its old tags and gains these). Keys that are already
+   * live keep their tags untouched.
+   */
+  tags?: string[];
 }
 
 /** Server's answer to a push: how many keys it wrote. */
@@ -218,6 +224,7 @@ export function createClient(options: ClientOptions = {}): SlangClient {
           locale,
           translations,
           ...(options?.namespace ? { namespace: options.namespace } : {}),
+          ...(options?.tags && options.tags.length > 0 ? { tags: options.tags } : {}),
         },
       });
       const keys = (body as { data?: { keys?: unknown } } | null)?.data?.keys;

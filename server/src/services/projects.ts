@@ -27,6 +27,8 @@ import {
   wordVersions,
   words,
   wordsToNamespaces,
+  wordsToTags,
+  tags,
   type Project,
 } from '../db/schema.js';
 import { generateApiKey } from '../lib/ids.js';
@@ -388,9 +390,11 @@ export async function deleteProjectPermanently(db: Database, projectId: number):
     await tx.delete(translationVersions).where(inArray(translationVersions.wordId, wordIds));
     await tx.delete(wordVersions).where(inArray(wordVersions.wordId, wordIds));
     await tx.delete(wordsToNamespaces).where(inArray(wordsToNamespaces.wordId, wordIds));
+    await tx.delete(wordsToTags).where(inArray(wordsToTags.wordId, wordIds));
     await tx.delete(translations).where(inArray(translations.wordId, wordIds));
     await tx.delete(words).where(eq(words.projectId, projectId));
     await tx.delete(namespaces).where(eq(namespaces.projectId, projectId));
+    await tx.delete(tags).where(eq(tags.projectId, projectId));
     await tx.delete(projectsToLocales).where(eq(projectsToLocales.projectId, projectId));
     await tx.delete(invitations).where(eq(invitations.projectId, projectId));
     await tx.delete(usersToProjects).where(eq(usersToProjects.projectId, projectId));

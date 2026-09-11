@@ -70,7 +70,7 @@ describe('GET /api/translations (client contract)', () => {
     expect(rows).toHaveLength(1);
     const row = rows[0]!;
     expect(row.value).toBe('Hello!');
-    expect(row.word).toEqual({ key: 'hello', namespaces: [] });
+    expect(row.word).toEqual({ key: 'hello', namespaces: [], tags: [] });
     expect(row.locale.code).toBe('en');
   });
 
@@ -93,6 +93,80 @@ describe('GET /api/translations (client contract)', () => {
       project.apiKey,
     );
     expect(await flat.json()).toEqual({ en: { hello: 'Hello!' } });
+  });
+});
+
+describe('GET /api/translations?tag=', () => {
+  it('returns only tagged words, flat, without reshaping the payload', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', tags: ['Email'], translations: { subject: 'Hello' } });
+    await push(project, { locale: 'en', translations: { other: 'Other' } });
+    await push(project, { locale: 'de', tags: ['email'], translations: { subject: 'Hallo' } });
+
+    const response = await get('/api/translations?format=i18next&tag=email', project.apiKey);
+    expect(await response.json()).toEqual({ en: { subject: 'Hello' }, de: { subject: 'Hallo' } });
+
+    // The filter is normalized the way tag names are: case, outer and inner whitespace.
+    await push(project, { locale: 'en', tags: ['user  profile'], translations: { avatar: 'Avatar' } });
+    const spaced = await get('/api/translations?format=i18next&tag=User%20%20Profile', project.apiKey);
+    expect(await spaced.json()).toEqual({ en: { avatar: 'Avatar' } });
+    const upper = await get('/api/translations?format=i18next&tag=%20EMAIL', project.apiKey);
+    expect(await upper.json()).toEqual({ en: { subject: 'Hello' }, de: { subject: 'Hallo' } });
+
+    const none = await get('/api/translations?format=i18next&tag=missing', project.apiKey);
+    expect(await none.json()).toEqual({});
+  });
+
+  it('push tags only the keys it creates; existing keys keep their tags', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', tags: ['email'], translations: { old: 'v' } });
+    // A later push of the whole dictionary with a tag must not relabel `old`.
+    await push(project, { locale: 'en', tags: ['push'], translations: { old: 'v2', fresh: 'f' } });
+
+    const raw = (await (await get('/api/translations?locale=en', project.apiKey)).json()) as Array<{
+      word: { key: string; tags: Array<{ name: string }> };
+    }>;
+    const tagsOf = (key: string) => raw.find((row) => row.word.key === key)!.word.tags;
+    expect(tagsOf('old')).toEqual([{ name: 'email' }]);
+    expect(tagsOf('fresh')).toEqual([{ name: 'push' }]);
+
+    const byTag = await get('/api/translations?format=i18next&tag=push', project.apiKey);
+    expect(await byTag.json()).toEqual({ en: { fresh: 'f' } });
+  });
+
+  it('push tags a key it revives from soft-deletion, since it was not live', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', translations: { k: 'v' } });
+    const raw = (await (await get('/api/translations?locale=en', project.apiKey)).json()) as Array<{
+      word: { key: string };
+    }>;
+    expect(raw).toHaveLength(1);
+    const { words } = await import('../src/db/schema.js');
+    const { eq } = await import('drizzle-orm');
+    await handle.db.update(words).set({ deletedAt: new Date() }).where(eq(words.key, 'k'));
+
+    await push(project, { locale: 'en', tags: ['email'], translations: { k: 'v' } });
+    const byTag = await get('/api/translations?format=i18next&tag=email', project.apiKey);
+    expect(await byTag.json()).toEqual({ en: { k: 'v' } });
+  });
+
+  it('state honours the tag filter', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', tags: ['email'], translations: { k: 'v' } });
+
+    const hit = await get('/api/translations/state?tag=email', project.apiKey);
+    expect(hit.status).toBe(200);
+    const miss = await get('/api/translations/state?tag=other', project.apiKey);
+    expect(miss.status).toBe(404);
+  });
+
+  it('untagged words carry an empty tags array in the raw shape', async () => {
+    const project = await makeProject();
+    await push(project, { locale: 'en', translations: { k: 'v' } });
+    const raw = (await (await get('/api/translations?locale=en', project.apiKey)).json()) as Array<{
+      word: { tags: unknown[] };
+    }>;
+    expect(raw[0]!.word.tags).toEqual([]);
   });
 });
 

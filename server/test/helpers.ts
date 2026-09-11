@@ -13,6 +13,8 @@ export function openTestDb(): DbHandle {
 /** Everything except the seeded locale catalog. */
 const TABLES = [
   'translations',
+  'words_to_tags',
+  'tags',
   'words_to_namespaces',
   'words',
   'namespaces',

@@ -17,6 +17,7 @@ import {
   type Word,
   type WordVersionAction,
 } from '../db/schema.js';
+import { fetchTagsForWords, normalizeTagNames, setWordTags, unlinkWordTags, wordHasAnyTag } from './tags.js';
 
 export type Tx = PgTransaction<
   PostgresJsQueryResultHKT,
@@ -31,6 +32,7 @@ export interface WordWithTranslations {
   updatedAt: Date;
   deletedAt: Date | null;
   namespaces: Array<{ id: number; name: string }>;
+  tags: Array<{ id: number; name: string }>;
   translations: Array<{
     id: number;
     value: string;
@@ -58,6 +60,8 @@ export async function listWords(
     limit?: number;
     /** When set, only keys missing a translation in at least one of these locales. */
     missingLocaleIds?: number[];
+    /** When set, only keys carrying at least one of these tags. */
+    tagIds?: number[];
   },
 ): Promise<WordsPage> {
   const limit = options.limit ?? 100;
@@ -69,6 +73,9 @@ export async function listWords(
   ];
   if (options.search) {
     conditions.push(ilike(words.searchIndex, `%${options.search}%`));
+  }
+  if (options.tagIds && options.tagIds.length > 0) {
+    conditions.push(wordHasAnyTag(options.tagIds));
   }
   if (options.missingLocaleIds && options.missingLocaleIds.length > 0) {
     conditions.push(
@@ -141,10 +148,12 @@ export async function listWords(
   const items: WordWithTranslations[] = pageWords.map((word) => ({
     ...word,
     namespaces: [],
+    tags: [],
     translations: translationsByWord.get(word.id) ?? [],
   }));
 
   await attachNamespaces(db, items);
+  await attachTags(db, items);
   await attachLocaleCodes(db, items);
 
   const nextOffset = offset + pageWords.length;
@@ -170,6 +179,13 @@ async function attachNamespaces(db: Database, list: WordWithTranslations[]): Pro
   }
 }
 
+async function attachTags(db: Database, list: WordWithTranslations[]): Promise<void> {
+  const byWord = await fetchTagsForWords(db, list.map((word) => word.id));
+  for (const word of list) {
+    word.tags = byWord.get(word.id) ?? [];
+  }
+}
+
 async function attachLocaleCodes(db: Database, list: WordWithTranslations[]): Promise<void> {
   const localeIds = [...new Set(list.flatMap((word) => word.translations.map((t) => t.localeId)))];
   if (localeIds.length === 0) return;
@@ -191,6 +207,12 @@ export interface UpsertWordInput {
   translations: Array<{ localeId: number; value: string }>;
   /** User behind the change, recorded in translation_versions; null for API pushes. */
   changedById?: number | null;
+  /**
+   * When given, becomes the word's exact tag set (names are normalized).
+   * Omit to leave tags untouched — the CSV import and cell edits never carry
+   * tags and must not strip them.
+   */
+  tags?: string[];
 }
 
 /**
@@ -275,6 +297,9 @@ export async function upsertWordCore(tx: Tx, input: UpsertWordInput): Promise<Wo
   }
 
   await rebuildSearchIndex(tx, word.id);
+  if (input.tags !== undefined) {
+    await setWordTags(tx, input.projectId, word.id, normalizeTagNames(input.tags));
+  }
   return word;
 }
 
@@ -506,7 +531,7 @@ export async function restoreWord(
 
 /**
  * Hard-delete a word and every row that references it (translations,
- * namespace links, and version history). Irreversible.
+ * namespace and tag links, and version history). Irreversible.
  */
 export async function deleteWordPermanently(db: Database, wordId: number): Promise<boolean> {
   return db.transaction(async (tx) => {
@@ -520,6 +545,7 @@ export async function deleteWordPermanently(db: Database, wordId: number): Promi
     await tx.delete(translationVersions).where(eq(translationVersions.wordId, wordId));
     await tx.delete(wordVersions).where(eq(wordVersions.wordId, wordId));
     await tx.delete(wordsToNamespaces).where(eq(wordsToNamespaces.wordId, wordId));
+    await unlinkWordTags(tx, [wordId]);
     await tx.delete(translations).where(eq(translations.wordId, wordId));
     const deleted = await tx.delete(words).where(eq(words.id, wordId)).returning({ id: words.id });
     return deleted.length > 0;
@@ -589,6 +615,7 @@ export async function deleteWordsPermanently(db: Database, wordIds: number[]): P
     await tx.delete(translationVersions).where(inArray(translationVersions.wordId, wordIds));
     await tx.delete(wordVersions).where(inArray(wordVersions.wordId, wordIds));
     await tx.delete(wordsToNamespaces).where(inArray(wordsToNamespaces.wordId, wordIds));
+    await unlinkWordTags(tx, wordIds);
     await tx.delete(translations).where(inArray(translations.wordId, wordIds));
     const deleted = await tx
       .delete(words)

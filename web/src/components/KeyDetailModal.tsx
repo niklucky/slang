@@ -9,10 +9,12 @@ import { IconButton } from "./ui/icon-button.js";
 import { Field, Input, Textarea } from "./ui/input.js";
 import { LocaleFlag } from "./ui/locale-flag.js";
 import { Modal } from "./ui/modal.js";
+import { TagsInput } from "./ui/tags-input.js";
 
 export interface KeyDetailWord {
   id: number;
   key: string;
+  tags: Array<{ id: number; name: string }>;
   translations: Array<{ localeId: number; value: string }>;
 }
 
@@ -20,6 +22,8 @@ export interface KeyDetailModalProps {
   projectId: number;
   word: KeyDetailWord;
   locales: CatalogLocale[];
+  /** Names of the project's existing tags, offered as completions. */
+  tagSuggestions?: string[];
   open: boolean;
   onClose: () => void;
 }
@@ -33,12 +37,14 @@ export function KeyDetailModal({
   projectId,
   word,
   locales,
+  tagSuggestions = [],
   open,
   onClose,
 }: KeyDetailModalProps) {
   const utils = trpc.useUtils();
 
   const [key, setKey] = useState(word.key);
+  const [tags, setTags] = useState<string[]>([]);
   const [values, setValues] = useState<Record<number, string>>({});
   const [history, setHistory] = useState<HistoryState | null>(null);
   const upsert = trpc.words.upsert.useMutation();
@@ -47,12 +53,17 @@ export function KeyDetailModal({
   useEffect(() => {
     if (!open) return;
     setKey(word.key);
+    setTags(word.tags.map((tag) => tag.name));
     const next: Record<number, string> = {};
     for (const translation of word.translations) {
       next[translation.localeId] = translation.value;
     }
     setValues(next);
   }, [open, word]);
+
+  const tagsChanged =
+    tags.length !== word.tags.length ||
+    tags.some((name, index) => name !== word.tags[index]?.name);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -76,11 +87,15 @@ export function KeyDetailModal({
           localeId: locale.id,
           value: values[locale.id] ?? "",
         })),
+        // Only when edited: sending tags needs the create-keys permission,
+        // and a translator saving values has no business tripping over it.
+        ...(tagsChanged ? { tags } : {}),
       },
       {
         onSuccess: () => {
           void utils.words.list.invalidate({ projectId });
           void utils.words.history.invalidate();
+          void utils.tags.list.invalidate({ projectId });
           onClose();
         },
       },
@@ -104,6 +119,14 @@ export function KeyDetailModal({
                 onChange={(event) => setKey(event.target.value)}
                 placeholder="key.name"
                 required
+              />
+            </Field>
+            <Field label="Tags">
+              <TagsInput
+                value={tags}
+                onChange={setTags}
+                suggestions={tagSuggestions}
+                placeholder="email, ios, paywall…"
               />
             </Field>
             <div className="flex items-center justify-between gap-2">
