@@ -61,6 +61,10 @@ export function KeyDetailModal({
     setValues(next);
   }, [open, word]);
 
+  const tagsChanged =
+    tags.length !== word.tags.length ||
+    tags.some((name, index) => name !== word.tags[index]?.name);
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     const nextKey = key.trim();
@@ -83,7 +87,9 @@ export function KeyDetailModal({
           localeId: locale.id,
           value: values[locale.id] ?? "",
         })),
-        tags,
+        // Only when edited: sending tags needs the create-keys permission,
+        // and a translator saving values has no business tripping over it.
+        ...(tagsChanged ? { tags } : {}),
       },
       {
         onSuccess: () => {

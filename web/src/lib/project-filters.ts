@@ -20,9 +20,17 @@ const DEFAULT_FILTERS: ProjectFilters = {
   tagIds: [],
 };
 
+/** Ids from storage: positive safe integers only, deduped; anything else is dropped. */
 const numberList = (value: unknown): number[] =>
   Array.isArray(value)
-    ? value.filter((entry): entry is number => typeof entry === 'number' && Number.isFinite(entry))
+    ? [
+        ...new Set(
+          value.filter(
+            (entry): entry is number =>
+              typeof entry === 'number' && Number.isSafeInteger(entry) && entry > 0,
+          ),
+        ),
+      ]
     : [];
 
 function loadFilters(projectId: number): ProjectFilters {

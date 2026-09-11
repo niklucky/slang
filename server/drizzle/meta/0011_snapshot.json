@@ -1,5 +1,5 @@
 {
-  "id": "1816edda-6a8b-4216-8a7a-15afb8353a1c",
+  "id": "b854f025-7153-45c6-8f42-9643298ba917",
   "prevId": "41be4ac8-8acb-4c20-80e1-9e099c650bcf",
   "version": "7",
   "dialect": "postgresql",
@@ -1091,7 +1091,23 @@
           "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "words_to_tags_tag_id_idx": {
+          "name": "words_to_tags_tag_id_idx",
+          "columns": [
+            {
+              "expression": "tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "words_to_tags_word_id_words_id_fk": {
           "name": "words_to_tags_word_id_words_id_fk",

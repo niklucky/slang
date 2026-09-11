@@ -202,9 +202,10 @@ export interface PushInput {
   locale: string;
   namespace?: string;
   /**
-   * Attached to the keys this push creates. Keys that already exist keep
-   * their tags untouched: a `--tag email` on a full-dictionary push must not
-   * label the whole project by mistake.
+   * Attached to the keys this push creates or revives from a soft delete; a
+   * revived key keeps the tag links it had and gains these on top. Keys that
+   * are already live keep their tags untouched: a `--tag email` on a
+   * full-dictionary push must not label the whole project by mistake.
    */
   tags?: string[];
   translations: Record<string, string>;

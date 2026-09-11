@@ -416,6 +416,9 @@ export function ProjectPage() {
                   size="sm"
                   className="w-full sm:w-44"
                   allLabel="All tags"
+                  // An empty selection would mean "all tags" here, so the
+                  // action that produces one is not offered.
+                  allowNone={false}
                   options={tagOptions.map((tag) => ({
                     value: String(tag.id),
                     label: (

@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/app.js';
-import { locales, projectsToLocales, tags, type Project } from '../src/db/schema.js';
+import { locales, projectsToLocales, Role, tags, usersToProjects, type Project } from '../src/db/schema.js';
 import { openTestDb, resetDb, seedProject, seedUser, trpc } from './helpers.js';
 
 const handle = openTestDb();
@@ -147,6 +147,41 @@ describe('tags', () => {
       token,
     });
     expect(await handle.db.select().from(tags)).toEqual([]);
+  });
+
+  it('a translator can save values but not touch tags', async () => {
+    const { project, token, enId } = await setup();
+    await upsert(token, project.id, enId, 'k', 'v', ['email']);
+
+    const translator = await seedUser(handle, 'bob@example.com');
+    await handle.db.insert(usersToProjects).values({
+      projectId: project.id,
+      userId: translator.id,
+      assignedById: project.ownerId,
+      roleId: Role.TRANSLATOR,
+      canCreateKeys: false,
+      canTranslate: true,
+      canDeleteKeys: false,
+    });
+    const { accessToken } = await trpc<{ accessToken: string }>(app, 'auth.login', {
+      input: { email: translator.email, password: 'password123' },
+    });
+
+    // Values without tags: fine, and the tags stay.
+    await upsert(accessToken, project.id, enId, 'k', 'v2');
+    expect((await list(token, project.id)).items[0]!.tags.map((tag) => tag.name)).toEqual(['email']);
+
+    // Any tag set, even the same one, needs the create-keys permission.
+    await expect(upsert(accessToken, project.id, enId, 'k', 'v3', ['email'])).rejects.toThrow(
+      'tag_keys_forbidden',
+    );
+    await expect(upsert(accessToken, project.id, enId, 'k', 'v3', [])).rejects.toThrow('tag_keys_forbidden');
+    await expect(
+      trpc(app, 'words.setTags', {
+        input: { projectId: project.id, wordId: (await list(token, project.id)).items[0]!.id, tags: [] },
+        token: accessToken,
+      }),
+    ).rejects.toThrow('tag_keys_forbidden');
   });
 
   it('rejects a tag longer than 64 characters', async () => {

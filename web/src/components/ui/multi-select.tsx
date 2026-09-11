@@ -18,6 +18,8 @@ export interface MultiSelectProps {
   onChange: (next: string[]) => void;
   /** Label shown on the button when every option is selected. */
   allLabel?: string;
+  /** Offer the "None" action. Off for filters where an empty selection has no meaning. */
+  allowNone?: boolean;
   size?: 'sm' | 'md';
   className?: string;
 }
@@ -27,6 +29,7 @@ export function MultiSelect({
   selected,
   onChange,
   allLabel = 'All',
+  allowNone = true,
   size = 'md',
   className,
 }: MultiSelectProps) {
@@ -121,13 +124,15 @@ export function MultiSelect({
             >
               All
             </button>
-            <button
-              type="button"
-              onClick={() => onChange([])}
-              className="rounded-md px-2 py-1 text-xs font-medium text-ink-2 transition-colors hover:bg-fill hover:text-ink"
-            >
-              None
-            </button>
+            {allowNone && (
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="rounded-md px-2 py-1 text-xs font-medium text-ink-2 transition-colors hover:bg-fill hover:text-ink"
+              >
+                None
+              </button>
+            )}
           </div>
         </div>
       )}

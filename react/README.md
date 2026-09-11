@@ -139,7 +139,7 @@ slang pull --all --out ./src/locales     # every locale the project has
 
 slang push en.json ru.json               # push specific <locale>.json files
 slang push --in ./src/locales            # push every <locale>.json in a directory
-slang push en.json --tag email --tag web # tag the keys this push creates (existing ones are left alone)
+slang push en.json --tag email --tag web # tag the keys this push creates or revives (live ones are left alone)
 ```
 
 Reads `SLANG_API_URL` and `SLANG_API_KEY` from the environment; `--url` and `--key` override.

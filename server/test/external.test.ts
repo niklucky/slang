@@ -106,7 +106,10 @@ describe('GET /api/translations?tag=', () => {
     const response = await get('/api/translations?format=i18next&tag=email', project.apiKey);
     expect(await response.json()).toEqual({ en: { subject: 'Hello' }, de: { subject: 'Hallo' } });
 
-    // The filter is normalized the way tag names are.
+    // The filter is normalized the way tag names are: case, outer and inner whitespace.
+    await push(project, { locale: 'en', tags: ['user  profile'], translations: { avatar: 'Avatar' } });
+    const spaced = await get('/api/translations?format=i18next&tag=User%20%20Profile', project.apiKey);
+    expect(await spaced.json()).toEqual({ en: { avatar: 'Avatar' } });
     const upper = await get('/api/translations?format=i18next&tag=%20EMAIL', project.apiKey);
     expect(await upper.json()).toEqual({ en: { subject: 'Hello' }, de: { subject: 'Hallo' } });
 

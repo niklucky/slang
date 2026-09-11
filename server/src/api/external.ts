@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import type { Database } from '../db/client.js';
 import { projects } from '../db/schema.js';
-import { fetchTagsForWords } from '../services/tags.js';
+import { fetchTagsForWords, normalizeTagName } from '../services/tags.js';
 import {
   ExternalApiError,
   fetchNamespacesForWords,
@@ -18,7 +18,7 @@ import {
 const pushSchema = z.object({
   locale: z.string().min(1),
   namespace: z.string().min(1).optional(),
-  /** Applied to the keys the push creates, not to ones that already exist. */
+  /** Applied to the keys the push creates or revives, never to ones already live. */
   tags: z.array(z.string().min(1).max(64)).max(20).optional(),
   translations: z.record(z.string(), z.string()),
 });
@@ -67,7 +67,8 @@ export function externalApi(db: Database): Hono {
     const namespace = c.req.query('namespace');
     // `tag` narrows to words carrying that label. Unlike `namespace` it never
     // reshapes the payload, so a client can fetch just its slice of a project.
-    const tag = c.req.query('tag')?.trim().toLowerCase();
+    // Normalised the way names are stored, so "Email " finds "email".
+    const tag = normalizeTagName(c.req.query('tag') ?? '');
     const format = c.req.query('format');
 
     const rows = await fetchTranslations(db, {
@@ -95,7 +96,7 @@ export function externalApi(db: Database): Hono {
       const project = await projectByApiKey(c.req.header('x-api-key'));
       const locale = c.req.query('locale');
       const namespace = c.req.query('namespace');
-      const tag = c.req.query('tag')?.trim().toLowerCase();
+      const tag = normalizeTagName(c.req.query('tag') ?? '');
       const updatedAt = await fetchTranslationsState(db, {
         projectId: project.id,
         ...(locale ? { locale } : {}),

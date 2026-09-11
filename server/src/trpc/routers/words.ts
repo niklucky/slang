@@ -91,6 +91,11 @@ export const wordsRouter = router({
       } else {
         requirePermission(permissions, 'canCreateKeys', 'create_keys_forbidden');
       }
+      // Tags shape the key like its name does (see setTags), so a translator
+      // saving values must not be able to change them along the way.
+      if (input.tags !== undefined) {
+        requirePermission(permissions, 'canCreateKeys', 'tag_keys_forbidden');
+      }
       return upsertWord(ctx.db, { ...input, changedById: ctx.user.id });
     }),
 

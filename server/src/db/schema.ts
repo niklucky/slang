@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   boolean,
+  index,
   integer,
   pgTable,
   primaryKey,
@@ -183,7 +184,12 @@ export const wordsToTags = pgTable(
       .notNull()
       .references(() => tags.id),
   },
-  (t) => [primaryKey({ columns: [t.wordId, t.tagId] })],
+  (t) => [
+    primaryKey({ columns: [t.wordId, t.tagId] }),
+    // The primary key leads with word_id; the tag filter and the per-tag
+    // counts lead with tag_id.
+    index('words_to_tags_tag_id_idx').on(t.tagId),
+  ],
 );
 
 export const translations = pgTable(
